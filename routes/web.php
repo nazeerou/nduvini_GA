@@ -69,14 +69,14 @@ Route::middleware('auth')->group(function() {
         Route::get('settings/activity_logs', 'logActivity')->name('activity-log');
         
         // User routes
-        Route::get('users/edit/{id}', 'editUser')->name('home');
-        Route::get('users/details/{id}', 'getUser')->name('home');
-        Route::get('/users/delete/{id}', 'deleteUser')->name('home');
-        Route::post('users/update', 'updateUser')->name('home');
+        Route::get('users/edit/{id}', 'editUser')->name('edit-user');
+        Route::get('users/details/{id}', 'getUser')->name('get-user');
+        Route::get('/users/delete/{id}', 'deleteUser')->name('delete');
+        Route::post('users/update', 'updateUser')->name('update-users');
         Route::post('users/update/roles', 'updateUserRoles')->name('user-roles');
         
         Route::get('/users', 'userList')->name('user');
-        Route::post('/profile/update', 'updateUserProfile')->name('user');
+        Route::post('/profile/update', 'updateUserProfile')->name('user-');
         Route::post('/create-user', 'createUser')->name('user');
         Route::get('/user-profile', 'userProfile')->name('user');
         Route::post('/change_password', 'passwordReset')->name('user');
