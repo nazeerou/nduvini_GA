@@ -89,7 +89,7 @@ ul {
   padding: 10;
 }
 
-main {
+/* main {
         background-image: url("assets/images/logo_nduvini.jpeg");
         background-position: center;
         background-repeat: no-repeat;
@@ -101,6 +101,26 @@ main {
         background-size: 500px 500px;
 
     }
+} */
+
+:root {
+--watermark-opacity: 0.22;
+}
+.watermark {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 100%;
+height: 100%;
+background-image: url('assets/images/logo_nduvini.jpeg');
+background-position: center;
+background-repeat: no-repeat;
+background-size: 400px;
+opacity: var(--watermark-opacity);
+z-index: -1;
+pointer-events: none;
+}
 
     @page {
         margin: 140px 25px 100px 25px;
@@ -282,6 +302,8 @@ main {
 </div>
 </footer>
           <main>
+          <div class="watermark"></div>
+
              <table id="sales_report" class="table table-striped table-bordered vehicle_info">
                       <thead>
                              <tr>

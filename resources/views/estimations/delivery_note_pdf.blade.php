@@ -98,9 +98,9 @@ ul {
   padding: 10;
 }
 
-main {
-  /* The image used */
-        /* background-image: url("assets/images/logo_nduvini.jpeg"); */
+/* main {
+  The image used
+        background-image: url("assets/images/logo_nduvini.jpeg");
         background-position: center;
         background-repeat: no-repeat;
         display: flex;
@@ -109,6 +109,27 @@ main {
         margin: 0 auto;
         background-size: 500px 500px;
 
+} */
+
+}
+
+:root {
+--watermark-opacity: 0.22;
+}
+.watermark {
+position: absolute;
+top: 50%;
+left: 50%;
+transform: translate(-50%, -50%);
+width: 100%;
+height: 100%;
+background-image: url('assets/images/logo_nduvini.jpeg');
+background-position: center;
+background-repeat: no-repeat;
+background-size: 400px;
+opacity: var(--watermark-opacity);
+z-index: -1;
+pointer-events: none;
 }
 
     @page {
@@ -291,6 +312,8 @@ main {
 </footer>
 
 <main>
+<div class="watermark"></div>
+
              <table id="sales_report" class="table table-striped table-bordered">
                       <thead>
                             <tr>
