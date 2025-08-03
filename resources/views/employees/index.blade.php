@@ -1,0 +1,295 @@
+@extends('layouts.app_header')
+
+@section('content')
+
+<style>
+.dv-personal {
+   background: #ddd;
+   color: #fff;
+   padding: 4px 10px 1px 20px;
+   margin: 4px 0;
+}
+/* .tab-content-scroll {
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 15px;
+    background: #fff;
+} */
+</style>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="step-indicator pull-right">
+            <a class="step completed" href="{{ url('home') }}">Home</a>
+            <a class="step" href="#">Employee</a>
+        </div>
+    </div>
+</div>
+
+<div class="clearfix mb-3">
+    <button class="btn btn-primary pull-right" data-toggle="modal" data-target="#addEmployeeModal">Add Employee</button>
+</div>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="panel panel-custom panel-border">
+            <div class="panel-heading">
+                <h4 class="panel-title1">Employee Management</h4>
+            </div>
+
+            {{-- Bootstrap 3 Tabs --}}
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#tab_employees" data-toggle="tab">Employee Lists</a></li>
+                <li><a href="#tab_contracts" data-toggle="tab">Contracts</a></li>
+                <li><a href="#tab_transfers" data-toggle="tab">Transfers</a></li>
+                <li><a href="#tab_promotions" data-toggle="tab">Termination & Exit</a></li>
+            </ul>
+
+            <div class="tab-content tab-content-scroll">
+
+                {{-- Tab 1: Employee Lists --}}
+                <div class="tab-pane fade in active" id="tab_employees">
+                    <div id="display_message" style="display: none"></div>
+
+                    <div class="row" style="background: #f5f5f5; padding: 14px; margin-bottom: 20px;">
+                        <div class="col-md-3">
+                            <label>Branch</label>
+                            <select id="filterBranch" class="form-control">
+                                <option value="">-- ALL Branches --</option>
+                                @foreach ($branches as $b)
+                                    <option value="{{ $b->id }}">{{ $b->branch_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label>Contract Type</label>
+                            <select id="filterContract" class="form-control">
+                            <option value="">ALL</option>
+                            @foreach ($contract_types as $c)
+                                <option value="{{ $c->id }}">{{ $c->name }}</option>
+                            @endforeach
+                        </select>
+                        </div>
+
+                        <div class="col-md-3" style="margin-top: 25px;">
+                            <button id="generate-slip" class="btn btn-success">Generate PDF</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table id="datatable" class="table table-striped table-bordered">
+                            <thead>
+                                <tr style="background-color: #eee;">
+                                    <th>SN</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Designation</th>
+                                    <th>Contract Type</th>
+                                    <th>Mobile</th>
+                                    <th>Branch</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($employees as $key => $employee)
+                                <tr>
+                                    <td>{{ $key + 1 }}</td>
+                                    <td>{{ $employee->name }}</td>
+                                    <td>{{ $employee->email }}</td>
+                                    <td>{{ $employee->department_name ?? 'N/A' }}</td>
+                                    <td>{{ $employee->position ?? 'N/A' }}</td>
+                                    <td>{{ $employee->contract_name ?? 'N/A' }}</td>
+                                    <td>{{ $employee->mobile }}</td>
+                                    <td>{{ $employee->branch_name ?? 'N/A' }}</td>
+                                    <td>
+                                        <a href="{{ url('staffs/managements/employees/'. $employee->id ) }}" class="btn btn-info btn-sm"><i class="fa fa-eye"></i></a>
+                                        <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#editEmployeeModal{{ $employee->id }}"><i class="fa fa-edit"></i></button>
+                                        <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" style="display:inline;">
+                                            @csrf @method('DELETE')
+                                            <button class="btn btn-danger btn-sm" onclick="return confirm('Delete this employee?')"><i class="fa fa-trash"></i></button>
+                                        </form>
+                                    </td>
+                                </tr>
+
+                                {{-- Edit Modal --}}
+                                <div class="modal fade" id="editEmployeeModal{{ $employee->id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-lg">
+                                        <form action="{{ route('employees.update', $employee->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
+                                            @csrf @method('PUT')
+                                            <div class="modal-header">
+                                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                                <h4 class="modal-title">Edit Employee</h4>
+                                            </div>
+                                            <div class="modal-body">
+                                                @include('employees.partials.employee_form', ['employee' => $employee])
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-success">Update</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Tab 2: Contracts --}}
+                <div class="tab-pane fade" id="tab_contracts">
+                    <h4>Contracts & Probation</h4>
+                    <p>Coming soon: Show contracts that are near expiry or employees under probation.</p>
+                </div>
+
+                {{-- Tab 3: Transfers --}}
+                <div class="tab-pane fade" id="tab_transfers">
+                    <h4>Transfer Records</h4>
+                    <p>Coming soon: Show transfer requests or history of branch/department transfers.</p>
+                </div>
+
+                {{-- Tab 4: Promotions --}}
+                <div class="tab-pane fade" id="tab_promotions">
+                    <h4>Promotion Records</h4>
+                    <p>Coming soon: Display past promotions, new titles, and effective dates.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Add Employee Modal --}}
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <form action="{{ url('staffs/managements/employees/save') }}" method="POST" enctype="multipart/form-data" class="modal-content">
+            @csrf
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                <h4 class="modal-title">Add New Employee</h4>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+
+                    {{-- Personal Info --}}
+                    <div class="dv-personal">
+                        <h4><i class="fa fa-user"></i> Personal Information</h4>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label>Full Name *</label>
+                            <input type="text" name="name" class="form-control" required placeholder="Employee Name">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Mobile</label>
+                            <input type="text" name="mobile" class="form-control" placeholder="Mobile Number">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Email</label>
+                            <input type="email" name="email" class="form-control" placeholder="Email Address">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label>NIDA Number</label>
+                            <input type="text" name="nida_number" class="form-control" placeholder="NIDA Number">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Designation</label>
+                            <select name="designation_id" class="form-control">
+                                <option value="">-- Select Designation --</option>
+                                @foreach ($designations as $designation)
+                                    <option value="{{ $designation->id }}">{{ $designation->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Department</label>
+                            <select name="department_id" class="form-control">
+                                <option value="">-- Select Department --</option>
+                                @foreach ($departments as $department)
+                                    <option value="{{ $department->id }}">{{ $department->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Branch</label>
+                            <select name="branch_id" class="form-control">
+                                <option value="">-- Select Branch --</option>
+                                @foreach ($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Contract Info --}}
+                    <div class="dv-personal">
+                        <h4><i class="fa fa-file-text"></i> Contract & Salary</h4>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label>Salary Group</label>
+                            <select name="salary_group_id" class="form-control">
+                                <option value="">-- Select Salary Group --</option>
+                                @foreach ($salaryGroups as $group)
+                                    <option value="{{ $group->id }}">{{ $group->group_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Contract Type</label>
+                            <select name="contract_type_id" class="form-control">
+                                <option value="">-- Select Contract Type --</option>
+                                @foreach ($contract_types as $type)
+                                    <option value="{{ $type->id }}">{{ $type->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Contract Duration</label>
+                            <input type="text" name="contract_duration" class="form-control" placeholder="e.g. 12 months">
+                        </div>
+                        <div class="form-group col-md-8">
+                            <label>Contract Date</label>
+                            <div class="input-daterange input-group" id="date-range" data-date-format="yyyy-mm-dd">
+                                <input type="text" class="form-control" name="start_date" placeholder="Start Date" autocomplete="off"/>
+                                <span class="input-group-addon b-0 text-white" style="background: palevioletred">To</span>
+                                <input type="text" class="form-control" name="end_date" placeholder="End Date" autocomplete="off"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Documents --}}
+                    <div class="dv-personal">
+                        <h4><i class="fa fa-paperclip"></i> Attach Documents</h4>
+                    </div>
+                    <div class="row">
+                        <div class="form-group col-md-4">
+                            <label>Upload CV / Certificates</label>
+                            <input type="file" name="cv_file" class="form-control">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Upload NIDA</label>
+                            <input type="file" name="nida_file" class="form-control">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label>Upload Contract File</label>
+                            <input type="file" name="contract_file" class="form-control">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <input type="submit" class="btn btn-primary" value="Save Employee">
+            </div>
+        </form>
+    </div>
+</div>
+
+@endsection
