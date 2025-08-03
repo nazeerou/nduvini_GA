@@ -111,7 +111,6 @@ ul {
 
 } */
 
-}
 
 :root {
 --watermark-opacity: 0.22;

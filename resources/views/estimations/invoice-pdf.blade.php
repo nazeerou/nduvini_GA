@@ -303,7 +303,6 @@ pointer-events: none;
 </footer>
           <main>
           <div class="watermark"></div>
-
              <table id="sales_report" class="table table-striped table-bordered vehicle_info">
                       <thead>
                              <tr>

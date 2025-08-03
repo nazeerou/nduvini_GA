@@ -84,24 +84,6 @@ $currentYear = now()->year;
 $currentMonth = now()->month;
 
 $months = collect();
-
-// for ($m = $currentMonth; $m >= 1; $m--) {
-//     $monthStr = Carbon::createFromDate($currentYear, $m, 1)->format('Y-m');
-    
-//     $payrolls = Payroll::where('month', $monthStr)
-//                 ->where('branch_id', Auth::user()->branch_id)
-//                 ->get();
-    
-//     $months->push([
-//         'month' => $monthStr, // e.g., "May 2025"
-//         'month_key' => $monthStr, // Y-m for data access
-//         'exists' => $payrolls->isNotEmpty(),
-//         'paid_employees' => $payrolls->count(),
-//         'total_amount' => $payrolls->sum('net_salary'),
-//         'id' => $payrolls->first()->id ?? null,
-//         'reference' => $payrolls->first()->reference ?? null,
-//     ]);
-// }
          
 for ($m = $currentMonth; $m >= 1; $m--) {
     $monthStr = Carbon::createFromDate($currentYear, $m, 1)->format('Y-m');
@@ -196,7 +178,6 @@ for ($m = $currentMonth; $m >= 1; $m--) {
                     ));
                 }
 
-        // return view('payrolls.index', compact('payrolls', 'salaryGroups', 'branches'));
     
 
     public function create()
