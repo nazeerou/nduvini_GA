@@ -171,9 +171,6 @@ for ($m = $currentMonth; $m >= 1; $m--) {
                         'contributions',
                         'branches',
                         'months',
-                        'nssf',
-                        'nhif',
-                        'paye',
                         'employees',
                     ));
                 }
