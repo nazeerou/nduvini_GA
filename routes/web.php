@@ -469,4 +469,6 @@ Route::get('/payrolls/nssf-voucher/{month}', [PayrollController::class, 'generat
 Route::get('/payrolls/nhif-voucher/{month}', [PayrollController::class, 'generateNhifVoucher']);
 Route::get('/payrolls/paye-voucher/{month}', [PayrollController::class, 'generatePayeVoucher']);
 
+Route::get('/payrolls/wcf-voucher/{month?}', [PayrollController::class, 'generateWcfVoucher']);
+
 });

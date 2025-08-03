@@ -230,6 +230,9 @@
         <a href="{{ url('payrolls/nhif-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
             <i class="fa fa-file-pdf-o"></i> NHIF Voucher
         </a>
+        <a href="{{ url('payrolls/wcf-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
+            <i class="fa fa-file-pdf-o"></i> WCF Voucher
+        </a>
         <a href="{{ url('payrolls/paye-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
             <i class="fa fa-file-pdf-o"></i> PAYE Voucher
         </a>

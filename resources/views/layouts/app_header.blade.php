@@ -40,7 +40,7 @@ use App\Models\Module;
         <meta name="description" content="">
         <meta name="author" content="">
 
-        <link rel="shortcut icon" href="assets/images/icon.jpg">
+        <link rel="shortcut icon" href="{{ asset('assets/images/logo_nduvini.jpeg') }}">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>Garage Assistant System (GAS) </title>

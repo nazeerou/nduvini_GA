@@ -29,15 +29,7 @@
         </div>
     </div>
 </div>
-<div class="row">
-    <div class="col-lg-12">
-        <div class="panel panel-custom panel-border">
-            <div class="panel-heading">
-                <h4 class="panel-title1"> Estimations History </h4>
-                <br/>
-                <div id="display_message" style="display: none"></div>
-            </div>
-            <div class="row">
+ <div class="row">
     <div class="col-lg-12">
         <div class="panel panel-custom panel-border">
             <div class="panel-heading">
@@ -59,7 +51,7 @@
             <div class="col-md-2">
                 <label for="filterYear">Year</label>
                 <select id="filterYear" class="form-control">
-                @for ($y = now()->year; $y <= now()->year + 5; $y++)
+                @for ($y = now()->year; $y <= now()->year  + 5; $y++)
                         <option value="{{ $y }}">{{ $y }}</option>
                     @endfor
                 </select>

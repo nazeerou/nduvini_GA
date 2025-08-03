@@ -43,7 +43,6 @@
                             <tr>
                                 <th> # </th>
                                 <th>Supplier Name </th>
-                                <th>Reference Number</th>
                                 <th>Invoice Number</th>
                                 <th>Invoice Amount (VAT incl.)</th>
                                 <th>Invoice Date</th>
@@ -57,13 +56,6 @@
                             <tr>
                                 <td>{{ $key+1 }}</td>
                                 <td><a href="{{ url('/purchase-report/'.$purchase->created_date.'/'.$purchase->invoice_number) }}"> {{ $purchase->supplier_name }} </a> </td>
-                                <td style="padding-left: 11px;">
-                                 @if($purchase->lpo_number)
-                                  {{ $purchase->lpo_number }}
-                                 @else
-                                 <a class="btn btn-sm" href="{{ url('purchases/lpo/'.$purchase->invoice_number.'/'.$purchase->created_date) }}">Create LPO </a> 
-                                 @endif
-                                </td>
                                 <td> 
                                 <a href="{{ url('/attachments/'.$purchase->invoice_file) }}" target="_blank">{{ $purchase->invoice_number }}</a>
                                 </td>

@@ -881,7 +881,7 @@ public function generateNhifVoucher($month)
 
 private function calculatePaye($grossSalary, $nssf = 0, $nhif = 0)
 {
-    // Exemptions: remove NSSF (and NHIF if applicable)
+
     $taxable = $grossSalary - ($nssf + $nhif);
 
     if ($taxable <= 270000) {
@@ -935,6 +935,43 @@ public function generatePayeVoucher($month)
     return $pdf->download("PAYE_Voucher_$month.pdf");
 }
 
+
+
+public function generateWcfVoucher($month)
+{
+    $company = [
+        'name' => 'Nduvini AutoWorks Ltd',
+        'address' => 'P.O. Box 1234, Dar es Salaam',
+        'phone' => '+255 789 123 456',
+        'tin' => '123-456-789',
+    ];
+
+    $employees = Employee::with('payrolls')
+        ->whereHas('payrolls', function ($q) use ($month) {
+            $q->where('month', $month);
+        })
+        ->get()
+        ->map(function ($emp) use ($month) {
+            $payroll = $emp->payrolls->where('month', $month)->first();
+            $gross = $payroll->basic_salary ?? 0;
+
+            $wcf = $gross * 0.01;
+            $net_after_wcf = $gross - $wcf;
+
+            return [
+                'name' => $emp->name,
+                'nida' => $emp->nida_number,
+                'gross_salary' => $gross,
+                'wcf' => $wcf,
+                'net_after_wcf' => $net_after_wcf,
+            ];
+        });
+
+    $pdf = Pdf::loadView('payment-voucher.wcf_voucher', compact('company', 'employees', 'month'))
+        ->setPaper('A4', 'portrait');
+
+    return $pdf->download("WCF_Voucher_$month.pdf");
+}
 
 
 }
