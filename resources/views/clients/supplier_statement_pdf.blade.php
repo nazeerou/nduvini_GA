@@ -130,12 +130,7 @@
 </main>
 
 <footer>
-    <table style="border: 1px solid #ddd; width: 250px;" align="right">
-        <tr>
-            <td>Outstanding Balance:</td>
-            <td>{{ number_format($total_charges - $total_credit, 2) }}</td>
-        </tr>
-    </table>
+    
 </footer>
 
 </body>
