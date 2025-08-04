@@ -6,49 +6,110 @@
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 13px;
-            margin: 20px;
+            font-size: 12px;
+            color: #000;
         }
-        .header, .footer {
+
+        .header {
             text-align: center;
+            margin-bottom: 10px;
         }
-        .voucher-box {
+
+        .logo {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+        }
+
+        .logo img {
+            width: 100px;
+            height: auto;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 16px;
+        }
+
+        .header p {
+            margin: 4px 0;
+        }
+
+        .voucher-title {
+            margin-top: 10px;
+            font-size: 15px;
+            font-weight: bold;
+            /* text-decoration: underline; */
+        }
+
+        table.voucher-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
+            margin-top: 15px;
         }
-        .voucher-box th, .voucher-box td {
+
+        table.voucher-table th,
+        table.voucher-table td {
             border: 1px solid #000;
-            padding: 8px;
+            padding: 6px;
             text-align: left;
         }
-        .voucher-box th {
+
+        table.voucher-table th {
             background-color: #f2f2f2;
         }
+
+        tfoot th {
+            background-color: #f9f9f9;
+            text-align: right;
+        }
+
         .summary {
             margin-top: 20px;
         }
-        .signature-section {
-            margin-top: 40px;
+
+        .summary p {
+            margin: 4px 0;
         }
+
+        .signature-section {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+
         .signature {
-            display: inline-block;
             width: 30%;
             text-align: center;
-            margin-right: 10%;
+            font-size: 12px;
+        }
+
+        .signature p {
+            margin-bottom: 40px;
+        }
+
+        .signature-line {
+            display: block;
+            border-top: 1px solid #000;
+            margin-top: 30px;
+            width: 100%;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2><strong>{{ $company['name'] }}</strong></h2>
+        <h2><strong>{{ strtoupper($company['name']) }}</strong></h2>
+        <div class="logo">
+            <img src="{{ public_path('assets/images/logo_nduvini.jpeg') }}" alt="Company Logo">
+        </div>
         <p>{{ $company['address'] }} | {{ $company['phone'] }} | TIN: {{ $company['tin'] }}</p>
-        <h3>NSSF PAYMENT VOUCHER</h3>
+        <div class="voucher-title">NSSF PAYMENT VOUCHER</div>
         <p><strong>Month:</strong> {{ $month }} &nbsp;&nbsp; <strong>NSSF Number:</strong> {{ $company['nssf_number'] }}</p>
     </div>
 
-    <table class="voucher-box">
+    <table class="voucher-table">
         <thead>
             <tr>
                 <th>#</th>
@@ -103,20 +164,20 @@
 
     <div class="signature-section">
         <div class="signature">
-            <p>Prepared By</p><br><br>
-            _______________________<br>
+            <p>Prepared By</p>
+            <span class="signature-line"></span>
             Name & Signature
         </div>
 
         <div class="signature">
-            <p>Approved By</p><br><br>
-            _______________________<br>
+            <p>Approved By</p>
+            <span class="signature-line"></span>
             Name & Signature
         </div>
 
         <div class="signature">
-            <p>Received By (NSSF)</p><br><br>
-            _______________________<br>
+            <p>Received By (NSSF)</p>
+            <span class="signature-line"></span>
             Name & Stamp
         </div>
     </div>

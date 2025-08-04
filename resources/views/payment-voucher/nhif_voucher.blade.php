@@ -36,14 +36,28 @@
             text-align: center;
             margin-right: 5%;
         }
+        .logo {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+        }
+
+        .logo img {
+            width: 100px;
+            height: auto;
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2><strong>{{ $company['name'] }}</strong></h2>
+        <h2><strong>{{ strtoupper($company['name']) }}</strong></h2>
+        <div class="logo">
+            <img src="{{ public_path('assets/images/logo_nduvini.jpeg') }}" alt="Company Logo">
+        </div>
         <p>{{ $company['address'] }} | {{ $company['phone'] }} | TIN: {{ $company['tin'] }}</p>
-        <h3>NHIF PAYMENT VOUCHER</h3>
+        <h2>NHIF PAYMENT VOUCHER</h2>
         <p><strong>Month:</strong> {{ $month }} &nbsp;&nbsp; <strong>NHIF Number:</strong> {{ $company['nhif_number'] }}</p>
     </div>
 

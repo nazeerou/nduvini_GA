@@ -37,7 +37,9 @@
 <body>
     <div class="header">
     <h2>NDUVINI AUTO WORKS LIMITED (NAW) </h2>
-        <img src="{{ public_path('logo.png') }}" class="logo" alt="Company Logo">
+        <!-- <img src="{{ public_path('logo.png') }}" class="logo" alt="Company Logo"> -->
+        <img src="{{ public_path('assets/images/logo_nduvini.jpeg') }}" alt="Company Logo" style="width: 150px;">
+
         <h2>WCF PAYMENT VOUCHER</h2>
         <p>Workers Compensation Fund Contribution</p>
     </div>
