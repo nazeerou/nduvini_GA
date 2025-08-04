@@ -336,67 +336,173 @@ $sales = $query->orderBy('invoices.created_date', 'desc')->get();
             return view('clients.supplier_statement', compact('clients'));
         }
     
-
-        public function getSupplierStatementPDF(Request $request) {
-                 
-            $startdate= $request->startdate;
-            $enddate= $request->enddate;
+        public function getSupplierStatementPDF(Request $request)
+        {
+            $startdate = $request->startdate;
+            $enddate = $request->enddate;
             $payment = $request->payment;
-            $purchases = DB::table('purchases')
-                    ->select(DB::raw("SUM((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"), 'purchases.invoice_number', 'purchases.lpo_number', 'purchases.paid_amount', 'suppliers.supplier_name', 'suppliers.address', 'suppliers.place', 'purchases.created_date')
-                    ->leftjoin('suppliers', 'suppliers.id', 'purchases.supplier_id')
-                    ->where('purchases.branch_id', Auth::user()->branch_id)
-                    ->whereBetween('purchases.created_date', [$request->startdate, $request->enddate])
-                    ->where('purchases.supplier_id', $request->supplier_id)
-                    ->groupBy('purchases.invoice_number', 'purchases.paid_amount', 'suppliers.address', 'suppliers.place', 'purchases.lpo_number', 'suppliers.supplier_name', 'purchases.created_date')
-                    ->orderBy('purchases.created_date', 'desc')
-                    ->distinct()
-                    ->get();
-
-                    $total_charges = DB::table('purchases')
-                               ->select(DB::raw("SUM((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"))
-                               ->where('supplier_id', $request->supplier_id)
-                               ->whereBetween('created_date', [$request->startdate, $request->enddate])
-                               ->get();      
-                       
-                    $total_credit = DB::table('payments')
-                             ->select(DB::raw("SUM(paid_amount) as paid_amount"))
-                             ->where('supplier_id', $request->supplier_id)
-                             ->whereBetween('created_date', [$request->startdate, $request->enddate])
-                             ->get();
-
-    
-     if ($startdate  == '' && $enddate == '') {
-
-                $purchases = DB::table('purchases')
-                ->select(DB::raw("SUM((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"), 'purchases.invoice_number', 'purchases.lpo_number', 'purchases.paid_amount', 'suppliers.supplier_name', 'suppliers.address', 'suppliers.place', 'purchases.created_date')
-                ->leftjoin('suppliers', 'suppliers.id', 'purchases.supplier_id')
-                ->where('purchases.branch_id', Auth::user()->branch_id)
-                ->where('purchases.supplier_id', $request->supplier_id)
-                ->groupBy('purchases.invoice_number', 'purchases.paid_amount', 'suppliers.address', 'suppliers.place', 'purchases.lpo_number', 'suppliers.supplier_name', 'purchases.created_date')
-                ->orderBy('purchases.created_date', 'desc')
-                ->distinct()
-                ->get();
-
-                $total_charges = DB::table('purchases')
-                           ->select(DB::raw("SUM((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"))
-                           ->where('supplier_id', $request->supplier_id)
-                           ->get();      
-                   
-                $total_credit = DB::table('payments')
-                         ->select(DB::raw("SUM(paid_amount) as paid_amount"))
-                         ->where('supplier_id', $request->supplier_id)
-                         ->get();
-
-        }   // End Condition
+            $supplierId = $request->supplier_id;
+            $branchId = Auth::user()->branch_id;
         
-        $pdf = App::make('dompdf.wrapper');
-        $pdf->loadView('clients.supplier_statement_pdf', compact('startdate', 'enddate', 'payment', 'purchases', 'total_credit', 'total_charges'));
-        return $pdf->stream();
+            // Base purchase query
+            $purchases = DB::table('purchases')
+            ->select(
+                DB::raw("((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"),
+                'purchases.total_purchase',
+                'purchases.vat_amount',
+                'purchases.invoice_number',
+                'purchases.lpo_number',
+                'purchases.paid_amount',
+                'suppliers.supplier_name',
+                'suppliers.address',
+                'suppliers.place',
+                'purchases.created_date'
+            )
+            ->leftJoin('suppliers', 'suppliers.id', '=', 'purchases.supplier_id')
+            ->where('purchases.branch_id', Auth::user()->branch_id)
+            ->where('purchases.supplier_id', $request->supplier_id)
+            ->orderBy('purchases.created_date', 'desc')
+            ->groupBy(
+                'purchases.invoice_number',
+                'purchases.paid_amount',
+                'suppliers.address',
+                'suppliers.place',
+                'purchases.lpo_number',
+                'suppliers.supplier_name',
+                'purchases.created_date',
+                'purchases.total_purchase',
+                'purchases.vat_amount'
+            )
+            ->get();
+        
+        
+            // Total charges (VAT inclusive)
+            $totalChargesQuery = DB::table('purchases')
+                ->select(DB::raw("SUM((total_purchase * vat_amount) + total_purchase) as total_amount"))
+                ->where('supplier_id', $supplierId);
+        
+            if (!empty($startdate) && !empty($enddate)) {
+                $totalChargesQuery->whereBetween('created_date', [$startdate, $enddate]);
+            }
+        
+            $total_charges = $totalChargesQuery->value('total_amount') ?? 0;
+        
+            // return $total_charges;
+            
+            // // Total credit (payments)
+            // $totalCreditQuery = DB::table('payments')
+            //     ->select(DB::raw("SUM(paid_amount) as paid_amount"))
+            //     ->where('supplier_id', $supplierId);
+        
+            // if (!empty($startdate) && !empty($enddate)) {
+            //     $totalCreditQuery->whereBetween('created_date', [$startdate, $enddate]);
+            // }
+        
+            // $total_credit = $totalCreditQuery->value('paid_amount') ?? 0;
+        
+// $total_credit = DB::table('payments')
+//     ->where('supplier_id', $request->supplier_id)
+//     ->whereBetween('created_date', [$startdate, $enddate])
+//     ->sum('paid_amount');
 
+// $total_charges = DB::table('purchases')
+//     ->where('supplier_id', $request->supplier_id)
+//     ->whereBetween('created_date', [$startdate, $enddate])
+//     ->sum(DB::raw("(total_purchase * vat_amount) + total_purchase"));
+
+$query = DB::table('payments')->where('supplier_id', $request->supplier_id);
+
+if (!empty($startdate) && !empty($enddate)) {
+    $query->whereBetween('created_date', [$startdate, $enddate]);
+}
+
+$total_credit = $query->sum('paid_amount');
+
+
+// For purchases
+
+$query2 = DB::table('purchases')->where('supplier_id', $request->supplier_id);
+
+if (!empty($startdate) && !empty($enddate)) {
+    $query2->whereBetween('created_date', [$startdate, $enddate]);
+}
+
+$total_charges = $query2->sum(DB::raw("(total_purchase * vat_amount) + total_purchase"));
+
+            // Generate PDF
+            $pdf = App::make('dompdf.wrapper');
+            $pdf->loadView('clients.supplier_statement_pdf', compact(
+                'startdate',
+                'enddate',
+                'payment',
+                'purchases',
+                'total_credit',
+                'total_charges'
+            ));
+        
+            return $pdf->stream();
         }
-    
+        
+        
+    //     public function getSupplierStatementPDF(Request $request) {
+                 
+    //         $startdate= $request->startdate;
+    //         $enddate= $request->enddate;
+    //         $payment = $request->payment;
+    //         $purchases = DB::table('purchases')
+    //                 ->select(DB::raw("SUM((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"), 'purchases.invoice_number', 'purchases.lpo_number', 'purchases.paid_amount', 'suppliers.supplier_name', 'suppliers.address', 'suppliers.place', 'purchases.created_date')
+    //                 ->leftjoin('suppliers', 'suppliers.id', 'purchases.supplier_id')
+    //                 ->where('purchases.branch_id', Auth::user()->branch_id)
+    //                 ->whereBetween('purchases.created_date', [$request->startdate, $request->enddate])
+    //                 ->where('purchases.supplier_id', $request->supplier_id)
+    //                 ->groupBy('purchases.invoice_number', 'purchases.paid_amount', 'suppliers.address', 'suppliers.place', 'purchases.lpo_number', 'suppliers.supplier_name', 'purchases.created_date')
+    //                 ->orderBy('purchases.created_date', 'desc')
+    //                 ->distinct()
+    //                 ->get();
 
+    //                 $total_charges = DB::table('purchases')
+    //                            ->select(DB::raw("SUM((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"))
+    //                            ->where('supplier_id', $request->supplier_id)
+    //                            ->whereBetween('created_date', [$request->startdate, $request->enddate])
+    //                            ->get();      
+                       
+    //                 $total_credit = DB::table('payments')
+    //                          ->select(DB::raw("SUM(paid_amount) as paid_amount"))
+    //                          ->where('supplier_id', $request->supplier_id)
+    //                          ->whereBetween('created_date', [$request->startdate, $request->enddate])
+    //                          ->get();
+
+    
+    //  if ($startdate  == '' && $enddate == '') {
+
+    // $purchases = DB::table('purchases')
+    //             ->select(DB::raw("SUM((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"), 'purchases.invoice_number', 'purchases.lpo_number', 'purchases.paid_amount', 'suppliers.supplier_name', 'suppliers.address', 'suppliers.place', 'purchases.created_date')
+    //             ->leftjoin('suppliers', 'suppliers.id', 'purchases.supplier_id')
+    //             ->where('purchases.branch_id', Auth::user()->branch_id)
+    //             ->where('purchases.supplier_id', $request->supplier_id)
+    //             ->groupBy('purchases.invoice_number', 'purchases.paid_amount', 'suppliers.address', 'suppliers.place', 'purchases.lpo_number', 'suppliers.supplier_name', 'purchases.created_date')
+    //             ->orderBy('purchases.created_date', 'desc')
+    //             ->distinct()
+    //             ->get();
+
+    //             $total_charges = DB::table('purchases')
+    //                        ->select(DB::raw("SUM((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"))
+    //                        ->where('supplier_id', $request->supplier_id)
+    //                        ->get();      
+                   
+    //             $total_credit = DB::table('payments')
+    //                      ->select(DB::raw("SUM(paid_amount) as paid_amount"))
+    //                      ->where('supplier_id', $request->supplier_id)
+    //                      ->get();
+
+    //     }   // End Condition
+        
+    //     $pdf = App::make('dompdf.wrapper');
+    //     $pdf->loadView('clients.supplier_statement_pdf', compact('startdate', 'enddate', 'payment', 'purchases', 'total_credit', 'total_charges'));
+    //     return $pdf->stream();
+
+    //     }
+    
           public function getDeptorStatement() {
             $clients = Client::where('branch_id', Auth::user()->branch_id)->get();
             return view('accounts.deptor_statement', compact('clients'));
