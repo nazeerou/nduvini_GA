@@ -84,7 +84,7 @@ ul {
   padding: 10;
 }
 
-main {
+main1 {
         /* background-image: url("assets/images/logo_nduvini.jpeg"); */
         background-position: center;
         background-repeat: no-repeat;
