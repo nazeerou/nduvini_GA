@@ -148,6 +148,7 @@
         <li><a href="#documents" data-toggle="tab">Documents</a></li>
         <li><a href="#contract" data-toggle="tab">Contract & Salary</a></li>
         <li><a href="#bank_details" data-toggle="tab">Bank Account Details </a></li>
+        <li><a href="#nssf_details" data-toggle="tab">NSSF Details </a></li>
         <li><a href="#termination" data-toggle="tab">Termination</a></li>
     </ul>
 
@@ -170,8 +171,8 @@
                             <th> Employee ID </th>
                             <td><strong>NAW{{ str_pad($employee->id, 3, '0', STR_PAD_LEFT) }}</strong></td>
                         <tr>
-                            <th>Name</th>
-                            <td>{{ $employee->name }}</td>
+                            <th>Full Name</th>
+                            <td>{{ $employee->firstname }} {{ $employee->middlename }} {{ $employee->surname }}</td>
                         </tr>
                         <tr>
                             <th>Email</th>
@@ -277,7 +278,7 @@
     </table>
 </div>
 
-     <!-- Termination -->
+     <!-- Bank -->
      <div class="tab-pane fade" id="bank_details">
     <h4>Bank Account Details</h4>
 
@@ -376,6 +377,85 @@
                     <div class="form-group">
                         <label>Account Name</label>
                         <input type="text" name="account_name" class="form-control" placeholder="Account Name" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- NSSF -->
+
+<div class="tab-pane fade" id="nssf_details">
+    <h4>NSSF Details</h4>
+
+    <!-- Add Button -->
+    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addNssfModal">Add NSSF Member No</button>
+
+    <!-- NSSF Table -->
+    <table class="table table-bordered table-striped" style="margin-top: 10px;">
+        <thead>
+            <tr>
+                <th>NSSF Member Number</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($employee->nssfDetails as $nssf)
+            <tr>
+                <td>{{ $nssf->member_number }}</td>
+                <td>
+                    <button class="btn btn-xs btn-info" data-toggle="modal" data-target="#editNssfModal{{ $nssf->id }}">Edit</button>
+                    <form action="{{ route('employee.nssf.destroy', $nssf->id) }}" method="POST" style="display:inline;">
+                        @csrf @method('DELETE')
+                        <button class="btn btn-xs btn-danger" onclick="return confirm('Delete this NSSF entry?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+
+            <!-- Edit Modal -->
+            <div class="modal fade" id="editNssfModal{{ $nssf->id }}">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form action="{{ route('employee.nssf.update', $nssf->id) }}" method="POST">
+                            @csrf @method('PUT')
+                            <div class="modal-header"><h5>Edit NSSF Member No</h5></div>
+                            <div class="modal-body">
+                                <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                                <div class="form-group">
+                                    <label>NSSF Member Number</label>
+                                    <input type="text" name="member_number" class="form-control" value="{{ $nssf->member_number }}" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-primary">Update</button>
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addNssfModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('employee.nssf.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                <div class="modal-header"><h5>Add NSSF Member No</h5></div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>NSSF Member Number</label>
+                        <input type="text" name="member_number" class="form-control" placeholder="Enter NSSF Member No" required>
                     </div>
                 </div>
                 <div class="modal-footer">

@@ -474,9 +474,9 @@ li:hover .nav-icon-rounded {
 
                 </div> <!-- content -->
 
-                <footer class="footer text-right">
+                <!-- <footer class="footer text-right">
                  All right reserved. ©  <?php echo date('Y'); ?>  
-                </footer>
+                </footer> -->
 
             </div>
 

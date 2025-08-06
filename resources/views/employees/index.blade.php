@@ -96,7 +96,7 @@
                                 @foreach($employees as $key => $employee)
                                 <tr>
                                     <td>{{ $key + 1 }}</td>
-                                    <td>{{ $employee->name }}</td>
+                                    <td>{{ $employee->firstname }} {{ $employee->middlename }} {{ $employee->surname }}</td>
                                     <td>{{ $employee->email }}</td>
                                     <td>{{ $employee->department_name ?? 'N/A' }}</td>
                                     <td>{{ $employee->position ?? 'N/A' }}</td>
@@ -174,56 +174,69 @@
 
                     {{-- Personal Info --}}
                     <div class="dv-personal">
-                        <h4><i class="fa fa-user"></i> Personal Information</h4>
-                    </div>
-                    <div class="row">
-                        <div class="form-group col-md-4">
-                            <label>Full Name *</label>
-                            <input type="text" name="name" class="form-control" required placeholder="Employee Name">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>Mobile</label>
-                            <input type="text" name="mobile" class="form-control" placeholder="Mobile Number">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>Email</label>
-                            <input type="email" name="email" class="form-control" placeholder="Email Address">
-                        </div>
-                    </div>
+    <h4><i class="fa fa-user"></i> Personal Information</h4>
+</div>
 
-                    <div class="row">
-                        <div class="form-group col-md-4">
-                            <label>NIDA Number</label>
-                            <input type="text" name="nida_number" class="form-control" placeholder="NIDA Number">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>Designation</label>
-                            <select name="designation_id" class="form-control">
-                                <option value="">-- Select Designation --</option>
-                                @foreach ($designations as $designation)
-                                    <option value="{{ $designation->id }}">{{ $designation->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>Department</label>
-                            <select name="department_id" class="form-control">
-                                <option value="">-- Select Department --</option>
-                                @foreach ($departments as $department)
-                                    <option value="{{ $department->id }}">{{ $department->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label>Branch</label>
-                            <select name="branch_id" class="form-control">
-                                <option value="">-- Select Branch --</option>
-                                @foreach ($branches as $branch)
-                                    <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
+        <div class="row">
+            <div class="form-group col-md-4">
+                <label>First Name *</label>
+                <input type="text" name="firstname" class="form-control" required placeholder="First Name">
+            </div>
+            <div class="form-group col-md-4">
+                <label>Middle Name</label>
+                <input type="text" name="middlename" class="form-control" placeholder="Middle Name (optional)">
+            </div>
+            <div class="form-group col-md-4">
+                <label>Surname *</label>
+                <input type="text" name="surname" class="form-control" required placeholder="Surname">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group col-md-4">
+                <label>Mobile</label>
+                <input type="text" name="mobile" class="form-control" placeholder="Mobile Number">
+            </div>
+            <div class="form-group col-md-4">
+                <label>Email</label>
+                <input type="email" name="email" class="form-control" placeholder="Email Address">
+            </div>
+            <div class="form-group col-md-4">
+                <label>NIDA Number</label>
+                <input type="text" name="nida_number" class="form-control" placeholder="NIDA Number">
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group col-md-4">
+                <label>Designation</label>
+                <select name="designation_id" class="form-control">
+                    <option value="">-- Select Designation --</option>
+                    @foreach ($designations as $designation)
+                        <option value="{{ $designation->id }}">{{ $designation->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Department</label>
+                <select name="department_id" class="form-control">
+                    <option value="">-- Select Department --</option>
+                    @foreach ($departments as $department)
+                        <option value="{{ $department->id }}">{{ $department->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="form-group col-md-4">
+                <label>Branch</label>
+                <select name="branch_id" class="form-control">
+                    <option value="">-- Select Branch --</option>
+                    @foreach ($branches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
 
                     {{-- Contract Info --}}
                     <div class="dv-personal">

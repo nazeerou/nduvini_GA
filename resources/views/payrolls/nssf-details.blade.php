@@ -9,21 +9,21 @@
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
-            <th>SN</th>
-            <th>Employee Name</th>
-            <th>Bank Name</th>
-            <th>Account Number</th>
-            <th>Net Pay </th>
+            <th>Member No</th>
+            <th>FirstName</th>
+            <th>MiddleName</th>
+            <th>Surname</th>
+            <th>Wage </th>
         </tr>
     </thead>
     <tbody>
     @foreach($slips as $key => $slip)
         <tr>
-             <td>{{ $key+1 }}</td>
-            <td>{{ strtoupper($slip['employee_name']) }}</td>
-            <td>{{ $slip['bank_name'] }}</td>
-            <td>{{ $slip['account_number'] }}</td>
-            <td>{{ $slip['net_salary'] }}</td>
+             <td>{{ $slip['nssf_no'] }}</td>
+             <td>{{ $slip['firstname'] }}</td>
+            <td>{{ strtoupper($slip['middlename']) }}</td>
+            <td>{{ strtoupper($slip['surname']) }}</td>
+            <td>{{ $slip['gross_salary'] }}</td>
         </tr>
         @endforeach
     </tbody>

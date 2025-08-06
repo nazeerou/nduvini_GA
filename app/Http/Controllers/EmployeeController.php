@@ -32,7 +32,7 @@ class EmployeeController extends Controller
         $contract_types = ContractType::all();
 
         $employees = DB::table('employees')
-                    ->select('employees.id', 'employees.name', 'employees.email', 'photo', 'departments.name as department_name',
+                    ->select('employees.id', 'employees.firstname', 'employees.middlename', 'employees.surname', 'employees.email', 'photo', 'departments.name as department_name',
                      'employees.mobile', 'employees.joining_date', 'designations.name as position', 'contract_types.name as contract_name',
                      'salary_groups.group_name', 'branches.branch_name', 'salary_groups.id as salary_id',
                       'salary_groups.group_name', 'branches.id as branch_id')
@@ -42,7 +42,7 @@ class EmployeeController extends Controller
                      ->leftJoin('departments', 'departments.id', 'employees.department_id')
                      ->leftJoin('contracts', 'contracts.employee_id', 'employees.id')
                      ->leftJoin('contract_types', 'contract_types.id', 'contracts.contract_type_id')
-                    //  ->where('employees.branch_id', Auth::user()->branch_id)
+                     ->where('employees.branch_id', Auth::user()->branch_id)
                      ->get();
 
         $employee = Employee::where('employees.branch_id', Auth::user()->branch_id)->first();
@@ -103,7 +103,9 @@ class EmployeeController extends Controller
             }
     
             $employee = Employee::create([
-                'name' => $request->name,
+                'firstname' => $request->firstname,
+                'middlename' => $request->middlename,
+                'surname' => $request->surname,
                 'mobile' => $request->mobile,
                 'email' => $request->email,
                 'nida_number' => $request->nida_number,
@@ -186,9 +188,10 @@ class EmployeeController extends Controller
 public function update(Request $request, Employee $employee)
 {
     $request->validate([
-        'name' => 'required',
+        'firstname' => 'required',
+        'middlename' => 'nullable',
+        'surname' => 'required',
         'email' => 'required|email|unique:employees,email,' . $employee->id,
-        'position' => 'required',
         'basic_salary' => 'required|numeric',
     ]);
 

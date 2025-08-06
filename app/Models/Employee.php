@@ -8,7 +8,7 @@ class Employee extends Model
     use HasFactory;
 
      protected $fillable = [
-        'name', 'email', 'mobile','joining_date', 'salary_group_id','contract_type_id',
+        'firstname', 'middlename', 'surname', 'email', 'mobile','joining_date', 'salary_group_id','contract_type_id',
         'department_id', 'designation_id', 'contract_type', 'photo', 'nida_number',
         'contract_duration', 'salary_group_id', 'created_by',
         'cv_file', 'nida_file', 'contract_file', 'branch_id',
@@ -62,5 +62,9 @@ public function bankAccount()
     return $this->hasMany(BankAccount::class);
 }
 
+public function nssfdetails()
+{
+    return $this->hasOne(NssfDetail::class); // not hasMany
+}
     
 }

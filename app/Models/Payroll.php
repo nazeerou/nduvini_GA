@@ -21,5 +21,8 @@ class Payroll extends Model
 {
     return $this->hasMany(PayrollContribution::class);
 }
-
+// public function payment_contributions()
+// {
+//     return $this->hasMany(PaymentContribution::class);
+// }
 }

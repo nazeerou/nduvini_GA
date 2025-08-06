@@ -28,7 +28,10 @@ use App\Http\Controllers\{
     EmployeeBankController,
     BankController,
     LeaveController,
-    LeaveTypeController
+    LeaveTypeController,
+    EmployeeNssfController,
+    LoanController,
+    SalaryAdvanceController
 };
 
 /*
@@ -431,9 +434,10 @@ Route::post('/salary-groups/generate', [PayrollController::class, 'generatePayro
 Route::resource('salary-groups', SalaryGroupController::class)->only(['store', 'update', 'destroy']);
 Route::get('/payrolls/salary-slip-fetch/view', [PayrollController::class, 'fetchSalarySlip'])->name('payrolls.slip.fetch');
 Route::get('/payrolls/salary-slip-download/view/pdf', [PayrollController::class, 'downloadSalarySlip'])->name('salary-slip.download');
-// Route::get('/payrolls/show/{reference}', [PayrollController::class, 'show'])->name('payrolls.show');
 Route::get('/payrolls/details/{reference}', [PayrollController::class, 'details']);
 Route::get('/payrolls/download/view/details/{reference}', [PayrollController::class, 'downloadPayrollDetails']);
+
+Route::delete('/payrolls/delete/{id}', [PayrollController::class, 'rollbackPayroll'])->name('payrolls.rollback');
 
 // Bank details
 Route::post('employee-bank/store', [EmployeeBankController::class, 'store'])->name('employee.bank.store');
@@ -470,5 +474,25 @@ Route::get('/payrolls/nhif-voucher/{month}', [PayrollController::class, 'generat
 Route::get('/payrolls/paye-voucher/{month}', [PayrollController::class, 'generatePayeVoucher']);
 
 Route::get('/payrolls/wcf-voucher/{month?}', [PayrollController::class, 'generateWcfVoucher']);
+
+// Route::resource('employee/nssf', EmployeeNssfController::class)->except(['create', 'edit', 'show', 'index']);
+
+// Route::resource('employee/nssf', EmployeeNssfController::class)->only(['store', 'update', 'destroy', 'create', 'edit', 'show', 'index']);
+
+Route::post('/employee/nssf', [EmployeeNssfController::class, 'store'])->name('employee.nssf.store');
+Route::put('/employee/nssf/{id}', [EmployeeNssfController::class, 'update'])->name('employee.nssf.update');
+Route::delete('/employee/nssf/{id}', [EmployeeNssfController::class, 'destroy'])->name('employee.nssf.destroy');
+
+Route::resource('loans', LoanController::class)
+     ->only(['store', 'update', 'destroy']);
+
+     Route::resource('salary-advances', SalaryAdvanceController::class);
+
+     Route::get('/loans/{id}/statement', [LoanController::class, 'statement']);
+
+
+ Route::get('/payrolls/{month}/nssf-voucher-view', [PayrollController::class, 'nssfVoucherView']);
+Route::get('/payrolls/{month}/tuico-voucher-view', [PayrollController::class, 'tuicoVoucherView']);
+
 
 });
