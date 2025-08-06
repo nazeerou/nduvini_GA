@@ -17,14 +17,21 @@
         </tr>
     </thead>
     <tbody>
+    @if (!empty($slips) && count($slips) > 0)
     @foreach($slips as $key => $slip)
         <tr>
-             <td>{{ $slip['nssf_no'] }}</td>
-             <td>{{ $slip['firstname'] }}</td>
+            <td>{{ $slip['nssf_no'] }}</td>
+            <td>{{ $slip['firstname'] }}</td>
             <td>{{ strtoupper($slip['middlename']) }}</td>
             <td>{{ strtoupper($slip['surname']) }}</td>
             <td>{{ $slip['gross_salary'] }}</td>
         </tr>
-        @endforeach
+    @endforeach
+@else
+    <tr>
+        <td colspan="5" style="text-align: center;">No salary slip data available for this month.</td>
+    </tr>
+@endif
+
     </tbody>
 </table>
