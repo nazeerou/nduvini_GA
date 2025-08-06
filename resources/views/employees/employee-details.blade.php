@@ -405,7 +405,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($employee->nssfDetails as $nssf)
+            @foreach($employee->nssfDetails ?? [] as $nssf)
             <tr>
                 <td>{{ $nssf->member_number }}</td>
                 <td>
