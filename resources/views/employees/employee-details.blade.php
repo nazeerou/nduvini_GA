@@ -418,14 +418,13 @@
             </tr>
         </thead>
         <tbody>
-        @if (!empty($employee->nssfDetails) && is_iterable($employee->nssfDetails))
-    @foreach ($employee->nssfDetails as $nssf)
-        @if (is_object($nssf) && property_exists($nssf, 'member_number'))
+        @if (!empty($nssf) && is_iterable($nssf))
+    @foreach ($nssf as $ns)
             <tr>
-                <td>{{ $nssf->member_number }}</td>
+                <td>{{ $ns->member_number }}</td>
                 <td>
-                    <button class="btn btn-xs btn-info" data-toggle="modal" data-target="#editNssfModal{{ $nssf->id }}">Edit</button>
-                    <form action="{{ route('employee.nssf.destroy', $nssf->id) }}" method="POST" style="display:inline;">
+                    <button class="btn btn-xs btn-info" data-toggle="modal" data-target="#editNssfModal{{ $ns->id }}">Edit</button>
+                    <form action="{{ route('employee.nssf.destroy', $ns->id) }}" method="POST" style="display:inline;">
                         @csrf
                         @method('DELETE')
                         <button class="btn btn-xs btn-danger" onclick="return confirm('Delete this NSSF entry?')">Delete</button>
@@ -434,10 +433,10 @@
             </tr>
 
             <!-- Edit Modal -->
-            <div class="modal fade" id="editNssfModal{{ $nssf->id }}">
+            <div class="modal fade" id="editNssfModal{{ $ns->id }}">
                 <div class="modal-dialog">
                     <div class="modal-content">
-                        <form action="{{ route('employee.nssf.update', $nssf->id) }}" method="POST">
+                        <form action="{{ route('employee.nssf.update', $ns->id) }}" method="POST">
                             @csrf
                             @method('PUT')
                             <div class="modal-header">
@@ -447,7 +446,7 @@
                                 <input type="hidden" name="employee_id" value="{{ $employee->id }}">
                                 <div class="form-group">
                                     <label>NSSF Member Number</label>
-                                    <input type="text" name="member_number" class="form-control" value="{{ $nssf->member_number }}" required>
+                                    <input type="text" name="member_number" class="form-control" value="{{ $ns->member_number }}" required>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -458,7 +457,6 @@
                     </div>
                 </div>
             </div>
-        @endif
     @endforeach
 @else
     <tr>

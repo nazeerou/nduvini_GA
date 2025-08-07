@@ -29,7 +29,7 @@ use App\Http\Controllers\{
     BankController,
     LeaveController,
     LeaveTypeController,
-    EmployeeNssfController,
+    EmployeeNSSFController,
     LoanController,
     SalaryAdvanceController
 };
@@ -479,9 +479,9 @@ Route::get('/payrolls/wcf-voucher/{month?}', [PayrollController::class, 'generat
 
 // Route::resource('employee/nssf', EmployeeNssfController::class)->only(['store', 'update', 'destroy', 'create', 'edit', 'show', 'index']);
 
-Route::post('/employee/nssf', [EmployeeNssfController::class, 'store'])->name('employee.nssf.store');
-Route::put('/employee/nssf/{id}', [EmployeeNssfController::class, 'update'])->name('employee.nssf.update');
-Route::delete('/employee/nssf/{id}', [EmployeeNssfController::class, 'destroy'])->name('employee.nssf.destroy');
+Route::post('/employee/nssf', [EmployeeNSSFController::class, 'store'])->name('employee.nssf.store');
+Route::put('/employee/nssf/{id}', [EmployeeNSSFController::class, 'update'])->name('employee.nssf.update');
+Route::delete('/employee/nssf/{id}', [EmployeeNSSFController::class, 'destroy'])->name('employee.nssf.destroy');
 
 Route::resource('loans', LoanController::class)
      ->only(['store', 'update', 'destroy']);

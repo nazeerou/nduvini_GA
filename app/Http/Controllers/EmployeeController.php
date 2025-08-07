@@ -225,10 +225,15 @@ public function getEmployeeDetails($id)
         'contributions' //  Eager load assigned contributions
     ])->findOrFail($id);
     
+    $nssf = DB::table('nssf_details')
+          ->select('*')
+          ->join('employees', 'employees.id', 'nssf_details.employee_id')
+          ->get();
+
     // Also pass all available contributions
     $contributions = Contribution::all();
     
-    return view('employees.employee-details', compact('employee', 'banks', 'contributions'));
+    return view('employees.employee-details', compact('employee', 'banks', 'contributions', 'nssf'));
     
     }
 

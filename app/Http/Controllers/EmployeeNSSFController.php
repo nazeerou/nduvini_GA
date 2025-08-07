@@ -7,28 +7,29 @@ use Illuminate\Http\Request;
 use App\Models\NssfDetail;
 use Illuminate\Support\Facades\Validator;
 
-class EmployeeNssfController extends Controller
+class EmployeeNSSFController extends Controller
 {
     /**
      * Store a newly created NSSF entry.
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'employee_id' => 'required|exists:employees,id',
-            'member_number' => 'required|string|max:50|unique:nssf_details,member_number',
-        ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
+        // $validator = Validator::make($request->all(), [
+        //     'employee_id' => 'required',
+        //     'member_number' => 'required|string|max:50|unique:nssf_details,member_number',
+        // ]);
+
+        // if ($validator->fails()) {
+        //     return redirect()->back()->withErrors($validator)->withInput();
+        // }
 
         NssfDetail::create([
             'employee_id' => $request->employee_id,
             'member_number' => $request->member_number,
         ]);
 
-        return redirect()->back()->with('success', 'NSSF member number added successfully.');
+        return redirect()->back()->with('message', 'NSSF member number added successfully.');
     }
 
     /**
