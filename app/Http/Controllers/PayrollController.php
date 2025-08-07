@@ -16,6 +16,7 @@ use App\Models\Loan;
 use App\Models\SalaryAdvance;
 use App\Models\LoanRepayment;
 use App\Models\AssignedEmployeeContribution;
+use App\Models\SalaryGroup;
 
 
 class PayrollController extends Controller
