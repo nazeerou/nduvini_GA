@@ -136,7 +136,7 @@
         <div class="panel panel-custom panel-border">
             <div class="panel-heading">
             <h3> 
-            Deatails : {{ $employee->name }}</h3>
+            Details : {{ $employee->firstname }} {{ $employee->middlename }} {{ $employee->surname }}</h3>
             </div>
             <hr/>
 <div class="panel-body">
@@ -149,7 +149,7 @@
         <li><a href="#contract" data-toggle="tab">Contract & Salary</a></li>
         <li><a href="#bank_details" data-toggle="tab">Bank Account Details </a></li>
         <li><a href="#nssf_details" data-toggle="tab">NSSF Details </a></li>
-        <li><a href="#contribution_settings" data-toggle="tab">Contribution settings </a></li>
+        <li><a href="#contribution_settings" data-toggle="tab">Employee Contribution settings </a></li>
         <li><a href="#termination" data-toggle="tab">Termination</a></li>
     </ul>
 
@@ -495,7 +495,7 @@
 
 <!-- Contributions Tab -->
 <div class="tab-pane fade" id="contribution_settings">
-    <h4>Contribution Settings</h4>
+    <h4>Employee Contribution Settings</h4>
 
     <!-- Add Button -->
     <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addContributionModal">Add Contribution</button>
