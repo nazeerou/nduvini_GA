@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Leave;
 use App\Models\LeaveType;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -32,11 +33,12 @@ class LeaveController extends Controller
 
     // "approval" tab shows only logged-in user's pending leaves
     if ($statusTab === 'approval') {
-        $query->where('status', 'pending')
-              ->where('employee_id', auth()->user()->employee->id); // show own pending requests
+        $query->where('status', 'pending');
+            //   ->where('employee_id', auth()->user()->employee->id); // show own pending requests
     }
 
     $leaves = $query->latest()->paginate(10);
+            
     $employees = \App\Models\Employee::all();
     $leaveTypes = \App\Models\LeaveType::all();
 
