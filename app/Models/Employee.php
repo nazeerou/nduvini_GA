@@ -66,5 +66,14 @@ public function nssfdetails()
 {
     return $this->hasOne(NssfDetail::class); // not hasMany
 }
-    
+
+public function contributions()
+{
+    return $this->belongsToMany(Contribution::class, 'assigned_employee_contributions')
+                ->using(AssignedEmployeeContribution::class)
+                ->withTimestamps()
+                ->select('contributions.id', 'contributions.name', 'contributions.type', 'contributions.rate');
+}
+
+
 }

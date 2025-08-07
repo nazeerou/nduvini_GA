@@ -145,34 +145,28 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    @foreach($employees as $employee)
-                                                    <tr>
-                                                        <td>
-                                                            <input type="checkbox" name="employees[{{ $employee->id }}][selected]" class="employee-checkbox" data-employee-id="{{ $employee->id }}">
-                                                        </td>
-                                                        <td>{{ $employee->firstname }} {{ $employee->middlename }} {{ $employee->surname }}</td>
-                                                        <td>
-                                                            {{ number_format($employee->basic_salary, 2) }}
-                                                            <input type="hidden" name="employees[{{ $employee->id }}][basic_salary]" value="{{ $employee->basic_salary }}">
-                                                        </td>
-                                                        <td>
-                                                            <input type="text" name="employees[{{ $employee->id }}][allowance]" class="form-control allowance-field" style="width: 100px;" data-employee-id="{{ $employee->id }}" placeholder="e.g. 2000" disabled>
-                                                        </td>
-                                                        <td width="400px;">
-                                                            @foreach($contributions as $contribution)
-                                                                <label class="checkbox-inline">
-                                                                    <input type="checkbox" 
-                                                                            name="employees[{{ $employee->id }}][contributions][]" 
-                                                                            value="{{ $contribution->id }}" 
-                                                                            disabled 
-                                                                            class="contrib-checkbox" 
-                                                                            data-employee-id="{{ $employee->id }}">
-                                                                    {{ $contribution->name }}
-                                                                </label>
-                                                            @endforeach
-                                                        </td>
-                                                    </tr>
-                                                    @endforeach
+                                                @foreach($employees as $employee)
+<tr>
+    <td>
+        <input type="checkbox" name="employees[{{ $employee->id }}][selected]" class="employee-checkbox" data-employee-id="{{ $employee->id }}">
+    </td>
+    <td>{{ $employee->firstname }} {{ $employee->middlename }} {{ $employee->surname }}</td>
+    <td>
+        {{ number_format($employee->basic_salary, 2) }}
+        <input type="hidden" name="employees[{{ $employee->id }}][basic_salary]" value="{{ $employee->basic_salary }}">
+    </td>
+    <td>
+        <input type="text" name="employees[{{ $employee->id }}][allowance]" class="form-control allowance-field" style="width: 100px;" data-employee-id="{{ $employee->id }}" placeholder="e.g. 2000" disabled>
+    </td>
+    <td width="400px;">
+        <div class="contributions-container" data-employee-id="{{ $employee->id }}">
+            <!-- Contributions checkboxes will be dynamically inserted here -->
+            <em>Select employee to load contributions</em>
+        </div>
+    </td>
+</tr>
+@endforeach
+
                                                 </tbody>
                                             </table>
                                         </div>
@@ -334,6 +328,7 @@
                                                         <select name="type" id="type{{ $item->id }}" class="form-control" required>
                                                             <option value="fixed" {{ $item->type == 'fixed' ? 'selected' : '' }}>Fixed</option>
                                                             <option value="percentage" {{ $item->type == 'percentage' ? 'selected' : '' }}>Percentage</option>
+                                                            <option value="tax" {{ $item->type == 'tax' ? 'selected' : '' }}>Tax</option>
                                                         </select>
                                                     </div>
 
@@ -584,6 +579,7 @@
                                             <option value="">-- Select Type --</option>
                                             <option value="fixed">Fixed</option>
                                             <option value="percentage">Percentage</option>
+                                            <option value="tax">Tax</option>
                                         </select>
                                     </div>
 
@@ -687,26 +683,54 @@
 </div>
 <!-- </div> -->
 <script>
-    $(document).ready(function () {
-        // Handle "Select All"
-        $('#select-all').change(function () {
-            var isChecked = $(this).is(':checked');
-            
-            $('.employee-checkbox').prop('checked', isChecked).trigger('change');
-        });
 
-        // Handle single checkbox change
-        $('.employee-checkbox').change(function () {
-            var employeeId = $(this).data('employee-id');
-            var isChecked = $(this).is(':checked');
-
-            // Enable/disable allowance input
-            $('.allowance-field[data-employee-id="' + employeeId + '"]').prop('disabled', !isChecked);
-
-            // Enable/disable contributions checkboxes
-            $('.contrib-checkbox[data-employee-id="' + employeeId + '"]').prop('disabled', !isChecked);
-        });
+    $(document).ready(function() {
+    // When select all checkbox is toggled
+    $('#select-all').change(function() {
+        let checked = $(this).is(':checked');
+        $('.employee-checkbox').prop('checked', checked).trigger('change');
     });
+
+    // When individual employee checkbox toggled
+    $('.employee-checkbox').change(function() {
+        let employeeId = $(this).data('employee-id');
+        let contributionsContainer = $('.contributions-container[data-employee-id="' + employeeId + '"]');
+        let allowanceField = $('.allowance-field[data-employee-id="' + employeeId + '"]');
+
+        if ($(this).is(':checked')) {
+            allowanceField.prop('disabled', false);
+
+            // Fetch contributions via AJAX
+            $.ajax({
+                url: '/employee/' + employeeId + '/contributions', // Adjust URL to your route
+                method: 'GET',
+                success: function(response) {
+                    // Response expected: array of contributions [{id, name}]
+                    let html = '';
+                    $.each(response, function(i, contribution) {
+                        html += `
+                            <label class="checkbox-inline" style="margin-right:10px;">
+                                <input type="checkbox" 
+                                       name="employees[${employeeId}][contributions][]" 
+                                       value="${contribution.id}" 
+                                       checked>
+                                ${contribution.name}
+                            </label>
+                        `;
+                    });
+                    contributionsContainer.html(html);
+                },
+                error: function() {
+                    contributionsContainer.html('<em>Failed to load contributions.</em>');
+                }
+            });
+        } else {
+            allowanceField.prop('disabled', true).val('');
+            contributionsContainer.html('<em>Select employee to load contributions</em>');
+        }
+    });
+});
+
 </script>
 
 <script>
@@ -746,7 +770,8 @@
                     toFloat(slip.wcf) +
                     toFloat(slip.nhif) +
                     toFloat(slip.tuico) +
-                    toFloat(slip.loan);
+                    toFloat(slip.loan) +
+                    toFloat(slip.paye);
 
                 container.innerHTML = `
                     <br/><h4>Salary Slip - ${data.month}</h4><br/>
@@ -756,11 +781,12 @@
                         <tr><th>Allowance</th><td>${slip.allowance}</td></tr>
                         <tr><th>Gross Salary</th><td>${grossSalary.toLocaleString()}</td></tr>
                         <tr><th>Salary Advance</th><td>${slip.salary_advance}</td></tr>
+                        <tr><th>Loan</th><td>${slip.loan}</td></tr>
                         <tr><th>NSSF</th><td>${slip.nssf}</td></tr>
                         <tr><th>WCF</th><td>${slip.wcf}</td></tr>
                         <tr><th>NHIF</th><td>${slip.nhif}</td></tr>
                         <tr><th>TUICO</th><td>${slip.tuico}</td></tr>
-                        <tr><th>Loan</th><td>${slip.loan}</td></tr>
+                        <tr><th>PAYE</th><td>${slip.paye}</td></tr>
                         <tr><th>Total Deduction</th><td>${totalDeductions.toLocaleString()}</td></tr>
                         <tr><th>Net Salary</th><td><strong>${slip.net_salary}</strong></td></tr>
                     </table>
@@ -813,11 +839,12 @@
                                         <td>${slip.basic_salary}</td>
                                         <td>${slip.allowance}</td>
                                         <td>${slip.salary_advance}</td>
+                                        <td>${slip.loan ?? 0}</td>
                                         <td>${slip.nssf ?? 0}</td>
                                         <td>${slip.nhif ?? 0}</td>
                                         <td>${slip.wcf ?? 0}</td>
                                         <td>${slip.tuico ?? 0}</td>
-                                        <td>${slip.loan ?? 0}</td>
+                                        <td>${slip.paye ?? 0}</td>
                                         <td>${slip.net_salary}</td>
                                     </tr>
                                 `;
@@ -838,11 +865,12 @@
                                             <th>Basic Salary</th>
                                             <th>Allowance</th>
                                             <th>Advance Pay</th>
+                                            <th>LOAN</th>
                                             <th>NSSF</th>
                                             <th>NHIF</th>
                                             <th>WCF</th>
                                             <th>TUICO</th>
-                                            <th>LOAN</th>
+                                            <th>PAYE</th>
                                             <th>Net Salary</th>
                                         </tr>
                                     </thead>

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Employee;
 use App\Models\Contract;
 use App\Models\SalaryGroup;
+use App\Models\Contribution;
+use App\Models\AssignedEmployeeContribution;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Designation;
@@ -210,17 +212,35 @@ public function getEmployeeDetails($id)
     {
         $banks = Bank::all();
 
-        $employee = Employee::with([
-            'department',
-            'designation',
-            'salaryGroup',
-            'contract',
-            'contractType',
-            'bankAccount'
-        ])->findOrFail($id);
-        
-        return view('employees.employee-details', compact('employee', 'banks'));
+    // $contributions = AssignedEmployeeContribution::with('employee.contributions')->findOrFail($id);
+    // $contributions_settings = Contribution::all();  
+
+    $employee = Employee::with([
+        'department',
+        'designation',
+        'salaryGroup',
+        'contract',
+        'contractType',
+        'bankAccount',
+        'contributions' //  Eager load assigned contributions
+    ])->findOrFail($id);
+    
+    // Also pass all available contributions
+    $contributions = Contribution::all();
+    
+    return view('employees.employee-details', compact('employee', 'banks', 'contributions'));
+    
     }
+
+    public function getContributions(Employee $employee)
+    {
+        // Load contributions assigned to this employee
+        $contributions = $employee->contributions()->select('contributions.id', 'contributions.name', 'contributions.type', 'contributions.rate')->get();
+
+    
+        return response()->json($contributions);
+    }
+    
 }
 
 

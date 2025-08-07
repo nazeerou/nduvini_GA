@@ -15,6 +15,7 @@ use App\Models\PayrollContribution;
 use App\Models\Loan;
 use App\Models\SalaryAdvance;
 use App\Models\LoanRepayment;
+use App\Models\AssignedEmployeeContribution;
 
 
 class PayrollController extends Controller
@@ -37,8 +38,9 @@ class PayrollController extends Controller
         ->leftJoin('designations', 'designations.id', 'employees.designation_id')
         ->where('employees.branch_id', $branchId)
         ->get();
-
+     
     $contributions = Contribution::all();
+
     $branches = Branch::where('id', $branchId)->get();
 
     $payrolls = Payroll::with('employee')
@@ -117,6 +119,7 @@ class PayrollController extends Controller
                 'nhif' => 0,
                 'wcf' => 0,
                 'tuico' => 0,
+                'paye' => 0,
                 'net_paid' => 0,
                 'id' => null,
                 'reference' => null,
@@ -178,6 +181,7 @@ class PayrollController extends Controller
             $totalNhif += $nhif;
             $totalWcf += $wcf;
             $totalTuico += $tuico;
+
             $totalNetPaid += $net;
         }
 
@@ -228,10 +232,10 @@ class PayrollController extends Controller
     
             $basicSalary = $data['basic_salary'];
             $allowance = $data['allowance'] ?? 0;
+            $gross_salary = $basicSalary + $allowance;
             $deduction = 0;
     
             // Fetch loan for selected employee
-            // if (!empty($data['contributions']) && in_array('LOAN', $data['contributions'])) {
                 $loan = DB::table('loans')
                     ->where('employee_id', $employeeId)
                     // ->where('status', 'active')
@@ -266,7 +270,6 @@ class PayrollController extends Controller
             // }
     
             // 2. SALARY ADVANCE Deduction
-        // if (!empty($data['contributions']) && in_array('ADVANCE', $data['contributions'])) {
             $advance = DB::table('salary_advances')
                 ->where('employee_id', $employeeId)
                 ->where('month', $month)
@@ -288,6 +291,30 @@ class PayrollController extends Controller
             }
         // }
 
+        $nssf = 0;
+
+        // Check if 'NSSF' is selected in contributions
+        if (!empty($data['contributions']) && in_array('1', array_map('strtolower', $data['contributions']))) {
+            // Assume 10% NSSF on gross salary as an example
+            $nssf = 0.10 * $gross_salary;
+        }
+
+        // 4. Calculate TAXABLE INCOME (only NSSF is deductible)
+        $taxable_income = $gross_salary - $nssf;
+
+        // 5. PAYE
+        if ($taxable_income <= 270000) {
+            $paye = 0;
+        } elseif ($taxable_income <= 520000) {
+            $paye = ($taxable_income - 270000) * 0.08;
+        } elseif ($taxable_income <= 760000) {
+            $paye = 20000 + ($taxable_income - 520000) * 0.20;
+        } elseif ($taxable_income <= 1000000) {
+            $paye = 68000 + ($taxable_income - 760000) * 0.25;
+        } else {
+            $paye = 128000 + ($taxable_income - 1000000) * 0.30;
+        }
+
             $netSalary = ($basicSalary + $allowance) - $deduction;
     
             $payroll = Payroll::create([
@@ -297,6 +324,7 @@ class PayrollController extends Controller
                 'month' => $month,
                 'basic_salary' => $basicSalary,
                 'allowance' => $allowance,
+                'paye' => $paye,
                 'net_salary' => $netSalary,
             ]);
     
@@ -423,6 +451,7 @@ public function fetchSalarySlip(Request $request)
 
         $basic_salary = floatval($first->payroll->basic_salary ?? 0);
         $allowance = floatval($first->payroll->allowance ?? 0);
+        $paye = floatval($first->payroll->paye ?? 0);
 
         $nssf = 0;
         $wcf = 0;
@@ -460,7 +489,7 @@ public function fetchSalarySlip(Request $request)
             ? $loanRepayments[$employeeId]->sum('amount')
             : 0;
 
-        $total_deductions = $nssf + $wcf + $nhif + $tuico + $advance_pay + $loan;
+        $total_deductions = $nssf + $wcf + $nhif + $tuico + $advance_pay + $loan + $paye;
         $net_salary = ($basic_salary + $allowance) - $total_deductions;
 
         
@@ -478,6 +507,7 @@ public function fetchSalarySlip(Request $request)
             'nhif' => number_format($nhif, 2),
             'tuico' => number_format($tuico, 2),
             'loan' => number_format($loan, 2),
+            'paye' => number_format($paye, 2),
             'net_salary' => number_format($net_salary, 2),
             'reference' => $first->payroll->reference ?? 'N/A',
         ];
@@ -555,7 +585,8 @@ public function downloadSalarySlip(Request $request)
     
             $basic_salary = floatval($first->payroll->basic_salary ?? 0);
             $allowance = floatval($first->payroll->allowance ?? 0);
-    
+            $paye = floatval($first->payroll->paye ?? 0);
+
             $nssf = 0;
             $wcf = 0;
             $nhif = 0;
@@ -592,7 +623,7 @@ public function downloadSalarySlip(Request $request)
                 ? $loanRepayments[$employeeId]->sum('amount')
                 : 0;
     
-            $total_deductions = $nssf + $wcf + $nhif + $tuico + $advance_pay + $loan;
+            $total_deductions = $nssf + $wcf + $nhif + $tuico + $advance_pay + $loan + $paye;
             $net_salary = ($basic_salary + $allowance) - $total_deductions;
     
             
@@ -602,15 +633,16 @@ public function downloadSalarySlip(Request $request)
                       $first->payroll->employee->middlename . ' ' .
                       $first->payroll->employee->surname
                     : 'N/A',
-                'basic_salary' => number_format($basic_salary, 2),
-                'allowance' => number_format($allowance, 2),
-                'salary_advance' => number_format($advance_pay, 2),
-                'nssf' => number_format($nssf, 2),
-                'wcf' => number_format($wcf, 2),
-                'nhif' => number_format($nhif, 2),
-                'tuico' => number_format($tuico, 2),
-                'loan' => number_format($loan, 2),
-                'net_salary' => number_format($net_salary, 2),
+                'basic_salary' => $basic_salary,
+                'allowance' => $allowance,
+                'salary_advance' => $advance_pay,
+                'nssf' => $nssf,
+                'wcf' => $wcf,
+                'nhif' => $nhif,
+                'tuico' => $tuico,
+                'loan' => $loan,
+                'paye' => $paye,
+                'net_salary' => $net_salary,
                 'reference' => $first->payroll->reference ?? 'N/A',
                 'employee_id' => $first->payroll->employee->id
             ];
@@ -644,6 +676,20 @@ public function details($reference)
     $contributions = PayrollContribution::whereIn('payroll_id', $payrollIds)
         ->with(['payroll.employee', 'contribution'])
         ->get();
+    $contributions1 = Payroll::leftJoin('payroll_contributions', 'payrolls.id', '=', 'payroll_contributions.payroll_id')
+    ->leftJoin('contributions', 'payroll_contributions.contribution_id', '=', 'contributions.id')
+    ->leftJoin('employees', 'payrolls.employee_id', '=', 'employees.id')
+    ->where('payrolls.reference', $reference)
+    ->select(
+        'payrolls.id as payroll_id',
+        'payrolls.month',
+        'employees.id as employee_id',
+        'employees.firstname as employee_name',
+        'payroll_contributions.id as contribution_id',
+        'contributions.name as contribution_name',
+        'payroll_contributions.amount'
+    )
+    ->get();
 
     // Get employee IDs for those payrolls
     $employeeIds = Payroll::whereIn('id', $payrollIds)->pluck('employee_id');
@@ -671,6 +717,8 @@ public function details($reference)
 
         $basic_salary = floatval($first->payroll->basic_salary ?? 0);
         $allowance = floatval($first->payroll->allowance ?? 0);
+        $paye = floatval($first->payroll->paye ?? 0);
+
 
         $nssf = 0;
         $wcf = 0;
@@ -712,7 +760,7 @@ public function details($reference)
     ? $loanRepayments[$employeeId]->sum('amount')
     : 0;
 
-        $net_salary = ($basic_salary + $allowance) - ($nssf + $wcf + $nhif + $tuico + $advance_pay + $loan);
+        $net_salary = ($basic_salary + $allowance) - ($nssf + $wcf + $nhif + $tuico + $advance_pay + $loan + $paye);
 
         return [
             'employee_name' => isset($first->payroll->employee)
@@ -728,6 +776,7 @@ public function details($reference)
             'nhif' => number_format($nhif, 2),
             'tuico' => number_format($tuico, 2),
             'loan' => number_format($loan, 2), 
+            'paye' => number_format($paye, 2), 
             'net_salary' => number_format($net_salary, 2),
             'reference' => $first->payroll->reference ?? 'N/A',
         ];
@@ -749,78 +798,6 @@ public function downloadPayrollDetails($reference)
     ->select('business_name')
     ->get(); 
 
-//     $payrollIds = Payroll::where('reference', $reference)->pluck('id');
-
-//     $month = $payrollIds->first()->month ?? 'N/A';
-
-//     if ($payrollIds->isEmpty()) {
-//         return response()->json(['success' => false, 'message' => 'No data found.']);
-//     }
-
-//     // Get the first for month display
-//     $mainPayroll = Payroll::find($payrollIds->first());
-//     $month = \Carbon\Carbon::parse($mainPayroll->month)->format('F Y');
-
-//     // Load contributions for all payrolls in that batch
-//     $contributions = PayrollContribution::whereIn('payroll_id', $payrollIds)
-//         ->with(['payroll.employee', 'contribution'])
-//         ->get();
-
-// // return $contributions;
-
-//     // Group by employee
-//     $grouped = $contributions->groupBy(function ($item) {
-//         return $item->payroll->employee_id ?? 0;
-//     });
-
-//     $slips = $grouped->map(function ($rows) {
-//         $first = $rows->first();
-
-//         $basic_salary = floatval($first->payroll->basic_salary ?? 0);
-//         $allowance = floatval($first->payroll->allowance ?? 0);
-
-//         $nssf = 0;
-//         $paye = 0;
-//         $nhif = 0;
-
-//         foreach ($rows as $p) {
-//             $contribution = $p->contribution;
-//             if ($contribution) {
-//                 $type = strtolower($contribution->type); // 'fixed' or 'percentage'
-//                 $name = strtoupper($contribution->name);
-        
-//                 $amount = 0;
-        
-//                 if ($type === 'fixed') {
-//                     $amount = floatval($contribution->rate);
-//                 } elseif ($type === 'percentage') {
-//                     $rate = floatval($contribution->rate);
-//                     $amount = ($rate / 100) * $basic_salary;
-//                 }
-        
-//                 switch ($name) {
-//                     case 'NSSF': $nssf = $amount; break;
-//                     case 'PAYE': $paye = $amount; break;
-//                     case 'NHIF': $nhif = $amount; break;
-
-//                 }
-//             }
-//         }
-        
-
-//         $net_salary = ($basic_salary + $allowance) - ($nssf + $paye + $nhif);
-
-//         return [
-//             'employee_name' => $first->payroll->employee->name ?? 'N/A',
-//             'basic_salary' => $basic_salary,
-//             'allowance' => $allowance,
-//             'nssf' => $nssf,
-//             'paye' => $paye,
-//             'nhif' => $nhif,
-//             'net_salary' => $net_salary,
-//             'reference' => $first->payroll->reference ?? 'N/A',
-//         ];
-//     })->values();
 $payrollIds = Payroll::where('reference', $reference)->pluck('id');
     
 if ($payrollIds->isEmpty()) {
@@ -863,6 +840,7 @@ $slips = $grouped->map(function ($rows, $employeeId) use ($loanRepayments, $sala
 
     $basic_salary = floatval($first->payroll->basic_salary ?? 0);
     $allowance = floatval($first->payroll->allowance ?? 0);
+    $paye = floatval($first->payroll->paye ?? 0);
 
     $nssf = 0;
     $wcf = 0;
@@ -904,7 +882,7 @@ $loan = $loanRepayments->has($employeeId)
 ? $loanRepayments[$employeeId]->sum('amount')
 : 0;
 
-    $net_salary = ($basic_salary + $allowance) - ($nssf + $wcf + $nhif + $tuico + $advance_pay + $loan);
+    $net_salary = ($basic_salary + $allowance) - ($nssf + $wcf + $nhif + $tuico + $advance_pay + $loan + $paye);
 
     return [
         'employee_name' => isset($first->payroll->employee)
@@ -920,6 +898,7 @@ $loan = $loanRepayments->has($employeeId)
         'nhif'             => $nhif,
         'tuico'            => $tuico,
         'loan'             => $loan,
+        'paye'             => $paye,
         'net_salary'       => $net_salary,
         'reference' => $first->payroll->reference ?? 'N/A',
     ];
@@ -1173,20 +1152,6 @@ public function generateNhifVoucher($month)
 }
 
 
-// private function calculatePaye($salary)
-// {
-//     if ($salary <= 270000) {
-//         return 0;
-//     } elseif ($salary <= 520000) {
-//         return ($salary - 270000) * 0.08;
-//     } elseif ($salary <= 760000) {
-//         return 20000 + ($salary - 520000) * 0.20;
-//     } elseif ($salary <= 1000000) {
-//         return 68000 + ($salary - 760000) * 0.25;
-//     } else {
-//         return 128000 + ($salary - 1000000) * 0.30;
-//     }
-// }
 
 // public function generatePayeVoucher($month)
 // {

@@ -9,7 +9,7 @@ class Payroll extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['employee_id', 'branch_id', 'month', 'basic_salary', 'allowance', 'deduction', 
+    protected $fillable = ['employee_id', 'branch_id', 'month', 'basic_salary', 'allowance', 'paye', 
     'description', 'net_salary', 'reference', 'is_paid'];
 
     public function employee()
@@ -21,8 +21,10 @@ class Payroll extends Model
 {
     return $this->hasMany(PayrollContribution::class);
 }
-// public function payment_contributions()
-// {
-//     return $this->hasMany(PaymentContribution::class);
-// }
+
+public function payrollContributions()
+{
+    return $this->hasMany(PayrollContribution::class);
+}
+
 }

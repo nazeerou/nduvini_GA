@@ -155,15 +155,18 @@
         </div>
 
         <table>
-            <tr><th>Basic Salary</th><td>{{ $slip['basic_salary'] }}</td></tr>
-            <tr><th>Allowance</th><td>{{ $slip['allowance'] }}</td></tr>
-            <tr><th>Salary Advance</th><td>{{ $slip['salary_advance'] }}</td></tr>
-            <tr><th>NSSF</th><td>{{ $slip['nssf'] }}</td></tr>
-            <tr><th>WCF</th><td>{{ $slip['wcf'] }}</td></tr>
-            <tr><th>NHIF</th><td>{{ $slip['nhif'] }}</td></tr>
-            <tr><th>TUICO</th><td>{{ $slip['tuico'] }}</td></tr>
-            <tr><th>Loan</th><td>{{ $slip['loan'] }}</td></tr>
-            <tr><th><strong>Net Salary</strong></th><td><strong>{{ $slip['net_salary'] }}</strong></td></tr>
+            <tr><th>Basic Salary</th><td>{{ number_format($slip['basic_salary'], 2) }}</td></tr>
+            <tr><th>Allowance</th><td>{{ number_format($slip['allowance'], 2) }}</td></tr>
+            <tr><th>Salary Advance</th><td>{{ number_format($slip['salary_advance'], 2) }}</td></tr>
+            <tr><th>Loan</th><td>{{ number_format($slip['loan'], 2) }}</td></tr>
+            <tr><th>NSSF</th><td>{{ number_format($slip['nssf'], 2) }}</td></tr>
+            <tr><th>WCF</th><td>{{ number_format($slip['wcf'], 2) }}</td></tr>
+            <tr><th>NHIF</th><td>{{ number_format($slip['nhif'], 2) }}</td></tr>
+            <tr><th>TUICO</th><td>{{ number_format($slip['tuico'], 2) }}</td></tr>
+            <tr><th>PAYE</th><td>{{ number_format($slip['paye'], 2) }}</td></tr>
+            <tr><th>Total Deduction</th>
+            <td>{{ number_format($slip['paye'] + $slip['nssf'] + $slip['wcf'] + $slip['tuico'] + $slip['nhif'], 2) }}</td></tr>
+            <tr><th><strong>Net Salary</strong></th><td><strong>{{ number_format($slip['net_salary'], 2) }}</strong></td></tr>
         </table>
     </div>
 

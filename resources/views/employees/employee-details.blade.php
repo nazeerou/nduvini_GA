@@ -149,6 +149,7 @@
         <li><a href="#contract" data-toggle="tab">Contract & Salary</a></li>
         <li><a href="#bank_details" data-toggle="tab">Bank Account Details </a></li>
         <li><a href="#nssf_details" data-toggle="tab">NSSF Details </a></li>
+        <li><a href="#contribution_settings" data-toggle="tab">Contribution settings </a></li>
         <li><a href="#termination" data-toggle="tab">Termination</a></li>
     </ul>
 
@@ -237,7 +238,7 @@
 </div>
 
         <!-- Contract -->
-        <div class="tab-pane fade" id="contract">
+    <div class="tab-pane fade" id="contract">
     <h5>Employee Contract Information</h5>
 
     <table class="contract-info-table">
@@ -405,13 +406,16 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($employee->nssfDetails ?? [] as $nssf)
+        @if (!empty($employee->nssfDetails) && is_iterable($employee->nssfDetails))
+    @foreach ($employee->nssfDetails as $nssf)
+        @if (is_object($nssf) && property_exists($nssf, 'member_number'))
             <tr>
                 <td>{{ $nssf->member_number }}</td>
                 <td>
                     <button class="btn btn-xs btn-info" data-toggle="modal" data-target="#editNssfModal{{ $nssf->id }}">Edit</button>
                     <form action="{{ route('employee.nssf.destroy', $nssf->id) }}" method="POST" style="display:inline;">
-                        @csrf @method('DELETE')
+                        @csrf
+                        @method('DELETE')
                         <button class="btn btn-xs btn-danger" onclick="return confirm('Delete this NSSF entry?')">Delete</button>
                     </form>
                 </td>
@@ -422,8 +426,11 @@
                 <div class="modal-dialog">
                     <div class="modal-content">
                         <form action="{{ route('employee.nssf.update', $nssf->id) }}" method="POST">
-                            @csrf @method('PUT')
-                            <div class="modal-header"><h5>Edit NSSF Member No</h5></div>
+                            @csrf
+                            @method('PUT')
+                            <div class="modal-header">
+                                <h5>Edit NSSF Member No</h5>
+                            </div>
                             <div class="modal-body">
                                 <input type="hidden" name="employee_id" value="{{ $employee->id }}">
                                 <div class="form-group">
@@ -439,7 +446,14 @@
                     </div>
                 </div>
             </div>
-            @endforeach
+        @endif
+    @endforeach
+@else
+    <tr>
+        <td colspan="2">No NSSF records found.</td>
+    </tr>
+@endif
+
         </tbody>
     </table>
 </div>
@@ -466,6 +480,56 @@
         </div>
     </div>
 </div>
+
+<!-- Contributions Tab -->
+<div class="tab-pane fade" id="contribution_settings">
+    <h4>Contribution Settings</h4>
+
+    <!-- Add Button -->
+    <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#addContributionModal">Add Contribution</button>
+
+    <!-- Contributions Table -->
+    <table class="table table-bordered table-striped" style="margin-top: 10px;">
+        <thead>
+            <tr>
+                <th>Contribution Name</th>
+                <th>Type</th>
+                <th>Rate</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        @if (!empty($employee->contributions) && $employee->contributions->count() > 0)
+    @foreach ($employee->contributions as $contribution)
+        <tr>
+            <td>{{ $contribution->name }}</td>
+            <td>{{ ucfirst($contribution->type) }}</td>
+            <td>
+                @if ($contribution->type === 'percentage')
+                    {{ $contribution->rate }}%
+                @else
+                    {{ number_format($contribution->rate, 2) }}
+                @endif
+            </td>
+            <td>
+                <form action="{{ route('employee.contribution.destroy', [$employee->id, $contribution->id]) }}" method="POST" style="display:inline;">
+                    @csrf
+                    @method('DELETE')
+                    <button class="btn btn-xs btn-danger" onclick="return confirm('Remove this contribution?')">Remove</button>
+                </form>
+            </td>
+        </tr>
+    @endforeach
+@else
+    <tr>
+        <td colspan="4" class="text-center">No contributions found.</td>
+    </tr>
+@endif
+
+        </tbody>
+    </table>
+</div>
+
 
         <!-- Termination -->
         <div class="tab-pane fade" id="termination">
@@ -494,6 +558,36 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Add Contribution Modal -->
+<div class="modal fade" id="addContributionModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('employee.contribution.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                <div class="modal-header"><h5>Add Contributions</h5></div>
+                <div class="modal-body">
+                    <div class="form-group">
+                    @foreach($contributions as $contribution)
+                        <label class="checkbox-inline" style="margin-right: 10px;">
+                            <input type="checkbox"
+                                name="contributions[]"
+                                value="{{ $contribution->id }}"
+                                {{ $employee->contributions->contains($contribution->id) ? 'disabled' : '' }}>
+                            {{ $contribution->name }}
+                        </label>
+                    @endforeach
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 

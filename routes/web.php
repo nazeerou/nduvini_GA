@@ -495,4 +495,10 @@ Route::resource('loans', LoanController::class)
 Route::get('/payrolls/{month}/tuico-voucher-view', [PayrollController::class, 'tuicoVoucherView']);
 
 
+Route::post('/employee/contribution/store', [ContributionController::class, 'storeAssignedContribution'])->name('employee.contribution.store');
+Route::delete('/employee/{employee}/contribution/{contribution}', [ContributionController::class, 'destroyAssignedContribution'])->name('employee.contribution.destroy');
+
+
+Route::get('/employee/{employee}/contributions', [EmployeeController::class, 'getContributions']);
+
 });

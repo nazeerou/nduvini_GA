@@ -155,6 +155,7 @@
     $total_loan = 0;
     $total_advance = 0;
     $total_allowance = 0;
+    $total_paye = 0;
     $total_net = 0;
 @endphp
 
@@ -168,11 +169,12 @@
             <th>Allowance</th>
             <th>Gross Salary </th>
             <th>Advance Pay</th>
+            <th>LOAN </th>
             <th>NSSF</th>
             <th>NHIF</th>
             <th>WCF</th>
             <th>TUICO</th>
-            <th>LOAN </th>
+            <th>PAYE </th>
             <th>Total Deduction</th>
             <th>Net Salary</th>
         </tr>
@@ -189,6 +191,7 @@
                 $net = floatval($slip['net_salary'] ?? 0);
                 $basic_salary = floatval($slip['basic_salary'] ?? 0);
                 $allowance = $slip['allowance'] ?? 0;
+                $paye = floatval($slip['paye'] ?? 0);
                 $total_basic_salary += $basic_salary;
                 $total_nssf += $nssf;
                 $total_wcf += $wcf;
@@ -197,6 +200,7 @@
                 $total_advance += $advance_pay;
                 $total_loan += $loan_repayment;
                 $total_tuico += $tuico;
+                $total_paye += $paye;
                 $total_net += $net;
             @endphp
             <tr>
@@ -211,14 +215,15 @@
             <td>{{ number_format($wcf ?? 0) }}</td>
             <td>{{ number_format($tuico ?? 0) }}</td>
             <td>{{ number_format($loan ?? 0) }}</td>
-            <td>{{ number_format(($advance_pay ?? 0) + ($nssf ?? 0) + ($wcf ?? 0) + ($tuico ?? 0) + ($loan ?? 0) + ($nhif ?? 0)) }}</td>
+            <td>{{ number_format($slip['paye'] ?? 0) }}</td>
+            <td>{{ number_format(($advance_pay ?? 0) + ($nssf ?? 0) + ($wcf ?? 0) + ($tuico ?? 0) + ($loan ?? 0) +  ($paye ?? 0)) }}</td>
             <td>{{ number_format($net ?? 0) }}</td>
         </tr>
         @endforeach
     </tbody>
     <tfoot>
         <tr>
-            <th colspan="2" style="text-align: right;">Total</th>
+            <th colspan="2" style="padding: 0 0 0 4px;">Total</th>
             <th>{{ number_format($total_basic_salary) }}</th>
             <th>{{ number_format($total_allowance) }}</th>
             <th>{{ number_format($total_basic_salary + $total_allowance) }}</th>
@@ -228,7 +233,8 @@
             <th>{{ number_format($total_wcf) }}</th>
             <th>{{ number_format($total_tuico) }}</th>
             <th>{{ number_format($total_loan) }}</th>
-            <th>{{ number_format($total_advance + $total_loan + $total_nhif + $total_nssf + $total_wcf + $total_tuico) }}</th>
+            <th>{{ number_format($total_paye) }}</th>
+            <th>{{ number_format($total_advance + $total_loan + $total_nhif + $total_nssf + $total_wcf + $total_tuico + $total_paye) }}</th>
             <th>{{ number_format($total_net) }}</th>
         </tr>
     </tfoot>
