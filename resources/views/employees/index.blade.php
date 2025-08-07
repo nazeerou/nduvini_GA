@@ -245,7 +245,7 @@
                     <div class="row">
                         <div class="form-group col-md-4">
                             <label>Salary Group</label>
-                            <select name="salary_group_id" class="form-control">
+                            <select name="salary_group_id" class="form-control select2">
                                 <option value="">-- Select Salary Group --</option>
                                 @foreach ($salaryGroups as $group)
                                     <option value="{{ $group->id }}">{{ $group->group_name }}</option>
