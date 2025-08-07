@@ -228,6 +228,7 @@ public function getEmployeeDetails($id)
     $nssf = DB::table('nssf_details')
           ->select('*')
           ->join('employees', 'employees.id', 'nssf_details.employee_id')
+          ->where('nssf_details.employee_id', $id)
           ->get();
 
     // Also pass all available contributions
