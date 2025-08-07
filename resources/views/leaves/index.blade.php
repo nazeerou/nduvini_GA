@@ -65,52 +65,58 @@
                 <br>
 
                 <div class="table-responsive">
-                    <table class="table table-bordered table-striped">
-                        <thead>
-                            <tr>
-                                <th>Employee</th>
-                                <th>Leave Type</th>
-                                <th>Dates</th>
-                                <th>Status</th>
-                                <th>Approved By</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($leaves as $leave)
-                                <tr>
-                                    <td>{{ $leave->employee->name }}</td>
-                                    <td>{{ $leave->leaveType->name }}</td>
-                                    <td>{{ $leave->start_date }} to {{ $leave->end_date }}</td>
-                                    <td>
-                                        <span class="label label-{{ $leave->status == 'approved' ? 'success' : ($leave->status == 'rejected' ? 'danger' : 'warning') }}">
-                                            {{ ucfirst($leave->status) }}
-                                        </span>
-                                    </td>
-                                    <td>{{ $leave->approver->name ?? '-' }}</td>
-                                    <td>
-                                        <a href="{{ url('leaves?tab=apply&edit_id=' . $leave->id) }}" class="btn btn-xs btn-info">Edit</a>
-                                        <form method="POST" action="{{ url('leaves/' . $leave->id) }}" style="display:inline;">
-                                            @csrf @method('DELETE')
-                                            <button class="btn btn-xs btn-danger" onclick="return confirm('Delete this leave?')">Delete</button>
-                                        </form>
-                                        @if($leave->status === 'pending')
-                                            <form method="POST" action="{{ url('leaves/' . $leave->id . '/approve') }}" style="display:inline;">@csrf
-                                                <button class="btn btn-xs btn-success">Approve</button>
-                                            </form>
-                                            <form method="POST" action="{{ url('leaves/' . $leave->id . '/reject') }}" style="display:inline;">@csrf
-                                                <button class="btn btn-xs btn-warning">Reject</button>
-                                            </form>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="6">No leave records found.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                    {{ $leaves->withQueryString()->links() }}
-                </div>
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Leave Type</th>
+                <th>Dates</th>
+                <th>Status</th>
+                <th>Approved By</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($leaves as $leave)
+                <tr>
+                    <td>{{ $leave->employee->name ?? '-' }}</td>
+                    <td>{{ $leave->leaveType->name ?? '-' }}</td>
+                    <td>{{ $leave->start_date ?? '-' }} to {{ $leave->end_date ?? '-' }}</td>
+                    <td>
+                        <span class="label label-{{ $leave->status == 'approved' ? 'success' : ($leave->status == 'rejected' ? 'danger' : 'warning') }}">
+                            {{ ucfirst($leave->status ?? 'N/A') }}
+                        </span>
+                    </td>
+                    <td>{{ $leave->approver->name ?? '-' }}</td>
+                    <td>
+                        <a href="{{ url('leaves?tab=apply&edit_id=' . $leave->id) }}" class="btn btn-xs btn-info">Edit</a>
+                        <form method="POST" action="{{ url('leaves/' . $leave->id) }}" style="display:inline;">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-xs btn-danger" onclick="return confirm('Delete this leave?')">Delete</button>
+                        </form>
+                        @if($leave->status === 'pending')
+                            <form method="POST" action="{{ url('leaves/' . $leave->id . '/approve') }}" style="display:inline;">
+                                @csrf
+                                <button class="btn btn-xs btn-success">Approve</button>
+                            </form>
+                            <form method="POST" action="{{ url('leaves/' . $leave->id . '/reject') }}" style="display:inline;">
+                                @csrf
+                                <button class="btn btn-xs btn-warning">Reject</button>
+                            </form>
+                        @endif
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6" class="text-center">No leave records found.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    {{ $leaves->withQueryString()->links() }}
+</div>
+
 
             {{-- APPLY TAB --}}
             @elseif($statusTab === 'apply')
