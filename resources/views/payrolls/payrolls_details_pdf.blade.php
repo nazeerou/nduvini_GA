@@ -228,11 +228,11 @@
             <th>{{ number_format($total_allowance) }}</th>
             <th>{{ number_format($total_basic_salary + $total_allowance) }}</th>
             <th>{{ number_format($total_advance) }}</th>
+            <th>{{ number_format($total_loan) }}</th>
             <th>{{ number_format($total_nssf) }}</th>
             <th>{{ number_format($total_nhif) }}</th>
             <th>{{ number_format($total_wcf) }}</th>
             <th>{{ number_format($total_tuico) }}</th>
-            <th>{{ number_format($total_loan) }}</th>
             <th>{{ number_format($total_paye) }}</th>
             <th>{{ number_format($total_advance + $total_loan + $total_nhif + $total_nssf + $total_wcf + $total_tuico + $total_paye) }}</th>
             <th>{{ number_format($total_net) }}</th>
