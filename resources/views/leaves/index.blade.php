@@ -79,7 +79,7 @@
         <tbody>
             @forelse($leaves as $leave)
                 <tr>
-                    <td>{{ $leave->employee->name ?? '-' }}</td>
+                    <td>{{ $leave->employee->firstname ." ". $leave->employee->surname?? '-' }}</td>
                     <td>{{ $leave->leaveType->name ?? '-' }}</td>
                     <td>{{ $leave->start_date ?? '-' }} to {{ $leave->end_date ?? '-' }}</td>
                     <td>
