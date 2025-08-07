@@ -231,7 +231,7 @@ class EstimationController extends Controller
             'created_date' => $request['created_date']
             ]);
         }
-        return redirect('/create-estimations')->with('message', 'You have Created Estimation for '.$request->vehicle_reg);
+        return redirect()->back()->with('message', 'You have Created Estimation for '.$request->vehicle_reg);
     }      
 
     public function addMoreEstimations(Request $request) {
