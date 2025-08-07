@@ -216,7 +216,7 @@
             <td>{{ number_format($wcf ?? 0) }}</td>
             <td>{{ number_format($tuico ?? 0) }}</td>
             <td>{{ number_format($slip['paye'] ?? 0) }}</td>
-            <td>{{ number_format(($advance_pay ?? 0) + ($nssf ?? 0) + ($wcf ?? 0) + ($tuico ?? 0) + ($loan ?? 0) +  ($paye ?? 0)) }}</td>
+            <td>{{ number_format(($advance_pay ?? 0) + ($nssf ?? 0) + ($wcf ?? 0) + ($nhif ?? 0) + ($tuico ?? 0) + ($loan ?? 0) +  ($paye ?? 0)) }}</td>
             <td>{{ number_format($net ?? 0) }}</td>
         </tr>
         @endforeach
