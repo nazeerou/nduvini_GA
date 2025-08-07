@@ -297,7 +297,9 @@
             </tr>
         </thead>
         <tbody>
-            @foreach($employee->bankAccount as $bank)
+        @if (!empty($employee->bankAccount) && $employee->bankAccount->count() > 0)
+    @foreach($employee->bankAccount as $bank)
+        @if ($bank->bank) {{-- Ensure the related bank exists --}}
             <tr>
                 <td>{{ $bank->bank->name }}</td>
                 <td>{{ $bank->account_number }}</td>
@@ -320,21 +322,24 @@
                             <div class="modal-header"><h5>Edit Bank Account</h5></div>
                             <div class="modal-body">
                                 <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                                
                                 <div class="form-group">
-                                <label>Bank Name</label>
-                                <select name="bank_id" class="form-control" required>
-                                    <option value="">-- Select Bank --</option>
-                                    @foreach($banks as $bankOption)
-                                        <option value="{{ $bankOption->id }}" {{ $bankOption->name == $bank->bank_name ? 'selected' : '' }}>
-                                            {{ $bankOption->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="form-group">
+                                    <label>Bank Name</label>
+                                    <select name="bank_id" class="form-control" required>
+                                        <option value="">-- Select Bank --</option>
+                                        @foreach($banks as $bankOption)
+                                            <option value="{{ $bankOption->id }}" {{ $bankOption->id == $bank->bank_id ? 'selected' : '' }}>
+                                                {{ $bankOption->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
                                     <label>Account Number</label>
                                     <input type="text" name="account_number" class="form-control" value="{{ $bank->account_number }}" required>
                                 </div>
+
                                 <div class="form-group">
                                     <label>Account Name</label>
                                     <input type="text" name="account_name" class="form-control" value="{{ $bank->account_name }}" required>
@@ -348,7 +353,14 @@
                     </div>
                 </div>
             </div>
-            @endforeach
+        @endif
+    @endforeach
+@else
+    <tr>
+        <td colspan="4" class="text-center">No bank account found.</td>
+    </tr>
+@endif
+
         </tbody>
     </table>
 </div>
