@@ -501,4 +501,8 @@ Route::delete('/employee/{employee}/contribution/{contribution}', [ContributionC
 
 Route::get('/employee/{employee}/contributions', [EmployeeController::class, 'getContributions']);
 
+Route::get('/staffs/managements/employees/{employee}/edit', [EmployeeController::class, 'editEmployeeDetails'])->name('employees.details');
+
+Route::put('staffs/managements/employees/{id}', [EmployeeController::class, 'updateEmployee'])->name('employees.update');
+
 });

@@ -172,7 +172,6 @@
             <th>LOAN </th>
             <th>NSSF</th>
             <th>NHIF</th>
-            <th>WCF</th>
             <th>TUICO</th>
             <th>PAYE </th>
             <th>Total Deduction</th>
@@ -213,7 +212,6 @@
             <td>{{ number_format($loan ?? 0) }}</td>
             <td>{{ number_format($nssf ?? 0) }}</td>
             <td>{{ number_format($nhif ?? 0) }}</td>
-            <td>{{ number_format($wcf ?? 0) }}</td>
             <td>{{ number_format($tuico ?? 0) }}</td>
             <td>{{ number_format($slip['paye'] ?? 0) }}</td>
             <td>{{ number_format(($advance_pay ?? 0) + ($nssf ?? 0) + ($wcf ?? 0) + ($nhif ?? 0) + ($tuico ?? 0) + ($loan ?? 0) +  ($paye ?? 0)) }}</td>
@@ -231,7 +229,6 @@
             <th>{{ number_format($total_loan) }}</th>
             <th>{{ number_format($total_nssf) }}</th>
             <th>{{ number_format($total_nhif) }}</th>
-            <th>{{ number_format($total_wcf) }}</th>
             <th>{{ number_format($total_tuico) }}</th>
             <th>{{ number_format($total_paye) }}</th>
             <th>{{ number_format($total_advance + $total_loan + $total_nhif + $total_nssf + $total_wcf + $total_tuico + $total_paye) }}</th>

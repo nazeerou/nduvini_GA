@@ -161,7 +161,92 @@ class EmployeeController extends Controller
     }
     
 
-    
+    public function updateEmployee(Request $request, $id)
+{
+    $request->validate([
+        // 'name' => 'required|string|max:255',
+        // 'mobile' => 'nullable|string|max:20',
+        // 'email' => 'nullable|email|max:255',
+        // 'designation_id' => 'nullable|exists:designations,id',
+        // 'department_id' => 'nullable|exists:departments,id',
+        // 'branch_id' => 'nullable|exists:branches,id',
+        // 'nida_number' => 'nullable|string|max:100',
+        // 'cv_file' => 'nullable|file|mimes:pdf,doc,docx',
+        // 'nida_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png',
+        // 'contract_file' => 'nullable|file|mimes:pdf',
+    ]);
+
+    try {
+        $employee = Employee::findOrFail($id);
+        $safeName = Str::slug($request->firstname . '-' . $request->surname);
+        $timestamp = now()->format('Ymd_His');
+
+        $cvPath = $employee->cv_file;
+        $nidaPath = $employee->nida_file;
+        $contractPath = $employee->contract_file;
+
+        if ($request->hasFile('cv_file')) {
+            if ($cvPath) Storage::disk('public')->delete($cvPath);
+            $ext = $request->file('cv_file')->getClientOriginalExtension();
+            $filename = "cv_{$safeName}_{$timestamp}." . $ext;
+            $cvPath = $request->file('cv_file')->storeAs('documents/cv', $filename, 'public');
+        }
+
+        if ($request->hasFile('nida_file')) {
+            if ($nidaPath) Storage::disk('public')->delete($nidaPath);
+            $ext = $request->file('nida_file')->getClientOriginalExtension();
+            $filename = "nida_{$safeName}_{$timestamp}." . $ext;
+            $nidaPath = $request->file('nida_file')->storeAs('documents/nida', $filename, 'public');
+        }
+
+        if ($request->hasFile('contract_file')) {
+            if ($contractPath) Storage::disk('public')->delete($contractPath);
+            $ext = $request->file('contract_file')->getClientOriginalExtension();
+            $filename = "contract_{$safeName}_{$timestamp}." . $ext;
+            $contractPath = $request->file('contract_file')->storeAs('documents/contract', $filename, 'public');
+        }
+
+        // Update employee
+        $employee->update([
+            'firstname' => $request->firstname,
+            'middlename' => $request->middlename,
+            'surname' => $request->surname,
+            'mobile' => $request->mobile,
+            'email' => $request->email,
+            'nida_number' => $request->nida_number,
+            'salary_group_id' => $request->salary_group_id,
+            'designation_id' => $request->designation_id,
+            'department_id' => $request->department_id,
+            'branch_id' => $request->branch_id,
+            'contract_type_id' => $request->contract_type_id,
+            'joining_date' => $request->start_date,
+            'cv_file' => $cvPath,
+            'nida_file' => $nidaPath,
+            'contract_file' => $contractPath,
+        ]);
+
+        // Update or create contract
+        $contract = Contract::firstOrNew(['employee_id' => $employee->id]);
+        $contract->fill([
+            'salary_group_id' => $request->salary_group_id,
+            'contract_type_id' => $request->contract_type_id,
+            'contract_duration' => $request->contract_duration,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'contract_file' => $contractPath,
+            'cv_file' => $cvPath,
+            'nida_file' => $nidaPath
+        ])->save();
+
+        return redirect()->back()->with('message', 'Employee updated successfully.');
+    } catch (\Exception $e) {
+        Log::error('Failed to update employee: ' . $e->getMessage());
+        return redirect()->back()
+            ->withInput()
+            ->with('error', 'Failed to update employee: ' . $e->getMessage());
+    }
+}
+
     public function filter(Request $request)
     {
         $query = Employee::with(['department', 'designation', 'branch', 'contract']);
@@ -212,9 +297,6 @@ public function getEmployeeDetails($id)
     {
         $banks = Bank::all();
 
-    // $contributions = AssignedEmployeeContribution::with('employee.contributions')->findOrFail($id);
-    // $contributions_settings = Contribution::all();  
-
     $employee = Employee::with([
         'department',
         'designation',
@@ -237,6 +319,30 @@ public function getEmployeeDetails($id)
     return view('employees.employee-details', compact('employee', 'banks', 'contributions', 'nssf'));
     
     }
+
+
+    public function editEmployeeDetails($id)
+    {
+
+    $employee = Employee::with([
+        'department',
+        'designation',
+        'salaryGroup',
+        'contract',
+        'contractType',
+        'bankAccount',
+        'contributions' //  Eager load assigned contributions
+    ])->findOrFail($id);
+        
+  $designations = Designation::all();
+  $departments = Department::all();
+  $contract_types = ContractType::all();
+  $branches = Branch::all();
+  $salaryGroups = SalaryGroup::all();
+
+    return view('employees.edit-employee-details', compact('employee', 'designations', 'salaryGroups', 'branches', 'departments', 'contract_types'));
+    
+}
 
     public function getContributions(Employee $employee)
     {

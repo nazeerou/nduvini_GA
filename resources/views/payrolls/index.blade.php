@@ -783,7 +783,6 @@
                         <tr><th>Salary Advance</th><td>${slip.salary_advance}</td></tr>
                         <tr><th>Loan</th><td>${slip.loan}</td></tr>
                         <tr><th>NSSF</th><td>${slip.nssf}</td></tr>
-                        <tr><th>WCF</th><td>${slip.wcf}</td></tr>
                         <tr><th>NHIF</th><td>${slip.nhif}</td></tr>
                         <tr><th>TUICO</th><td>${slip.tuico}</td></tr>
                         <tr><th>PAYE</th><td>${slip.paye}</td></tr>
@@ -842,7 +841,6 @@
                                         <td>${slip.loan ?? 0}</td>
                                         <td>${slip.nssf ?? 0}</td>
                                         <td>${slip.nhif ?? 0}</td>
-                                        <td>${slip.wcf ?? 0}</td>
                                         <td>${slip.tuico ?? 0}</td>
                                         <td>${slip.paye ?? 0}</td>
                                         <td>${slip.net_salary}</td>
@@ -868,7 +866,6 @@
                                             <th>LOAN</th>
                                             <th>NSSF</th>
                                             <th>NHIF</th>
-                                            <th>WCF</th>
                                             <th>TUICO</th>
                                             <th>PAYE</th>
                                             <th>Net Salary</th>

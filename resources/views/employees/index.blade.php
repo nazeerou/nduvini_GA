@@ -49,94 +49,77 @@
 
                 {{-- Tab 1: Employee Lists --}}
                 <div class="tab-pane fade in active" id="tab_employees">
-                    <div id="display_message" style="display: none"></div>
+    <div id="display_message" style="display: none"></div>
 
-                    <div class="row" style="background: #f5f5f5; padding: 14px; margin-bottom: 20px;">
-                        <div class="col-md-3">
-                            <label>Branch</label>
-                            <select id="filterBranch" class="form-control">
-                                <option value="">-- ALL Branches --</option>
-                                @foreach ($branches as $b)
-                                    <option value="{{ $b->id }}">{{ $b->branch_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+    <div class="row" style="background: #f5f5f5; padding: 14px; margin-bottom: 20px;">
+        <div class="col-md-3">
+            <label>Branch</label>
+            <select id="filterBranch" class="form-control">
+                <option value="">-- ALL Branches --</option>
+                @foreach ($branches as $b)
+                    <option value="{{ $b->id }}">{{ $b->branch_name }}</option>
+                @endforeach
+            </select>
+        </div>
 
-                        <div class="col-md-3">
-                            <label>Contract Type</label>
-                            <select id="filterContract" class="form-control">
-                            <option value="">ALL</option>
-                            @foreach ($contract_types as $c)
-                                <option value="{{ $c->id }}">{{ $c->name }}</option>
-                            @endforeach
-                        </select>
-                        </div>
+        <div class="col-md-3">
+            <label>Contract Type</label>
+            <select id="filterContract" class="form-control">
+                <option value="">ALL</option>
+                @foreach ($contract_types as $c)
+                    <option value="{{ $c->id }}">{{ $c->name }}</option>
+                @endforeach
+            </select>
+        </div>
 
-                        <div class="col-md-3" style="margin-top: 25px;">
-                            <button id="generate-slip" class="btn btn-success">Generate PDF</button>
-                        </div>
-                    </div>
+        <div class="col-md-3" style="margin-top: 25px;">
+            <button id="generate-slip" class="btn btn-success">Generate PDF</button>
+        </div>
+    </div>
 
-                    <div class="table-responsive">
-                        <table id="datatable" class="table table-striped table-bordered">
-                            <thead>
-                                <tr style="background-color: #eee;">
-                                    <th>SN</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th>Department</th>
-                                    <th>Designation</th>
-                                    <th>Contract Type</th>
-                                    <th>Mobile</th>
-                                    <th>Branch</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($employees as $key => $employee)
-                                <tr>
-                                    <td>{{ $key + 1 }}</td>
-                                    <td>{{ $employee->firstname }} {{ $employee->middlename }} {{ $employee->surname }}</td>
-                                    <td>{{ $employee->email }}</td>
-                                    <td>{{ $employee->department_name ?? 'N/A' }}</td>
-                                    <td>{{ $employee->position ?? 'N/A' }}</td>
-                                    <td>{{ $employee->contract_name ?? 'N/A' }}</td>
-                                    <td>{{ $employee->mobile }}</td>
-                                    <td>{{ $employee->branch_name ?? 'N/A' }}</td>
-                                    <td>
-                                        <a href="{{ url('staffs/managements/employees/'. $employee->id ) }}" class="btn btn-info btn-sm"><i class="fa fa-eye"></i></a>
-                                        <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#editEmployeeModal{{ $employee->id }}"><i class="fa fa-edit"></i></button>
-                                        <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" style="display:inline;">
-                                            @csrf @method('DELETE')
-                                            <button class="btn btn-danger btn-sm" onclick="return confirm('Delete this employee?')"><i class="fa fa-trash"></i></button>
-                                        </form>
-                                    </td>
-                                </tr>
+    <div class="table-responsive">
+        <table id="datatable" class="table table-striped table-bordered">
+            <thead>
+                <tr style="background-color: #eee;">
+                    <th>SN</th>
+                    <th>Full Name</th>
+                    <th>Email</th>
+                    <th>Department</th>
+                    <th>Designation</th>
+                    <th>Contract Type</th>
+                    <th>Mobile</th>
+                    <th>Branch</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($employees as $key => $employee)
+                <tr>
+                    <td>{{ $key + 1 }}</td>
+                    <td>{{ $employee->firstname }} {{ $employee->middlename }} {{ $employee->surname }}</td>
+                    <td>{{ $employee->email }}</td>
+                    <td>{{ $employee->department_name ?? 'N/A' }}</td>
+                    <td>{{ $employee->position ?? 'N/A' }}</td>
+                    <td>{{ $employee->contract_name ?? 'N/A' }}</td>
+                    <td>{{ $employee->mobile }}</td>
+                    <td>{{ $employee->branch_name ?? 'N/A' }}</td>
+                    <td>
+                        <a href="{{ url('staffs/managements/employees/'. $employee->id ) }}" class="btn btn-info btn-sm"><i class="fa fa-eye"></i></a>
+                        <a href="{{ url('staffs/managements/employees/' . $employee->id . '/edit') }}" class="btn btn-success btn-sm">
+                            <i class="fa fa-edit"></i>
+                        </a>
+                        <form action="{{ route('employees.destroy', $employee->id) }}" method="POST" style="display:inline;">
+                            @csrf @method('DELETE')
+                            <button class="btn btn-danger btn-sm" onclick="return confirm('Delete this employee?')"><i class="fa fa-trash"></i></button>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
 
-                                {{-- Edit Modal --}}
-                                <div class="modal fade" id="editEmployeeModal{{ $employee->id }}" tabindex="-1">
-                                    <div class="modal-dialog modal-lg">
-                                        <form action="{{ route('employees.update', $employee->id) }}" method="POST" enctype="multipart/form-data" class="modal-content">
-                                            @csrf @method('PUT')
-                                            <div class="modal-header">
-                                                <button type="button" class="close" data-dismiss="modal">&times;</button>
-                                                <h4 class="modal-title">Edit Employee</h4>
-                                            </div>
-                                            <div class="modal-body">
-                                                @include('employees.partials.employee_form', ['employee' => $employee])
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-success">Update</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
 
                 {{-- Tab 2: Contracts --}}
                 <div class="tab-pane fade" id="tab_contracts">
@@ -304,5 +287,26 @@
         </form>
     </div>
 </div>
+
+
+
+<script>
+// $('#editEmployeeModal{{ $employee->id }}').on('shown.bs.modal', function () {
+//     $(this).find('.datepicker').datepicker({
+//         format: 'yyyy-mm-dd',
+//         autoclose: true,
+//         todayHighlight: true
+//     });
+// });
+
+// $('.modal').on('shown.bs.modal', function () {
+//     $(this).find('.datepicker').datepicker({
+//         format: 'yyyy-mm-dd',
+//         autoclose: true,
+//         todayHighlight: true
+//     });
+// });
+
+</script>
 
 @endsection
