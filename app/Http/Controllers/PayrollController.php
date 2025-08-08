@@ -305,7 +305,7 @@ class PayrollController extends Controller
 
         // 5. PAYE
         if ($taxable_income <= 270000) {
-            $paye = 0;
+            $paye = 0 ;
         } elseif ($taxable_income <= 520000) {
             $paye = ($taxable_income - 270000) * 0.08;
         } elseif ($taxable_income <= 760000) {
@@ -720,6 +720,7 @@ public function details($reference)
         $allowance = floatval($first->payroll->allowance ?? 0);
         $paye = floatval($first->payroll->paye ?? 0);
 
+        $gross_salary = $basic_salary + $allowance;
 
         $nssf = 0;
         $wcf = 0;
@@ -739,7 +740,7 @@ public function details($reference)
                     $amount = floatval($contribution->rate);
                 } elseif ($type === 'percentage') {
                     $rate = floatval($contribution->rate);
-                    $amount = ($rate / 100) * $basic_salary;
+                    $amount = ($rate / 100) * $gross_salary;
                 }
 
                 switch ($name) {
@@ -843,6 +844,8 @@ $slips = $grouped->map(function ($rows, $employeeId) use ($loanRepayments, $sala
     $allowance = floatval($first->payroll->allowance ?? 0);
     $paye = floatval($first->payroll->paye ?? 0);
 
+    $gross_salary = $basic_salary + $allowance;
+
     $nssf = 0;
     $wcf = 0;
     $nhif = 0;
@@ -861,7 +864,7 @@ $slips = $grouped->map(function ($rows, $employeeId) use ($loanRepayments, $sala
                 $amount = floatval($contribution->rate);
             } elseif ($type === 'percentage') {
                 $rate = floatval($contribution->rate);
-                $amount = ($rate / 100) * $basic_salary;
+                $amount = ($rate / 100) * $gross_salary;
             }
 
             switch ($name) {
@@ -951,6 +954,8 @@ public function bankDetails($reference)
         $basic_salary = floatval($payroll->basic_salary ?? 0);
         $allowance = floatval($payroll->allowance ?? 0);
     
+        $gross_salary = $basic_salary + $allowance;
+
         $nssf = $paye = $nhif = 0;
     
         foreach ($rows as $p) {
@@ -964,18 +969,19 @@ public function bankDetails($reference)
                     $amount = floatval($contribution->rate);
                 } elseif ($type === 'percentage') {
                     $rate = floatval($contribution->rate);
-                    $amount = ($rate / 100) * $basic_salary;
+                    $amount = ($rate / 100) * $gross_salary;
                 }
     
                 switch ($name) {
                     case 'NSSF': $nssf = $amount; break;
                     case 'PAYE': $paye = $amount; break;
                     case 'NHIF': $nhif = $amount; break;
+                    case 'TUICO': $nhif = $amount; break;
                 }
             }
         }
     
-        $net_salary = ($basic_salary + $allowance) - ($nssf + $paye + $nhif);
+        $net_salary = ($basic_salary + $allowance) - ($nssf + $paye + $nhif + $tuico);
     
         // Bank account details
         $bankAccount = $employee?->bankAccount?->first(); // or use a loop if multiple
