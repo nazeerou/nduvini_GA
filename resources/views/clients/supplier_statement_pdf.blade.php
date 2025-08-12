@@ -48,6 +48,16 @@
         @page {
             margin: 140px 25px 100px 25px;
         }
+        .total-row {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+        .outstanding {
+            font-size: 16px;
+            font-weight: bold;
+            border-top: 2px solid #000;
+            padding-top: 8px;
+        }
     </style>
 </head>
 <body>
@@ -66,8 +76,8 @@
             </td>
             <td>
                 <p><strong>STATEMENT</strong></p>
-                <p>Period: 
-                    @if ($startdate == '' && $enddate == '') 
+                <p>Period:
+                    @if ($startdate == '' && $enddate == '')
                         ALL
                     @else
                         {{ $startdate }} TO {{ $enddate }}
@@ -99,23 +109,48 @@
             </tr>
         </thead>
         <tbody>
+            @php
+                $totalInvoice = 0;
+                $totalDebit = 0;
+                $totalCredit = 0;
+                $totalBalance = 0;
+            @endphp
+
             @forelse ($purchases as $s)
+                @php
+                    $invoiceAmount = $s->total_amount;
+                    $creditAmount = $s->paid_amount;
+                    $debitAmount = max(0, $s->total_amount - $s->paid_amount);
+                    $balance = $s->total_amount - $s->paid_amount;
+
+                    $totalInvoice += $invoiceAmount;
+                    if ($payment == '1') {
+                        $totalCredit += $creditAmount;
+                    } elseif ($payment == '') {
+                        $totalDebit += $debitAmount;
+                        $totalCredit += $creditAmount;
+                    } else {
+                        $totalDebit += $debitAmount;
+                    }
+                    $totalBalance += $balance;
+                @endphp
+
                 <tr>
                     <td>{{ $s->created_date }}</td>
                     <td>PI {{ $s->invoice_number }}</td>
                     <td>{{ $s->lpo_number }}</td>
-                    <td>{{ number_format($s->total_amount, 2) }}</td>
+                    <td>{{ number_format($invoiceAmount, 2) }}</td>
 
                     @if ($payment == '1')
-                        <td>{{ number_format($s->paid_amount, 2) }}</td>
-                        <td>{{ number_format($s->total_amount - $s->paid_amount, 2) }}</td>
+                        <td>{{ number_format($creditAmount, 2) }}</td>
+                        <td>{{ number_format($balance, 2) }}</td>
                     @elseif ($payment == '')
-                        <td>{{ number_format(max(0, $s->total_amount - $s->paid_amount), 2) }}</td>
-                        <td>{{ number_format($s->paid_amount, 2) }}</td>
-                        <td>{{ number_format($s->total_amount - $s->paid_amount, 2) }}</td>
+                        <td>{{ number_format($debitAmount, 2) }}</td>
+                        <td>{{ number_format($creditAmount, 2) }}</td>
+                        <td>{{ number_format($balance, 2) }}</td>
                     @else
-                        <td>{{ number_format(max(0, $s->total_amount - $s->paid_amount), 2) }}</td>
-                        <td>{{ number_format($s->total_amount - $s->paid_amount, 2) }}</td>
+                        <td>{{ number_format($debitAmount, 2) }}</td>
+                        <td>{{ number_format($balance, 2) }}</td>
                     @endif
                 </tr>
             @empty
@@ -124,13 +159,31 @@
                 </tr>
             @endforelse
 
-            
+            {{-- Totals Row --}}
+            <tr class="total-row">
+                <td colspan="3" style="text-align: right;">TOTAL</td>
+                <td>{{ number_format($totalInvoice, 2) }}</td>
+
+                @if ($payment == '1')
+                    <td>{{ number_format($totalCredit, 2) }}</td>
+                    <td>{{ number_format($totalBalance, 2) }}</td>
+                @elseif ($payment == '')
+                    <td>{{ number_format($totalDebit, 2) }}</td>
+                    <td>{{ number_format($totalCredit, 2) }}</td>
+                    <td>{{ number_format($totalBalance, 2) }}</td>
+                @else
+                    <td>{{ number_format($totalDebit, 2) }}</td>
+                    <td>{{ number_format($totalBalance, 2) }}</td>
+                @endif
+            </tr>
         </tbody>
     </table>
 </main>
 
 <footer>
-    
+    <p class="outstanding">
+        Outstanding Balance: {{ number_format($totalBalance, 2) }}
+    </p>
 </footer>
 
 </body>
