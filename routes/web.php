@@ -484,9 +484,9 @@ Route::put('/employee/nssf/{id}', [EmployeeNSSFController::class, 'update'])->na
 Route::delete('/employee/nssf/{id}', [EmployeeNSSFController::class, 'destroy'])->name('employee.nssf.destroy');
 
 Route::resource('loans', LoanController::class)
-     ->only(['store', 'update', 'destroy']);
+     ->only(['store', 'update', 'destroy', 'downloadPDF']);
 
-     Route::resource('salary-advances', SalaryAdvanceController::class);
+     Route::resource('salary-advances', SalaryAdvanceController::class)->only(['store', 'update', 'destroy', 'downloadPDF']);
 
      Route::get('/loans/{id}/statement', [LoanController::class, 'statement']);
 
@@ -504,5 +504,9 @@ Route::get('/employee/{employee}/contributions', [EmployeeController::class, 'ge
 Route::get('/staffs/managements/employees/{employee}/edit', [EmployeeController::class, 'editEmployeeDetails'])->name('employees.details');
 
 Route::put('staffs/managements/employees/{id}', [EmployeeController::class, 'updateEmployee'])->name('employees.update');
+
+Route::get('/salary-advances/pdf', [SalaryAdvanceController::class, 'downloadPdf'])->name('salary-advances.pdf');
+
+Route::get('/loans/pdf', [LoanController::class, 'downloadPdf'])->name('loans.pdf');
 
 });

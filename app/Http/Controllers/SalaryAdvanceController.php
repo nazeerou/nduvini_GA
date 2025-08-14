@@ -6,6 +6,10 @@ use App\Models\SalaryAdvance;
 use App\Models\Employee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Payroll;
+use PDF;
+use App;
+use Barryvdh\Snappy;
 
 class SalaryAdvanceController extends Controller
 {
@@ -69,4 +73,32 @@ class SalaryAdvanceController extends Controller
 
         return redirect()->back()->with('success', 'Salary advance deleted.');
     }
+
+    
+   public function downloadPdf() {
+
+    $salary_advances = SalaryAdvance::with('employee')->get();
+
+
+    $pdf = Pdf::loadView('payrolls.salary_advances_pdf', compact('salary_advances'))
+        ->setPaper('A4', 'portrait');
+
+    return $pdf->download('salary_advances.pdf');
+
+    // $pdf = App::make('dompdf.wrapper');
+       
+    // $pdf->loadView('payrolls.salary_advances_pdf', compact('salary_advances'));
+    // return $pdf->stream();
+
+   }
+  
+//    public function show() {
+
+//     $salary_advances = SalaryAdvance::with('employee')->get();
+
+//     $pdf = App::make('dompdf.wrapper');
+       
+//     $pdf->loadView('payrolls.salary_advances_pdf', compact('salary_advances'));
+//     return $pdf->stream();
+//    }
 }

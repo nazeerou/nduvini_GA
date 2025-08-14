@@ -237,12 +237,12 @@
                                                 <a href="{{ url('payrolls/paye-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
                                                     <i class="fa fa-file-pdf-o"></i> TUICO Voucher
                                                 </a> -->
-                                                <a href="{{ url('payrolls/wcf-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
+                                                <!-- <a href="{{ url('payrolls/wcf-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
                                                     <i class="fa fa-file-pdf-o"></i> WCF Voucher
                                                 </a>
                                                 <a href="{{ url('payrolls/nhif-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
                                                     <i class="fa fa-file-pdf-o"></i> NHIF Voucher
-                                                </a>
+                                                </a> -->
                                                 
                                             @else
                                                 <span class="text-muted">Not Generated</span>
@@ -384,8 +384,11 @@
 
                     <!-- Loan Details Tab -->
                     <div role="tabpanel" class="tab-pane fade" id="loan-details">
+                       <a href="{{ route('loans.pdf') }}" class="btn btn-pink" style="float:right;">
+                            <i class="fa fa-file-pdf-o"></i>&nbsp; Loan PDF
+                        </a>
                         <button class="btn btn-primary" data-toggle="modal" data-target="#addLoanModal" style="float:right;">
-                            Add Loan
+                           + Add Loan
                         </button>
                         <h4>Employee Loans</h4>
                         <div class="clearfix"></div>
@@ -460,9 +463,13 @@
 
                     <!-- Salary Advance Tab -->
                     <div role="tabpanel" class="tab-pane fade" id="salary-advances">
+                       
+                        <a href="{{ url('salary-advances/pdf') }}" class="btn btn-pink" style="float:right;">
+                           <i class="fa fa-file-pdf-o"></i>&nbsp; Salary Advance PDF
+                        </a>
                         <button class="btn btn-primary" data-toggle="modal" data-target="#addAdvanceModal" style="float:right;">
-                            Add Salary Advance
-                        </button>
+                            + Add Salary Advance
+                        </button> &nbsp;&nbsp;
                         <h4>Employee Salary Advances</h4>
                         <div class="clearfix"></div>
 
@@ -930,11 +937,11 @@
 $(document).on('click', '.view-nssf-btn', function () {
     let month = $(this).data('month');
     $('#bankModal').modal('show');
-    $('#bankModal .modal-title').text('NSSF PAYEMENT Voucher');
+    $('#bankModal .modal-title').text('NSSF PAYEMENT');
     $('#bankModal .modal-body').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-2x"></i> Loading...</div>');
 
     $.get(`/payrolls/${month}/nssf-voucher-view`, function (data) {
-        $('#bankModal .modal-title').text(`NSSF PAYEMENT Voucher - ${month}`);
+        $('#bankModal .modal-title').text(`NSSF PAYEMENT  - ${month}`);
         $('#bankModal .modal-body').html(data);
     }).fail(function (xhr) {
         let message = 'Failed to load NSSF voucher.';

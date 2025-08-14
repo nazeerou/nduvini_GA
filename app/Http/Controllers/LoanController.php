@@ -6,6 +6,7 @@ use App\Models\Loan;
 use Illuminate\Http\Request;
 use App\Models\LoanRepayment;
 use App\Models\Employee;
+use PDF;
 
 class LoanController extends Controller
 {
@@ -68,6 +69,17 @@ public function statement($id)
     $loan = Loan::with(['employee', 'loanRepayments'])->findOrFail($id);
 
     return view('payrolls.loan_statement', compact('loan'));
+}
+
+
+public function downloadPdf()
+{
+    $loans = Loan::with('employee')->get();
+
+    $pdf = Pdf::loadView('payrolls.loan_pdf', compact('loans'))
+        ->setPaper('A4', 'landscape'); // Landscape for wide tables
+
+    return $pdf->download('employee_loans.pdf');
 }
 
 }
