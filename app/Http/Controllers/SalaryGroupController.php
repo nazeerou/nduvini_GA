@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SalaryGroup;
 use Illuminate\Http\Request;
+use Auth;
 
 class SalaryGroupController extends Controller
 {
