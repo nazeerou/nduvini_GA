@@ -9,6 +9,8 @@ use App\Models\Designation;
 use App\Models\ContractType;
 use App\Models\SalaryGroup;
 use App\Models\Bank;
+use Illuminate\Support\Facades\Auth;
+
 
 class HRController extends Controller
 {
