@@ -338,7 +338,7 @@ public function getEmployeeDetails($id)
   $departments = Department::all();
   $contract_types = ContractType::all();
   $branches = Branch::all();
-  $salaryGroups = SalaryGroup::all();
+  $salaryGroups = SalaryGroup::where('branch_id', Auth::user()->branch_id)->get();
 
     return view('employees.edit-employee-details', compact('employee', 'designations', 'salaryGroups', 'branches', 'departments', 'contract_types'));
     

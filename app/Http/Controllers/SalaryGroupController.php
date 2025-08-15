@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Http\Controllers;
-
-use Illuminate\Support\Facades\Auth;
+namespace App\Http\Controller;
+use Auth;
 use App\Models\SalaryGroup;
 use Illuminate\Http\Request;
 

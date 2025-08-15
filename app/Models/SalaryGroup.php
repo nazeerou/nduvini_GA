@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class SalaryGroup extends Model
 {
     //
-    protected $fillable = ['group_name', 'basic_salary', 'allowance', 'deductions'];
+    protected $fillable = ['branch_id', 'group_name', 'basic_salary', 'allowance', 'deductions'];
 
     public function employees()
     {
