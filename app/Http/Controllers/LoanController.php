@@ -75,11 +75,11 @@ public function statement($id)
 
 public function downloadPdf()
 {
-    $loans = Loan::with('employee')->get();
+    $loans = Loan::with('employee')->where('branch_id', Auth::user()->branch_id)->get();
 
     $pdf = Pdf::loadView('payrolls.loan_pdf', compact('loans'))
         ->setPaper('A4', 'landscape'); // Landscape for wide tables
-
+        
     return $pdf->download('employee_loans.pdf');
 }
 
