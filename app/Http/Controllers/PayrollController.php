@@ -99,8 +99,12 @@ class PayrollController extends Controller
     $months = collect();
 
     // Cache loans & advances for performance
-    $loans = Loan::with(['employee', 'loanRepayments'])->get();
-    $salary_advances = SalaryAdvance::with('employee')->get();
+    $loans = Loan::with(['employee', 'loanRepayments'])
+             ->where('branch_id', Auth::user()->branch_id)
+             ->get();
+    $salary_advances = SalaryAdvance::with('employee')
+             ->where('branch_id', Auth::user()->branch_id)
+             ->get();
     
     for ($m = $currentMonthNum; $m >= 1; $m--) {
         $monthStr = Carbon::createFromDate($currentYear, $m, 1)->format('Y-m');
