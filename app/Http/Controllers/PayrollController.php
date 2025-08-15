@@ -462,6 +462,9 @@ public function fetchSalarySlip(Request $request)
         $wcf = 0;
         $nhif = 0;
         $tuico = 0;
+        $gross_salary = 0;
+
+        $gross_salary = $basic_salary + $allowance;
 
         foreach ($rows as $p) {
             $contribution = $p->contribution;
@@ -474,12 +477,11 @@ public function fetchSalarySlip(Request $request)
                     $amount = floatval($contribution->rate);
                 } elseif ($type === 'percentage') {
                     $rate = floatval($contribution->rate);
-                    $amount = ($rate / 100) * $basic_salary;
+                    $amount = ($rate / 100) * $gross_salary;
                 }
 
                 switch ($name) {
                     case 'NSSF': $nssf = $amount; break;
-                    case 'WCF': $wcf = $amount; break;
                     case 'NHIF': $nhif = $amount; break;
                     case 'TUICO': $tuico = $amount; break;
                 }
@@ -494,7 +496,7 @@ public function fetchSalarySlip(Request $request)
             ? $loanRepayments[$employeeId]->sum('amount')
             : 0;
 
-        $total_deductions = $nssf + $wcf + $nhif + $tuico + $advance_pay + $loan + $paye;
+        $total_deductions = $nssf  + $nhif + $tuico + $advance_pay + $loan + $paye;
         $net_salary = ($basic_salary + $allowance) - $total_deductions;
 
         
@@ -508,7 +510,6 @@ public function fetchSalarySlip(Request $request)
             'allowance' => number_format($allowance, 2),
             'salary_advance' => number_format($advance_pay, 2),
             'nssf' => number_format($nssf, 2),
-            'wcf' => number_format($wcf, 2),
             'nhif' => number_format($nhif, 2),
             'tuico' => number_format($tuico, 2),
             'loan' => number_format($loan, 2),
@@ -592,10 +593,14 @@ public function downloadSalarySlip(Request $request)
             $allowance = floatval($first->payroll->allowance ?? 0);
             $paye = floatval($first->payroll->paye ?? 0);
 
+            
             $nssf = 0;
             $wcf = 0;
             $nhif = 0;
             $tuico = 0;
+            $gross_salary = 0;
+
+            $gross_salary = $basic_salary + $allowance;
     
             foreach ($rows as $p) {
                 $contribution = $p->contribution;
@@ -608,12 +613,11 @@ public function downloadSalarySlip(Request $request)
                         $amount = floatval($contribution->rate);
                     } elseif ($type === 'percentage') {
                         $rate = floatval($contribution->rate);
-                        $amount = ($rate / 100) * $basic_salary;
+                        $amount = ($rate / 100) * $gross_salary;
                     }
     
                     switch ($name) {
                         case 'NSSF': $nssf = $amount; break;
-                        case 'WCF': $wcf = $amount; break;
                         case 'NHIF': $nhif = $amount; break;
                         case 'TUICO': $tuico = $amount; break;
                     }
@@ -628,8 +632,8 @@ public function downloadSalarySlip(Request $request)
                 ? $loanRepayments[$employeeId]->sum('amount')
                 : 0;
     
-            $total_deductions = $nssf + $wcf + $nhif + $tuico + $advance_pay + $loan + $paye;
-            $net_salary = ($basic_salary + $allowance) - $total_deductions;
+            $total_deductions = $nssf  + $nhif + $tuico + $advance_pay + $loan + $paye;
+            $net_salary = ($gross_salary) - $total_deductions;
     
             
             return [
@@ -642,7 +646,6 @@ public function downloadSalarySlip(Request $request)
                 'allowance' => $allowance,
                 'salary_advance' => $advance_pay,
                 'nssf' => $nssf,
-                'wcf' => $wcf,
                 'nhif' => $nhif,
                 'tuico' => $tuico,
                 'loan' => $loan,
@@ -851,7 +854,6 @@ $slips = $grouped->map(function ($rows, $employeeId) use ($loanRepayments, $sala
     $gross_salary = $basic_salary + $allowance;
 
     $nssf = 0;
-    $wcf = 0;
     $nhif = 0;
     $tuico = 0;
     $advance_pay = 0;
@@ -890,7 +892,7 @@ $loan = $loanRepayments->has($employeeId)
 ? $loanRepayments[$employeeId]->sum('amount')
 : 0;
 
-    $net_salary = ($basic_salary + $allowance) - ($nssf + $wcf + $nhif + $tuico + $advance_pay + $loan + $paye);
+    $net_salary = ($basic_salary + $allowance) - ($nssf + $nhif + $tuico + $advance_pay + $loan + $paye);
 
     return [
         'employee_name' => isset($first->payroll->employee)
@@ -902,7 +904,6 @@ $loan = $loanRepayments->has($employeeId)
         'allowance'        => $allowance,
         'salary_advance'   => $advance_pay,
         'nssf'             => $nssf,
-        'wcf'              => $wcf,
         'nhif'             => $nhif,
         'tuico'            => $tuico,
         'loan'             => $loan,
@@ -1198,7 +1199,7 @@ public function generateNhifVoucher($month)
 private function calculatePaye($grossSalary, $nssf = 0, $nhif = 0)
 {
 
-    $taxable = $grossSalary - ($nssf + $nhif);
+    $taxable = $grossSalary - ($nssf);
 
     if ($taxable <= 270000) {
         return 0;
