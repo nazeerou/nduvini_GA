@@ -22,8 +22,8 @@ class HRController extends Controller
             'departments' => Department::all(),
             'designations' => Designation::all(),
             'contract_types' => ContractType::all(),
-            'salary_groups' => SalaryGroup::all(),
-            'banks' => Bank::all(),
+            'salary_groups' => SalaryGroup::where('branch_id', Auth:user()->branch_id)->get(),
+            'banks' => Bank::where('branch_id', Auth:user()->branch_id)->get(),
 
         ]);      
      }

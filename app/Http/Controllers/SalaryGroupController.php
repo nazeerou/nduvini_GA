@@ -17,7 +17,7 @@ class SalaryGroupController extends Controller
         SalaryGroup::create([
             'group_name' => $request->group_name,
             'basic_salary' => $request->basic_salary,
-            'branch_id' => Auth::id()
+            'branch_id' => Auth::user()->branch_id
         ]);
     
         return redirect()->back()->with('success', 'Salary Group added successfully.');
