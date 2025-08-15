@@ -164,7 +164,7 @@
             <tr><th>TUICO</th><td>{{ number_format($slip['tuico'], 2) }}</td></tr>
             <tr><th>PAYE</th><td>{{ number_format($slip['paye'], 2) }}</td></tr>
             <tr><th>Total Deduction</th>
-            <td>{{ number_format($slip['paye'] + $slip['nssf'] + $slip['wcf'] + $slip['tuico'] + $slip['nhif'], 2) }}</td></tr>
+            <td>{{ number_format($slip['paye'] + $slip['nssf'] + $slip['tuico'] + $slip['nhif'], 2) }}</td></tr>
             <tr><th><strong>Net Salary</strong></th><td><strong>{{ number_format($slip['net_salary'], 2) }}</strong></td></tr>
         </table>
     </div>
