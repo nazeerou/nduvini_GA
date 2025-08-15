@@ -160,7 +160,6 @@
             <tr><th>Salary Advance</th><td>{{ number_format($slip['salary_advance'], 2) }}</td></tr>
             <tr><th>Loan</th><td>{{ number_format($slip['loan'], 2) }}</td></tr>
             <tr><th>NSSF</th><td>{{ number_format($slip['nssf'], 2) }}</td></tr>
-            <tr><th>WCF</th><td>{{ number_format($slip['wcf'], 2) }}</td></tr>
             <tr><th>NHIF</th><td>{{ number_format($slip['nhif'], 2) }}</td></tr>
             <tr><th>TUICO</th><td>{{ number_format($slip['tuico'], 2) }}</td></tr>
             <tr><th>PAYE</th><td>{{ number_format($slip['paye'], 2) }}</td></tr>
