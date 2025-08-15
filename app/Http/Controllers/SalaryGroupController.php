@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Auth;
 use App\Models\SalaryGroup;
 use Illuminate\Http\Request;
-use Auth;
+
 
 class SalaryGroupController extends Controller
 {
