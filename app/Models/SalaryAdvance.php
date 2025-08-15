@@ -14,6 +14,7 @@ class SalaryAdvance extends Model
         'amount',
         'month',
         'user_id',
+        'branch_id'
     ];
 
     /**

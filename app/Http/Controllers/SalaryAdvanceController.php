@@ -34,6 +34,7 @@ class SalaryAdvanceController extends Controller
             'amount'      => $request->amount,
             'month'       => $request->month,
             'user_id'     => Auth::id(),
+            'branch_id' => Auth::user()->branch_id
         ]);
 
         return redirect()->back()->with('success', 'Salary advance added successfully.');

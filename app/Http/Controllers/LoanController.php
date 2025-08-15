@@ -29,6 +29,7 @@ class LoanController extends Controller
             'monthly_deduction' => $request->monthly_deduction,
             'balance'           => $request->balance,
             'start_date'        => $request->start_date,
+            'branch_id' => Auth::user()->branch_id
         ]);
 
         return back()->with('message', 'Loan added.');
