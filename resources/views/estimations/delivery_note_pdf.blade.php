@@ -366,7 +366,7 @@ pointer-events: none;
                             </tr>
                              <!-- Insert line break after every 30 rows -->
                             
-                             @if (($key + 1) % 18 == 0 && $key + 1 < count($sales))
+                             @if (($key + 1) % 16 == 0 && $key + 1 < count($sales))
                                 <div class="page-break"></div>
                                 
                             @endif
