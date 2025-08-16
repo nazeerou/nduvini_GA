@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\LoanRepayment;
 use App\Models\Employee;
 use PDF;
+use Auth;
 
 class LoanController extends Controller
 {
