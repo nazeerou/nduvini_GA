@@ -39,9 +39,6 @@
                     <li role="presentation">
                         <a href="#salary-groups" aria-controls="salary-groups" role="tab" data-toggle="tab">Contributions Settings</a>
                     </li>
-                    <li role="presentation">
-                        <a href="#attendance" aria-controls="attendance" role="tab" data-toggle="tab">Employee Attendances</a>
-                    </li>
                 </ul>
 
                 <!-- Tab panes -->

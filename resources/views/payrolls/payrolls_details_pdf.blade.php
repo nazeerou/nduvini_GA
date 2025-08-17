@@ -149,7 +149,6 @@
 @php
     $total_basic_salary = 0;
     $total_nssf = 0;
-    $total_wcf = 0;
     $total_nhif = 0;
     $total_tuico = 0;
     $total_loan = 0;
@@ -182,7 +181,6 @@
         @foreach($slips as $index => $slip)
             @php
                 $nssf = floatval($slip['nssf'] ?? 0);
-                $wcf = floatval($slip['wcf'] ?? 0);
                 $tuico = floatval($slip['tuico'] ?? 0);
                 $advance_pay = floatval($slip['salary_advance'] ?? 0);
                 $loan_repayment = floatval($slip['loan'] ?? 0);
@@ -193,7 +191,6 @@
                 $paye = floatval($slip['paye'] ?? 0);
                 $total_basic_salary += $basic_salary;
                 $total_nssf += $nssf;
-                $total_wcf += $wcf;
                 $total_nhif += $nhif;
                 $total_allowance += $allowance;
                 $total_advance += $advance_pay;
@@ -209,12 +206,12 @@
             <td>{{ number_format($slip['allowance'] ?? 0) }}</td>
             <td>{{ number_format(($slip['basic_salary'] ?? 0) + ($slip['allowance'] ?? 0)) }}</td>
             <td>{{ number_format($advance_pay ?? 0) }}</td>
-            <td>{{ number_format($loan ?? 0) }}</td>
-            <td>{{ number_format($nssf ?? 0) }}</td>
-            <td>{{ number_format($nhif ?? 0) }}</td>
-            <td>{{ number_format($tuico ?? 0) }}</td>
+            <td>{{ number_format($slip['loan'] ?? 0) }}</td>
+            <td>{{ number_format($slip['nssf'] ?? 0) }}</td>
+            <td>{{ number_format($slip['nhif'] ?? 0) }}</td>
+            <td>{{ number_format($slip['tuico'] ?? 0) }}</td>
             <td>{{ number_format($slip['paye'] ?? 0) }}</td>
-            <td>{{ number_format(($advance_pay ?? 0) + ($nssf ?? 0) + ($wcf ?? 0) + ($nhif ?? 0) + ($tuico ?? 0) + ($loan ?? 0) +  ($paye ?? 0)) }}</td>
+            <td>{{ number_format(($advance_pay ?? 0) + ($nssf ?? 0) + ($nhif ?? 0) + ($tuico ?? 0) + ($loan ?? 0) +  ($paye ?? 0)) }}</td>
             <td>{{ number_format($net ?? 0) }}</td>
         </tr>
         @endforeach
@@ -231,7 +228,7 @@
             <th>{{ number_format($total_nhif) }}</th>
             <th>{{ number_format($total_tuico) }}</th>
             <th>{{ number_format($total_paye) }}</th>
-            <th>{{ number_format($total_advance + $total_loan + $total_nhif + $total_nssf + $total_wcf + $total_tuico + $total_paye) }}</th>
+            <th>{{ number_format($total_advance + $total_loan + $total_nhif + $total_nssf + $total_tuico + $total_paye) }}</th>
             <th>{{ number_format($total_net) }}</th>
         </tr>
     </tfoot>

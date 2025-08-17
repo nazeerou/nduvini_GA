@@ -428,13 +428,21 @@
         <h4 class="modal-title" id="editProfomaModalLabel">Edit Proforma Details  </h4>
       </div>
       <div class="modal-body">
-      <input type="hidden" name="reference" value="{{ $id }}" class="form-control">
       <div class="row">
-                        <div class="col-md-6">
+      <div class="col-md-6">
                             <div class="form-group">
                                 <label for="inputEmail3" class="control-label">Vehicle Reg # </label>
                                 <input type="text" name="vehicle_reg" id="vehicle_registration" class="form-control">
                             </div>
+                        </div>
+                    </div>
+                @if (Auth::user()->role_id === 1 || Auth::user()->role_id === 2)
+               <div class="row">
+               <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="inputEmail3" class="control-label">Reference # </label>
+                                <input type="text" name="reference" value="{{ $id }}" class="form-control">
+                             </div>
                         </div>
                          <div class="col-md-6">
                             <div class="form-group">
@@ -443,6 +451,7 @@
                             </div>
                         </div>
                     </div>
+                    @endif
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">

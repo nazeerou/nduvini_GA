@@ -460,12 +460,12 @@ table {
                 success: function(response){
                     $("#dataRows2").show();
                     var html = '<tr class="target_3">';
-                    html += '<td>'+'<input type="hidden" name="labour_name[]" value="'+response[0].labour+'">'+'</td>';
+                    html += '<td width="10px;">'+'<input type="hidden" name="labour_name[]" value="'+response[0].labour+'">'+'</td>';
                     html += '<td width="100px">'+response[0].labour+'</td>';
-                    html += '<td>'+'<input type="text" name="unit_charge[]" class="charge" value="'+response[0].charge+'">'+'</td>';
-                    html += '<td>'+'<input type="text" name="labour_qty[]"  class="qty" size="5"  required><input type="hidden" name="rate[]" value="hr" size="2">'+'</td>';
-                    html += '<td>'+'<input type="text" class="subtotal_other" name="total_amount[]" readonly value="0">'+'</td>';
-                    html += '<td>'+'<button type="button" class="btn-sm btn-danger btnDelete"> <i class="fa fa-trash"></i> </button>'+'</td></tr>';
+                    html += '<td>'+'<input type="text" name="unit_charge[]" class="form-control charge" value="'+response[0].charge+'">'+'</td>';
+                    html += '<td>'+'<input type="text" name="labour_qty[]"  class="form-control qty" size="5"  required><input type="hidden" name="rate[]" value="hr" size="2">'+'</td>';
+                    html += '<td width="70px;">'+'<input type="text" class="form-control subtotal_other" name="total_amount[]" readonly value="0">'+'</td>';
+                    html += '<td width="20px;">'+'<button type="button" class="btn-sm btn-danger btnDelete"> <i class="fa fa-trash"></i> </button>'+'</td></tr>';
                     $('#dataRows2').append(html);
                 }
             });
@@ -493,11 +493,11 @@ table {
                     $("#dataRows").show();
                     var html = '<tr class="target">';
                     html += '<td width="10px">'+'<input type="hidden" name="id[]" id="product_id" value="'+response[0].pid+'">'+'</td>';
-                    html += '<td width="100px">'+response[0].item_name+'</td>';
-                    html += '<td>'+'<input type="text" name="discount[]"  class="discount" size="5" value="0">'+'</td>';
-                    html += '<td>'+'<input type="text" name="selling_price[]" class="selling_price" value="'+response[0].sale_price+'">'+'</td>';
-                    html += '<td>'+'<input type="text" name="qty[]" size="5" class="qty" required>'+'</td>';
-                    html += '<td>'+'<input type="text" class="total_" name="total_charge[]" readonly value="0">'+'</td>';
+                    html += '<td width="80px">'+response[0].item_name+'</td>';
+                    html += '<td>'+'<input type="text" name="discount[]"  class="form-control discount" size="5" value="0">'+'</td>';
+                    html += '<td>'+'<input type="text" name="selling_price[]" class="form-control selling_price" value="'+response[0].sale_price+'">'+'</td>';
+                    html += '<td width="50px;">'+'<input type="text" name="qty[]" size="15" class="form-control qty" required>'+'</td>';
+                    html += '<td>'+'<input type="text" class="form-control total_" name="total_charge[]" readonly value="0">'+'</td>';
                     html += '<td>'+'<button type="button" class="btn-sm btn-danger btnDelete"> <i class="fa fa-trash"></i> </button>'+'</td></tr>';
                     $('#dataRows').append(html);
                 }

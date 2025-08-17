@@ -146,20 +146,22 @@
                         </div>
                       </div>
                      </div> <hr/>
+                     @if (Auth::user()->role_id === 1 || Auth::user()->role_id === 2)
                         <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="inputEmail3" class="control-label">Invoice No.   </label>
-                                <input type="text" name="invoice_number" id="invoice_number" class="form-control" readonly>
+                                <input type="text" name="invoice_number" id="invoice_number" class="form-control">
                              </div>
                         </div>
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="inputEmail3" class="control-label">Reference No.   </label>
-                                <input type="text" name="reference_no" id="reference_no" class="form-control" readonly>
+                                <input type="text" name="reference_no" id="reference_no" class="form-control">
                              </div>
                         </div>
                     </div>
+                    @endif
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">

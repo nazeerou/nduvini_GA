@@ -135,13 +135,13 @@ class EstimationController extends Controller
             'estimations.vehicle_reg',
             'estimations.customer_name'
         ])
-        ->join('estimations', 'estimations.job_card_no', '=', 'job_cards.job_card_no')
+        ->leftjoin('estimations', 'estimations.job_card_no', '=', 'job_cards.job_card_no')
         ->leftJoin('invoices', 'invoices.estimate_ref', '=', 'estimations.reference') // Corrected leftJoin method parameter order
         ->leftJoin('users', 'users.id', '=', 'job_cards.user_id')
         ->leftJoin('clients', 'clients.id', '=', 'estimations.client_name')
         ->where('job_cards.branch_id', Auth::user()->branch_id)
         ->groupBy('job_cards.job_card_no', 'job_cards.created_date', 'clients.place', 'estimations.customer_name', 'users.fname', 'users.lname', 'invoices.invoice_number', 'job_cards.status', 'estimations.reference', 'estimations.vehicle_reg', 'clients.client_name', 'estimations.created_date') // Removed duplicate grouping
-        ->orderBy('job_cards.created_date', 'desc')
+        ->orderBy('job_cards.job_card_ID', 'desc')
         ->get();
     
 
@@ -521,7 +521,8 @@ class EstimationController extends Controller
                             "chassis"=> $request->chassis, 
                             "milleage"=> $request->milleage, 
                             "profoma_invoice" => $request->proforma_invoice,
-                            "created_date" => $request->created_date
+                            "created_date" => $request->created_date,
+                            "reference" => $request->reference
                         ]);
  
         return redirect()->back()->with('message', 'Proforma updated successful');
@@ -854,15 +855,23 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
 
      public function saveInvoice(Request $request) {
 
-          $date = date('Y-m-d');
-           $invoices  = DB::table('invoices')->max('invoice_number');           
-           if(!$invoices) {
-            $invoice_no = 1;
-            } else {
-                $invoice_no = $invoices + 1;
-            }
+        
+        $date = date('Y-m-d');
 
-          $invoices = Invoice::create([
+        // check if invoice number already exists
+        if (Invoice::where('invoice_number', $request->invoice_no)->exists()) {
+            return redirect()->back()->with('error', 'Invoice number exists.');
+        }
+    
+        // auto-generate invoice number if not provided
+        $lastInvoice = DB::table('invoices')->max('invoice_number');
+        if (!$lastInvoice) {
+            $invoice_no = 1;
+        } else {
+            $invoice_no = $lastInvoice + 1;
+        }
+    
+        $invoices = Invoice::create([
             'branch_id' => Auth::user()->branch_id,
             'user_id' => Auth::user()->id,
             'reference' => $request->reference, 
@@ -881,16 +890,18 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
             'swift_code' => $request->swift_code,
             'payment_status' => 0,
             'created_date' => $date
-            ]);
-
-            $job_cards = DB::table('job_cards')
+        ]);
+    
+        DB::table('job_cards')
             ->where('job_card_no', $request->job_card_no)
-            ->where('job_cards.branch_id', Auth::user()->branch_id)
-            ->update(["invoice_no" => $request->invoice_no, 'amount' => $request->bill_amount
+            ->where('branch_id', Auth::user()->branch_id)
+            ->update([
+                'invoice_no' => $invoice_no,
+                'amount' => $request->bill_amount
             ]);
-
-            return redirect('job-cards')->with('message', 'You have Create Invoice '.$request->invoice_no);
-         } 
+    
+        return redirect('job-cards')->with('message', 'You have created Invoice '.$invoice_no);
+    }
 
 
          public function saveNewInvoice(Request $request) {
@@ -1012,16 +1023,43 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
 
          public function editInvoice($id) {
 
-            $invoices = DB::table('invoices')
+            $invoice = DB::table('invoices')
                     ->select('invoices.client_id', 'clients.client_name', 'invoices.reference', 'invoices.account_name', 'invoices.account_number'
                               ,'invoices.branch_name', 'invoices.swift_code', 'invoices.invoice_number', 'invoices.bank_name', 'invoices.id')
                     ->join('clients', 'clients.id', 'invoices.client_id')
                     ->where('reference', $id)
                     ->get();
     
-           return $invoices;  
+           return $invoice;  
         
         }
+
+// public function updateInvoice(Request $request)
+// {
+//     // return $request;
+
+//     // $invoice = Invoice::findOrFail($id);
+
+//     // validation
+//     $request->validate([
+//         'client_id' => 'required|exists:clients,id',
+//         'invoice_number' => 'required|numeric|unique:invoices,invoice_number',
+//         'reference' => 'nullable|string|unique:invoices,reference',
+//     ]);
+
+//     $invoice->update([
+//         'client_id' => $request->client_id,
+//         'invoice_number' => $request->invoice_number,
+//         'reference' => $request->reference,
+//         'account_number' => $request->account_number,
+//         'account_name' => $request->account_name,
+//         'bank_name' => $request->bank_name,
+//         'branch_name' => $request->branch_name,
+//         'swift_code' => $request->swift_code,
+//     ]);
+
+//     return redirect()-back()->with('message', 'Invoice updated successfully!');
+// }
 
      public function updateInvoice(Request $request) {
 

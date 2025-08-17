@@ -52,12 +52,14 @@
                             <input type="text" name="bill_amount" value="{{ $invoices[0]->amount }}" readonly class="form-control">       
                         </div>
                     </div>
+                    @if (Auth::user()->role_id == 1 || Auth::user()->role_id == 2)
                     <div class="col-md-2">
                         <div class="form-group">
                             <label for="inputEmail3" class="control-label"> Invoice No.  </label>
-                            <input type="text" name="invoice_no" value="{{ $invoice_no }}" readonly class="form-control">       
+                            <input type="text" name="invoice_no" value="{{ $invoice_no }}" class="form-control">       
                         </div>
                     </div>
+                    @endif
                     <div class="col-md-2">
                         <div class="form-group">
                             <label for="inputEmail3" class="control-label"> Status  </label><br/>

@@ -875,7 +875,6 @@ $slips = $grouped->map(function ($rows, $employeeId) use ($loanRepayments, $sala
 
             switch ($name) {
                 case 'NSSF': $nssf = $amount; break;
-                case 'WCF': $wcf = $amount; break;
                 case 'NHIF': $nhif = $amount; break;
                 case 'TUICO': $tuico = $amount; break;
             }
