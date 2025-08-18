@@ -1,6 +1,6 @@
 <?php
+namespace App\Http\Controllers;
 
-namespace App\Http\Controller;
 use Auth;
 use App\Models\SalaryGroup;
 use Illuminate\Http\Request;
@@ -18,10 +18,11 @@ class SalaryGroupController extends Controller
         SalaryGroup::create([
             'group_name' => $request->group_name,
             'basic_salary' => $request->basic_salary,
-            'branch_id' => Auth::user()->branch_id
+            'branch_id' => Auth::user()->branch_id,
+            'allowance' => $request->allowance,
         ]);
     
-        return redirect()->back()->with('success', 'Salary Group added successfully.');
+        return redirect()->back()->with('message', 'Salary Group added successfully.');
     }
     
     public function update(Request $request, SalaryGroup $salaryGroup)
@@ -34,16 +35,18 @@ class SalaryGroupController extends Controller
         $salaryGroup->update([
             'group_name' => $request->group_name,
             'basic_salary' => $request->basic_salary,
+            'allowance' => $request->allowance,
+            'branch_id' => Auth::user()->branch_id,
         ]);
     
-        return redirect()->back()->with('success', 'Salary Group updated successfully.');
+        return redirect()->back()->with('message', 'Salary Group updated successfully.');
     }
     
     public function destroy(SalaryGroup $salaryGroup)
     {
         $salaryGroup->delete();
     
-        return redirect()->back()->with('success', 'Salary Group deleted successfully.');
+        return redirect()->back()->with('error', 'Salary Group deleted successfully.');
     }
     
 }

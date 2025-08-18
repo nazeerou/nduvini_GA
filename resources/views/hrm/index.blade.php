@@ -100,13 +100,15 @@
                         <button id="addSalaryGroupBtn" class="btn btn-primary" style="float: right;">Add Salary Group</button>
                         <table class="table table-bordered mt-3">
                             <thead>
-                                <tr><th>Group Name</th><th>Basic Salary</th><th style="width: 130px;">Actions</th></tr>
+                                <tr><th>Group Name</th><th>Basic Salary</th><th>Transport Allowance</th><th style="width: 130px;">Actions</th></tr>
                             </thead>
                             <tbody>
                                 @foreach($salary_groups as $group)
-                                    <tr data-id="{{ $group->id }}" data-group_name="{{ $group->group_name }}" data-basic_salary="{{ $group->basic_salary }}">
+                                    <tr data-id="{{ $group->id }}" data-group_name="{{ $group->group_name }}" data-basic_salary="{{ $group->basic_salary }}" data-allowance="{{ $group->allowance }}">
                                         <td>{{ $group->group_name }}</td>
                                         <td>{{ number_format($group->basic_salary, 2) }}</td>
+                                        <td>{{ number_format($group->allowance, 2) }}</td>
+
                                         <td>
                                             <button class="btn btn-xs btn-info edit-salary-group-btn">Edit</button>
                                             <button class="btn btn-xs btn-danger delete-salary-group-btn">Delete</button>
@@ -221,7 +223,9 @@
                             </div>
                             <div class="modal-body">
                                 <input name="group_name" id="salaryGroupName" class="form-control" placeholder="Group Name" required style="margin-bottom: 10px;">
-                                <input name="basic_salary" id="salaryBasicSalary" type="number" class="form-control" placeholder="Basic Salary" required>
+                                <input name="basic_salary" id="salaryBasicSalary" type="number" class="form-control" placeholder="Basic Salary" required style="margin-bottom: 10px;">
+                                <input name="allowance" id="transportAllowance" type="number" class="form-control" placeholder="Transport Allowance">
+
                             </div>
                             <div class="modal-footer">
                                 <button type="submit" class="btn btn-success">Save</button>
@@ -393,12 +397,14 @@ $(document).ready(function() {
         var id = row.data('id');
         var groupName = row.data('group_name');
         var basicSalary = row.data('basic_salary');
+        var allowance = row.data('allowance');
 
         $('#salaryGroupForm')[0].reset();
         $('#salaryGroupMethod').val('PUT');
         $('#salaryGroupId').val(id);
         $('#salaryGroupName').val(groupName);
         $('#salaryBasicSalary').val(basicSalary);
+        $('#transportAllowance').val(allowance);
         $('#salaryGroupModalLabel').text('Edit Salary Group');
         $('#salaryGroupForm').attr('action', '/salary-groups/' + id);
         $('#salaryGroupModal').modal('show');

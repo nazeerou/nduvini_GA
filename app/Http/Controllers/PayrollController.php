@@ -386,9 +386,14 @@ public function store11(Request $request)
         'deductions' => 'nullable|numeric|min:0',
     ]);
 
-    SalaryGroup::create($request->only('branch_id', 'group_name', 'basic_salary', 'allowance', 'deductions'));
+    SalaryGroup::create([
+        'group_name' => $request->group_name,
+        'basic_salary' => $request->basic_salary,
+        'branch_id' => Auth::user()->branch_id,
+        'allowance' => $request->allowance,
+    ]);
 
-    return redirect()->back()->with('success', 'Salary group added successfully!');
+    return redirect()->back()->with('message', 'Salary group added successfully!');
 }
 
 public function show() {
@@ -460,7 +465,6 @@ public function fetchSalarySlip(Request $request)
 
         $nssf = 0;
         $wcf = 0;
-        $nhif = 0;
         $tuico = 0;
         $gross_salary = 0;
 
@@ -730,7 +734,6 @@ public function details($reference)
         $gross_salary = $basic_salary + $allowance;
 
         $nssf = 0;
-        $wcf = 0;
         $nhif = 0;
         $tuico = 0;
         $advance_pay = 0;
@@ -781,7 +784,6 @@ public function details($reference)
             'allowance' => number_format($allowance, 2),
             'salary_advance' => number_format($advance_pay, 2),
             'nssf' => number_format($nssf, 2),
-            'wcf' => number_format($wcf, 2),
             'nhif' => number_format($nhif, 2),
             'tuico' => number_format($tuico, 2),
             'loan' => number_format($loan, 2), 
