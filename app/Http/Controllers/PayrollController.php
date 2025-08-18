@@ -912,13 +912,15 @@ $loan = $loanRepayments->has($employeeId)
     ];
 })->values();
 
-    $pdf = Pdf::loadView('payrolls.payrolls_details_pdf', [
-        'slips' => $slips,
-        'month' => $month,
-        'settings' => $settings
-    ]);
+$pdf = Pdf::loadView('payrolls.payrolls_details_pdf', [
+    'slips' => $slips,
+    'month' => $month,
+    'settings' => $settings
+])
+->setPaper('a4', 'landscape'); // ✅ lowercase 'a4' is safer
 
-    return $pdf->download("Payroll-Details-{$month}.pdf");
+return $pdf->download("Payroll-Details-{$month}.pdf");
+
 }
 
 

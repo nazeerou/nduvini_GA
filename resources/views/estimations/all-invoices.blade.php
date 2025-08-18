@@ -100,7 +100,7 @@
                                 <a href="invoices/create-invoice/{{ $product->reference }}"> Create Invoice </a>
                                   @else  
                                     <a href="{{ url('invoices/tax-invoices/pdf/'.$product->estimate_ref) }}" target="_blank" class="btn btn-sm btn-pink"> <i class="fa fa-file-pdf-o"> </i> View   </a> 
-                                    <button class="btn btn-success btn-sm  waves-effect waves-light edit_invoice" data-id="{{ $product->reference }}" data-toggle="modal" data-target=".bs-example-modal-sm"><i class="fa fa-edit"></i> Edit  </button>
+                                    <button class="btn btn-success btn-sm  waves-effect waves-light edit_invoice" data-id="{{ $product->id }}" data-toggle="modal" data-target=".bs-example-modal-sm"><i class="fa fa-edit"></i> Edit  </button>
                                     <a href="{{ url('mails/tax-invoice/'.$product->client_name.'/'.$product->estimate_ref) }}" class="btn btn-sm btn-info"> <i class="fa fa-envelope"> </i> &nbsp; Send   </a> 
                                   @endif
                                   @if (Auth::user()->role_id == 1 OR Auth::user()->role_id == 2)
@@ -146,6 +146,8 @@
                         </div>
                       </div>
                      </div> <hr/>
+                     <input type="hidden" name="id" id="id" class="form-control">
+
                      @if (Auth::user()->role_id === 1 || Auth::user()->role_id === 2)
                         <div class="row">
                         <div class="col-md-4">
@@ -700,8 +702,8 @@
                  $("#invoice_number").val(response[0].invoice_number);
                  $("#reference_no").val(response[0].reference);
                  $("#client_id").val(response[0].client_id);
+                 $("#id").val(response[0].id);
                  $("#client_name").val(response[0].client_name);
-                 $("#client_name_label").html("Client Name *"); // Set label text
                 $("#client_name_value").html(response[0].client_name); // Set client name value
              }
          });

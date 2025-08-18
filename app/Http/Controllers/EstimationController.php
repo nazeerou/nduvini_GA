@@ -99,13 +99,13 @@ class EstimationController extends Controller
             ->get();
 
        $sales = DB::table('invoices')
-                 ->select(['clients.place', 'invoices.bill_amount',
+                 ->select(['clients.place', 'invoices.bill_amount', 'invoices.id',
                   'users.fname', 'users.lname', 'invoices.invoice_number', 'invoices.estimate_ref',
                    'invoices.reference', 'invoices.created_date', 'clients.client_name', 'invoices.vehicle_reg', 'estimations.customer_name'])
                  ->join('estimations', 'estimations.reference', '=', 'invoices.estimate_ref')
                  ->leftjoin('clients', 'clients.id', '=', 'invoices.client_id')
                  ->leftjoin('users', 'users.id', '=', 'invoices.user_id')
-                 ->groupBy('clients.place', 'invoices.bill_amount', 'users.fname', 
+                 ->groupBy('clients.place', 'invoices.bill_amount', 'users.fname', 'invoices.id',
                  'users.lname', 'invoices.invoice_number', 'invoices.estimate_ref', 'estimations.customer_name',
                   'invoices.reference', 'invoices.created_date', 'invoices.vehicle_reg', 'clients.client_name')
                  ->where('invoices.branch_id', Auth::user()->branch_id)
@@ -140,7 +140,9 @@ class EstimationController extends Controller
         ->leftJoin('users', 'users.id', '=', 'job_cards.user_id')
         ->leftJoin('clients', 'clients.id', '=', 'estimations.client_name')
         ->where('job_cards.branch_id', Auth::user()->branch_id)
-        ->groupBy('job_cards.job_card_no', 'job_cards.created_date', 'clients.place', 'estimations.customer_name', 'users.fname', 'users.lname', 'invoices.invoice_number', 'job_cards.status', 'estimations.reference', 'estimations.vehicle_reg', 'clients.client_name', 'estimations.created_date') // Removed duplicate grouping
+        ->groupBy('job_cards.job_card_no', 'job_cards.created_date', 'clients.place', 
+        'estimations.customer_name', 'users.fname', 'job_cards.job_card_ID',
+        'users.lname', 'invoices.invoice_number', 'job_cards.status', 'estimations.reference', 'estimations.vehicle_reg', 'clients.client_name', 'estimations.created_date') // Removed duplicate grouping
         ->orderBy('job_cards.job_card_ID', 'desc')
         ->get();
     
@@ -1027,41 +1029,57 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
                     ->select('invoices.client_id', 'clients.client_name', 'invoices.reference', 'invoices.account_name', 'invoices.account_number'
                               ,'invoices.branch_name', 'invoices.swift_code', 'invoices.invoice_number', 'invoices.bank_name', 'invoices.id')
                     ->join('clients', 'clients.id', 'invoices.client_id')
-                    ->where('reference', $id)
+                    ->where('invoices.id', $id)
                     ->get();
     
            return $invoice;  
         
         }
 
-// public function updateInvoice(Request $request)
-// {
-//     // return $request;
+        public function updateInvoice(Request $request)
+        {
+            
+            $invoice = Invoice::findOrFail($request->id);
+        
+            // ✅ Check if invoice_number already exists (excluding current)
+            if (
+                Invoice::where('invoice_number', $request->invoice_number)
+                    ->where('id', '!=', $invoice->id)
+                    ->exists()
+            ) {
+                return redirect()->back()
+                    ->with('error', 'Invoice number already exists.');
+                    // ->withInput();
+            }
+        
+            // ✅ Check if reference already exists (excluding current)
+            if (
+                Invoice::where('reference', $request->reference)
+                    ->where('id', '!=', $invoice->id)
+                    ->exists()
+            ) {
+                return redirect()->back()
+                    ->with('error', 'Reference number already exists.');
+                    // ->withInput();
+            }
+        
+            // If passed, update record
+            $invoice->update([
+                'client_id' => $request->client_name,
+                'invoice_number' => $request->invoice_number,
+                'estimate_reference' => $request->reference,
+                'account_number' => $request->account_number,
+                'account_name' => $request->account_name,
+                'bank_name' => $request->bank_name,
+                'branch_name' => $request->branch_name,
+                'swift_code' => $request->swift_code,
+            ]);
+        
+            return redirect()->back()->with('message', 'Invoice updated successfully!');
+        }
+        
 
-//     // $invoice = Invoice::findOrFail($id);
-
-//     // validation
-//     $request->validate([
-//         'client_id' => 'required|exists:clients,id',
-//         'invoice_number' => 'required|numeric|unique:invoices,invoice_number',
-//         'reference' => 'nullable|string|unique:invoices,reference',
-//     ]);
-
-//     $invoice->update([
-//         'client_id' => $request->client_id,
-//         'invoice_number' => $request->invoice_number,
-//         'reference' => $request->reference,
-//         'account_number' => $request->account_number,
-//         'account_name' => $request->account_name,
-//         'bank_name' => $request->bank_name,
-//         'branch_name' => $request->branch_name,
-//         'swift_code' => $request->swift_code,
-//     ]);
-
-//     return redirect()-back()->with('message', 'Invoice updated successfully!');
-// }
-
-     public function updateInvoice(Request $request) {
+     public function updateInvoice11(Request $request) {
 
       $invoices = DB::table('invoices')
             ->where('reference', $request->reference_no)
