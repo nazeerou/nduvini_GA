@@ -750,12 +750,13 @@ public function details($reference)
                 } elseif ($type === 'percentage') {
                     $rate = floatval($contribution->rate);
                     $amount = ($rate / 100) * $gross_salary;
+                    $amount_ = ($rate / 100) * $basic_salary;
                 }
 
                 switch ($name) {
                     case 'NSSF': $nssf = $amount; break;
                     case 'NHIF': $nhif = $amount; break;
-                    case 'TUICO': $tuico = $amount; break;
+                    case 'TUICO': $tuico = $amount_; break;
                 }
             }
         }
@@ -871,12 +872,13 @@ $slips = $grouped->map(function ($rows, $employeeId) use ($loanRepayments, $sala
             } elseif ($type === 'percentage') {
                 $rate = floatval($contribution->rate);
                 $amount = ($rate / 100) * $gross_salary;
+                $amount_ = ($rate / 100) * $basic_salary;
             }
 
             switch ($name) {
                 case 'NSSF': $nssf = $amount; break;
                 case 'NHIF': $nhif = $amount; break;
-                case 'TUICO': $tuico = $amount; break;
+                case 'TUICO': $tuico = $amount_; break;
             }
         }
     }
@@ -962,7 +964,7 @@ public function bankDetails($reference)
     
         $gross_salary = $basic_salary + $allowance;
 
-        $nssf = $paye = $nhif = 0;
+        $nssf = $paye = $nhif = $tuico = 0;
     
         foreach ($rows as $p) {
             $contribution = $p->contribution;
@@ -976,13 +978,15 @@ public function bankDetails($reference)
                 } elseif ($type === 'percentage') {
                     $rate = floatval($contribution->rate);
                     $amount = ($rate / 100) * $gross_salary;
+                    $amount_ = ($rate / 100) * $basic_salary;
+
                 }
     
                 switch ($name) {
                     case 'NSSF': $nssf = $amount; break;
                     case 'PAYE': $paye = $amount; break;
                     case 'NHIF': $nhif = $amount; break;
-                    case 'TUICO': $nhif = $amount; break;
+                    case 'TUICO': $tuico = $amount_; break;
                 }
             }
         }
@@ -1070,7 +1074,8 @@ public function tuicoVoucherView($reference)
 
     $slips = $employees->map(function ($emp) use ($month) {
         $payroll = $emp->payrolls->where('month', $month)->first();
-        $gross_salary = ($payroll->basic_salary ?? 0) + ($payroll->allowance ?? 0);
+        $gross_salary = ($payroll->basic_salary ?? 0);
+        // + ($payroll->allowance ?? 0);
 
         $tuico = 0;
 
