@@ -159,7 +159,7 @@
                         <div class="col-md-4">
                             <div class="form-group">
                                 <label for="inputEmail3" class="control-label">Reference No.   </label>
-                                <input type="text" name="reference_no" id="reference_no" class="form-control">
+                                <input type="text" name="reference_no" id="reference_no" readonly class="form-control">
                              </div>
                         </div>
                     </div>
