@@ -32,7 +32,7 @@ class PayrollController extends Controller
             'designations.name as position',
             'salary_groups.group_name', 'branches.branch_name',
             'salary_groups.id as salary_id', 'branches.id as branch_id',
-            'salary_groups.basic_salary'
+            'salary_groups.basic_salary', 'salary_groups.allowance'
         )
         ->leftJoin('salary_groups', 'salary_groups.id', 'employees.salary_group_id')
         ->leftJoin('branches', 'branches.id', 'employees.branch_id')
@@ -178,13 +178,12 @@ class PayrollController extends Controller
                 })
                 ->sum('amount');
 
-            $total_deductions = $nssf + $wcf + $nhif + $tuico + $advance_pay + $loan_deductions;
+            $total_deductions = $nssf + $nhif + $tuico + $advance_pay + $loan_deductions;
             $net = $gross - $total_deductions;
 
             $totalGrossAmount += $gross;
             $totalNssf += $nssf;
             $totalNhif += $nhif;
-            $totalWcf += $wcf;
             $totalTuico += $tuico;
 
             $totalNetPaid += $net;
@@ -755,7 +754,6 @@ public function details($reference)
 
                 switch ($name) {
                     case 'NSSF': $nssf = $amount; break;
-                    case 'WCF': $wcf = $amount; break;
                     case 'NHIF': $nhif = $amount; break;
                     case 'TUICO': $tuico = $amount; break;
                 }
@@ -772,7 +770,7 @@ public function details($reference)
     ? $loanRepayments[$employeeId]->sum('amount')
     : 0;
 
-        $net_salary = ($basic_salary + $allowance) - ($nssf + $wcf + $nhif + $tuico + $advance_pay + $loan + $paye);
+        $net_salary = ($basic_salary + $allowance) - ($nssf + $nhif + $tuico + $advance_pay + $loan + $paye);
 
         return [
             'employee_name' => isset($first->payroll->employee)

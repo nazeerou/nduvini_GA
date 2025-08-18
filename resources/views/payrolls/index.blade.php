@@ -153,7 +153,7 @@
         <input type="hidden" name="employees[{{ $employee->id }}][basic_salary]" value="{{ $employee->basic_salary }}">
     </td>
     <td>
-        <input type="text" name="employees[{{ $employee->id }}][allowance]" class="form-control allowance-field" style="width: 100px;" data-employee-id="{{ $employee->id }}" placeholder="e.g. 2000" disabled>
+        <input type="text" name="employees[{{ $employee->id }}][allowance]" value="{{ $employee->allowance }}" class="form-control allowance-field" style="width: 100px;" data-employee-id="{{ $employee->id }}" placeholder="e.g. 2000" readonly>
     </td>
     <td width="400px;">
         <div class="contributions-container" data-employee-id="{{ $employee->id }}">
