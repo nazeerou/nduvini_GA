@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class PayrollContribution extends Model
 {
-    protected $fillable = ['payroll_id', 'contribution_id', 'name'];
+    protected $fillable = ['payroll_id', 'branch_id', 'contribution_id', 'name'];
 
     public function payroll()
     {

@@ -258,6 +258,7 @@ class PayrollController extends Controller
     
                     DB::table('loan_repayments')->insert([
                         'loan_id'       => $loan->id,
+                        'branch_id' => Auth::user()->branch_id,
                         'employee_id'   => $employeeId,
                         'amount'        => $deductAmount,
                         'deduction_date' => $month, // assumes YYYY-MM format input
@@ -339,6 +340,7 @@ class PayrollController extends Controller
                         'contribution_id' => $contribName,
                         'name' => $contribName,
                         'rate' => null,
+                        'branch_id' => Auth::user()->branch_id
                     ]);
                 }
             }
@@ -1308,19 +1310,20 @@ public function rollbackPayroll($id)
         $month = $referencePayroll->month;
 
         // Get all payrolls for the same employee and month
-        $payrolls = Payroll::
-            where('month', $month)
+        $payrolls = Payroll::where('month', $month)
+            ->where('branch_id', Auth::user()->branch_id)
             ->get();
 
         // Delete contributions and payrolls
         foreach ($payrolls as $payroll) {
-            PayrollContribution::where('payroll_id', $id)->delete();
+            PayrollContribution::where('payroll_id', $id)
+                                 ->where('branch_id', Auth::user()->branch_id)->delete();
             $payroll->delete();
         }
 
         // Delete loan repayments for the employee in that month
-        LoanRepayment::
-            where('deduction_date', $month)
+        LoanRepayment::where('deduction_date', $month)
+            ->where('branch_id', Auth::user()->branch_id)
             ->delete();
 
         DB::commit();

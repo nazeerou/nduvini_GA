@@ -11,6 +11,7 @@ class LoanRepayment extends Model
 
     protected $fillable = [
         'loan_id',
+        'branch_id',
         'employee_id',
         'amount',
         'deduction_date',
