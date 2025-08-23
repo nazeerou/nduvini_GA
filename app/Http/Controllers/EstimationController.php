@@ -950,13 +950,14 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
 
      public function saveInvoice(Request $request) {
 
-        
+        // return $request;
+
         $date = date('Y-m-d');
 
         // check if invoice number already exists
-        if (Invoice::where('invoice_number', $request->invoice_no)->exists()) {
-            return redirect()->back()->with('error', 'Invoice number exists.');
-        }
+        // if (Invoice::where('invoice_number', $request->invoice_no)->exists()) {
+        //     return redirect()->back()->with('error', 'Invoice number exists.');
+        // }
     
         // auto-generate invoice number if not provided
         $lastInvoice = DB::table('invoices')->max('invoice_number');
