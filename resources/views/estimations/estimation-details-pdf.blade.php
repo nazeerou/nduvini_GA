@@ -56,7 +56,7 @@
 
     .page-break {
         page-break-before: always;
-        margin-top: 55px;
+        margin-top: 155px;
     }
 
     .page-break-after {
@@ -371,7 +371,7 @@
                 </tbody>
                 </table>
 
-                <div class="page-break" style="margin-top: 100px;"></div>
+                <div class="page-break"></div>
 
                 <table id="sales_report" class="table table-striped table-bordered">
                     <thead>
