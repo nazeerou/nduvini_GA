@@ -60,8 +60,8 @@
     }
 
     .page-break-after {
-        page-break-before: always;
-        margin-top: 620px;
+        /* page-break-before: always; */
+        /* margin-top: 620px; */
     }
 
     #sales_report th {
@@ -189,7 +189,7 @@
     }
 
     .page-break thead tr {
-//        display: table-row;
+       display: table-row;
     }
 
     .branch {
@@ -371,7 +371,7 @@
                 </tbody>
                 </table>
 
-                <div class="page-break" style="margin-top: 90px;"></div>
+                <div class="page-break" style="margin-top: 100px;"></div>
 
                 <table id="sales_report" class="table table-striped table-bordered">
                     <thead>
@@ -491,11 +491,11 @@
                                     <td width="100px"> {{ number_format(($total_sales + $total_labours), 2) }} </td>
                                 </tr>
                                    @if (!is_null($temesa_fee) && $temesa_fee != 0)
-    <tr>
-        <td>TEMESA Fee (8%):</td>
-        <td>{{ number_format($temesa_fee, 2) }}</td>
-    </tr>
-@endif
+                                        <tr>
+                                            <td>TEMESA Fee (8%):</td>
+                                            <td>{{ number_format($temesa_fee, 2) }}</td>
+                                        </tr>
+                                    @endif
 
                                  <td>
                                       VAT Amount (18%)  :
