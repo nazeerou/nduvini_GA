@@ -60,8 +60,8 @@
     }
 
     .page-break-after {
-        /* page-break-before: always; */
-        /* margin-top: 620px; */
+        page-break-before: always;
+        margin-top: 620px;
     }
 
     #sales_report th {

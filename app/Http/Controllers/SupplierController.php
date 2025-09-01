@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use DB;
-use App\Supplier;
-use App\Brand;
-use App\Product;
+use App\Models\Supplier;
+use App\Models\Brand;
+use App\Models\Product;
 use Auth;
 
 class SupplierController extends Controller
