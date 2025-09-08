@@ -61,7 +61,7 @@
 
     .page-break-after {
         page-break-before: always;
-        margin-top: 120px;
+        /* margin-top: 120px; */
     }
 
     #sales_report th {
