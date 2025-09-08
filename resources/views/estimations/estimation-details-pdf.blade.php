@@ -60,7 +60,7 @@
     }
 
     .page-break-after {
-        page-break-before: always;
+        /* page-break-before: always; */
         /* margin-top: 120px; */
     }
 
