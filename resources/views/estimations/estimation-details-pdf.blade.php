@@ -367,7 +367,7 @@
                 <td>{{ number_format($product->total_sales, 2) }}</td>
             </tr>
 
-            @if (($key + 1) % 18 == 0 && $key + 1 < count($sales))
+            @if (($key + 1) % 17 == 0 && $key + 1 < count($sales))
                 </tbody>
                 </table>
 
