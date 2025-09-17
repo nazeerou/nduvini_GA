@@ -417,7 +417,6 @@
                     count($sales) % 21 == '0' OR count($sales) % 22 == '0' OR count($sales) % 23 == 0 OR count($sales) % 24 == '0' OR count($sales) % 25 == '0' OR count($sales) % 26 == 0 OR count($sales) % 27 == '0' OR count($sales) % 28 == '0' OR count($sales) % 29 == 0 OR count($sales) % 30 == '0' OR count($sales) % 31 == '0' )
                     <br/>
                     <div class="page-break-after"></div>
-                     <br/><br/>
                         <table id="total_estimate"  class="table table-striped table-bordered"  align="right">
                            <thead>
                               @if($total_discounts != NULL)
