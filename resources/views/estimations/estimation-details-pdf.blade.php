@@ -465,7 +465,6 @@
                      </thead>
               </table>
               @else
-              <br/>
                     
           <br/><br/>
                         <table id="total_estimate"  class="table table-striped table-bordered"  align="right">
