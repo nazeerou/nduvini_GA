@@ -240,7 +240,7 @@ pointer-events: none;
         @endif
  
  </span>
-    <p> Delivery Date : <span style="float:right"> {{ \Carbon\Carbon::parse($sales[0]->delivery_date)->format('Y-m-d') ?? $sales[0]->created_date }} </span> </p> 
+    <p> Delivery Date : <span style="float:right"> {{ \Carbon\Carbon::parse($sales[0]->created_date)->format('Y-m-d') ?? $sales[0]->created_date }} </span> </p> 
     <p> P.O # :  <span style="float:right"> {{ $sales[0]->reference }} </span></p>    
     </td>
 </t>
