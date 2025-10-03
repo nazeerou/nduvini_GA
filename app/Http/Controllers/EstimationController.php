@@ -129,7 +129,7 @@ class EstimationController extends Controller
             'users.lname',
             'job_cards.job_card_no',
             'estimations.reference',
-            'job_cards.created_date',
+            'estimations.created_date',
             'job_cards.status',
             'clients.client_name',
             'estimations.vehicle_reg',
