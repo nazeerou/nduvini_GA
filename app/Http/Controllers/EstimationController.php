@@ -718,7 +718,14 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
 
         $invoice = date('his');
         $sales = DB::table('estimations')
-                      ->select('estimations.id as id', 'estimations.product_id', 'estimations.qty', 'items.item_name', 'estimations.vat_amount', 'brands.title', 'estimations.vehicle_reg', 'estimations.reference', 'clients.client_name as client', 'estimations.client_name as client_id', 'estimations.client_name','estimations.model', 'estimations.make', 'estimations.chassis', 'estimations.milleage', 'estimations.qty', 'estimations.profoma_invoice', 'estimations.valid_estimate_date', 'estimations.created_date', 'clients.client_name as client_name', 'clients.place', 'estimations.created_date', 'estimations.reference', 'estimations.client_name as client',  'products.model', 'estimations.selling_price', 'estimations.total_sales')
+                      ->select('estimations.id as id', 'estimations.product_id', 'estimations.qty', 'items.item_name',
+                       'estimations.vat_amount', 'brands.title', 'estimations.vehicle_reg', 'estimations.reference',
+                        'clients.client_name as client', 'estimations.client_name as client_id', 'estimations.client_name',
+                        'estimations.model', 'estimations.make', 'estimations.chassis', 'estimations.milleage', 'temesa_fee',
+                         'estimations.qty', 'estimations.profoma_invoice', 'estimations.valid_estimate_date', 
+                         'estimations.created_date', 'clients.client_name as client_name', 'clients.place', 
+                         'estimations.created_date', 'estimations.reference', 'estimations.client_name as client', 
+                          'products.model', 'estimations.selling_price', 'estimations.total_sales')
                       ->join('products', 'products.pid', '=', 'estimations.product_id')
                       ->join('items', 'items.id', 'products.product_id')
                       ->join('brands', 'brands.id', 'products.brand_id')
@@ -749,9 +756,13 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
             $vat_charges =  (0.18) * ($total_sales + $total_labours);
           }
 
-         $grand_total_amount = ($total_sales + $total_labours + $vat_charges);
+        //  $grand_total_amount = ($total_sales + $total_labours + $vat_charges);
+        $temesa_fee =  ($sales[0]->temesa_fee ?? 0) * ($total_sales + $total_labours + $vat_charges);
 
-        return view('estimations.create-job-cards', compact('sales', 'grand_total_amount', 'job_card_no',  'invoice', 'total_bill_amount'));
+        $grand_total_amount = ($total_sales + $total_labours + $temesa_fee + $vat_charges);
+
+
+        return view('estimations.create-job-cards', compact('sales', 'temesa_fee', 'grand_total_amount', 'job_card_no',  'invoice', 'total_bill_amount'));
 
     }
 
