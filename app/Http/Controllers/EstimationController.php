@@ -1280,9 +1280,7 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
            $temesa_fee =  ($sales[0]->temesa_fee ?? 0) * ($total_sales + $total_labours + $vat_charges);
 
          $grand_total_amount = ($total_sales + $total_labours + $temesa_fee + $vat_charges);
-    
-         return $sales;
-         
+             
            $pdf = App::make('dompdf.wrapper');
            $pdf->loadView('estimations.invoice-pdf', compact('sales', 'total_discounts', 'vat_charges', 'grand_total_amount', 'temesa_fee',  'labours', 'total_labours', 'total_sales', 'id', 'products', 'client_name', 'vat_calculations', 'vehicle', 'settings'));
            return $pdf->stream();
