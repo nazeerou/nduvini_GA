@@ -1147,27 +1147,27 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
             
             $invoice = Invoice::findOrFail($request->id);
         
-            // ✅ Check if invoice_number already exists (excluding current)
-            if (
-                Invoice::where('invoice_number', $request->invoice_number)
-                    ->where('id', '!=', $invoice->id)
-                    ->exists()
-            ) {
-                return redirect()->back()
-                    ->with('error', 'Invoice number already exists.');
-                    // ->withInput();
-            }
+            //  Check if invoice_number already exists (excluding current)
+            // if (
+            //     Invoice::where('invoice_number', $request->invoice_number)
+            //         ->where('id', '!=', $invoice->id)
+            //         ->exists()
+            // ) {
+            //     return redirect()->back()
+            //         ->with('error', 'Invoice number already exists.');
+            //         // ->withInput();
+            // }
         
-            // ✅ Check if reference already exists (excluding current)
-            if (
-                Invoice::where('reference', $request->reference)
-                    ->where('id', '!=', $invoice->id)
-                    ->exists()
-            ) {
-                return redirect()->back()
-                    ->with('error', 'Reference number already exists.');
-                    // ->withInput();
-            }
+            // //  Check if reference already exists (excluding current)
+            // if (
+            //     Invoice::where('reference', $request->reference)
+            //         ->where('id', '!=', $invoice->id)
+            //         ->exists()
+            // ) {
+            //     return redirect()->back()
+            //         ->with('error', 'Reference number already exists.');
+            //         // ->withInput();
+            // }
         
             // If passed, update record
             $invoice->update([
