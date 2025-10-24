@@ -399,7 +399,7 @@ pointer-events: none;
                     <div class="total_summations">
                     <table id="total_estimate"  class="table table-striped table-bordered" align="right">
                            <thead>
-                              @if($total_discounts != '')
+                              @if($total_discounts != null)
                                <tr>
                                  <td> <strong> Net Discount : </strong> </td>
                                     <td> {{ number_format($total_discounts, 2) }} </td>
@@ -463,7 +463,7 @@ pointer-events: none;
                     <div class="total_summations">
                     <table id="total_estimate"  class="table table-striped table-bordered" align="right">
                            <thead>
-                              @if($total_discounts != '')
+                              @if($total_discounts != null)
                                <tr>
                                  <td> <strong> Net Discount : </strong> </td>
                                     <td> {{ number_format($total_discounts, 2) }} </td>
