@@ -277,6 +277,7 @@ class EstimationController extends Controller
             'registration_year'=> $accounts['registration_year'],
             'vehicle_reg'=> $accounts['vehicle_reg'],
             'client_name'=> $accounts['client_name'],
+            'temesa_fee'=> $accounts['temesa_fee'],
             'customer_name' => $accounts->customer_name, 
             'total_sales' => (($request['selling_price'][$i]*$request->qty[$i]) - (($request->discount[$i]/100) * ($request['selling_price'][$i]*$request->qty[$i]))),
             'reference' => $request->reference,
