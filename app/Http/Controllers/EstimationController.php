@@ -1172,7 +1172,7 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
             // If passed, update record
             $invoice->update([
                 'client_id' => $request->client_name,
-                'invoice_number' => $request->invoice_number,
+                // 'invoice_number' => $request->invoice_number,
                 'estimate_reference' => $request->reference,
                 'account_number' => $request->account_number,
                 'account_name' => $request->account_name,
