@@ -516,6 +516,9 @@ class EstimationController extends Controller
 
     public function updateProfomaDetails(Request $request)
 {
+
+    return $request;
+    
     // Find invoice either by reference or proforma_invoice
     $invoice = DB::table('estimations')
         ->where(function($query) use ($request) {
