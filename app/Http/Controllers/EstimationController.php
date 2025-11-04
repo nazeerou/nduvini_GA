@@ -530,16 +530,16 @@ class EstimationController extends Controller
     }
 
     // Check which field changed
-    $referenceChanged = $request->reference !== $invoice->reference;
-    $proformaChanged = $request->proforma_invoice !== $invoice->profoma_invoice;
+    // $referenceChanged = $request->reference !== $invoice->reference;
+    // $proformaChanged = $request->proforma_invoice !== $invoice->profoma_invoice;
 
-    if ($referenceChanged && $proformaChanged) {
-        return redirect()->back()->with('error', 'You cannot update Reference and Proforma Invoice at the same time.');
-    }
+    // if ($referenceChanged && $proformaChanged) {
+    //     return redirect()->back()->with('error', 'You cannot update Reference and Proforma Invoice at the same time.');
+    // }
 
-    if (!$referenceChanged && !$proformaChanged) {
-        return redirect()->back()->with('error', 'You must update either Reference or Proforma Invoice.');
-    }
+    // if (!$referenceChanged && !$proformaChanged) {
+    //     return redirect()->back()->with('error', 'You must update either Reference or Proforma Invoice.');
+    // }
 
     // Prepare update data
     $updateData = [
@@ -548,14 +548,15 @@ class EstimationController extends Controller
         "model"        => $request->model, 
         "chassis"      => $request->chassis, 
         "milleage"     => $request->milleage, 
+        "temesa_fee"     => $request->temesa_fee, 
         "created_date" => $request->created_date
     ];
 
-    if ($referenceChanged) {
-        $updateData['reference'] = $request->reference;
-    } elseif ($proformaChanged) {
-        $updateData['profoma_invoice'] = $request->proforma_invoice;
-    }
+    // if ($referenceChanged) {
+    //     $updateData['reference'] = $request->reference;
+    // } elseif ($proformaChanged) {
+    //     $updateData['profoma_invoice'] = $request->proforma_invoice;
+    // }
 
     // Perform update
     DB::table('estimations')

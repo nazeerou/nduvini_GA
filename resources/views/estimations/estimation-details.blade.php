@@ -481,6 +481,19 @@
                         </div>
                     </div>
                     <div class="row">
+                    <div class="col-md-6">
+                           <div class="form-group">
+                            <label for="inputEmail3" class="control-label">TEMESA Fee ? </label>
+                         </div>
+                        <div class="radio radio-info radio-inline">
+                                <input type="radio" name="temesa_fee" value="0.08" name="radioInline">
+                                <label for="inlineRadio1">Yes</label>
+                            </div>
+                            <div class="radio radio-inline">
+                                <input type="radio" name="temesa_fee" value="0" name="radioInline">
+                                <label for="inlineRadio2">No</label>
+                        </div>
+                       </div>               
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="inputEmail3" class="control-label">Created Date </label>
