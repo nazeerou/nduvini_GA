@@ -506,7 +506,7 @@ class EstimationController extends Controller
 
         $edit = DB::table('estimations')
                     ->select('estimations.id', 'estimations.reference', 'estimations.vehicle_reg', 'estimations.profoma_invoice', 'estimations.make', 'estimations.model', 'estimations.created_date', 'estimations.chassis', 'estimations.milleage')
-                    ->where('estimations.branch_id', Auth::user()->branch_id)
+                    // ->where('estimations.branch_id', Auth::user()->branch_id)
                     ->where('estimations.reference', $id)
                     ->get();
 
@@ -522,7 +522,7 @@ class EstimationController extends Controller
             $query->where('reference', $request->reference)
                   ->orWhere('profoma_invoice', $request->proforma_invoice);
         })
-        ->where('branch_id', Auth::user()->branch_id)
+        // ->where('branch_id', Auth::user()->branch_id)
         ->first();
 
     if (!$invoice) {
@@ -563,7 +563,7 @@ class EstimationController extends Controller
         ->where('id', $invoice->id)
         ->update($updateData);
 
-    return redirect()->back()->with('message', 'Proforma updated successfully!');
+    return redirect()->back()->with('message', 'Proforma Updated successfully!');
 }
 
     public function updateP(Request $request)
