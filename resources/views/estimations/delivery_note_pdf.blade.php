@@ -240,7 +240,7 @@ pointer-events: none;
         @endif
  
  </span>
-    <p> Delivery Date : <span style="float:right"> {{ \Carbon\Carbon::parse($sales[0]->created_date)->format('Y-m-d') ?? $sales[0]->created_date }} </span> </p> 
+    <p> Delivery Date : <span style="float:right"> {{ \Carbon\Carbon::parse($sales[0]->delivery_date)->format('Y-m-d') ?? $sales[0]->created_date }} </span> </p> 
     <p> P.O # :  <span style="float:right"> {{ $sales[0]->reference }} </span></p>    
     </td>
 </t>
@@ -338,7 +338,7 @@ pointer-events: none;
 <div class="subject"><strong>RE: COMPLETION OF VEHICLE REPAIRS </strong></div>
 
 <span class="content">I would like to inform you that the repairs of the aforementioned vehicle, which was taken to the workshop <br/> <strong>NDUVINI AUTO WORKS LTD </strong> on 
-{{ \Carbon\Carbon::parse($sales[0]->created_date)->format('d M, Y') }}
+{{ \Carbon\Carbon::parse($sales[0]->delivery_date)->format('d M, Y') ?? $sales->created_date->format('d M, Y') }}
  have been completed. </span> 
 
 <h4><i><strong>The repairs carried out include the following: </strong> </i></h4>

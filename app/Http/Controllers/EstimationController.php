@@ -420,8 +420,8 @@ class EstimationController extends Controller
                       ->where('estimations.branch_id', Auth::user()->branch_id)
                       ->where('estimations.reference', '=', $id)
                       ->get();
-                      
-        $labours = DB::table('labour_estimations')
+
+             $labours = DB::table('labour_estimations')
                       ->select('labour_estimations.estimate_reference', 'charge', 'qty', 'labour_estimations.labour_name', 'labour_estimations.total_amount')
                       ->where('labour_estimations.branch_id', Auth::user()->branch_id)
                       ->where('labour_estimations.estimate_reference', '=', $id)
