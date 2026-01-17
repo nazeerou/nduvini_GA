@@ -133,7 +133,8 @@ class EstimationController extends Controller
             'job_cards.status',
             'clients.client_name',
             'estimations.vehicle_reg',
-            'estimations.customer_name'
+            'estimations.customer_name',
+            'job_cards.delivery_date'
         ])
         ->leftjoin('estimations', 'estimations.job_card_no', '=', 'job_cards.job_card_no')
         ->leftJoin('invoices', 'invoices.estimate_ref', '=', 'estimations.reference') // Corrected leftJoin method parameter order
@@ -142,7 +143,9 @@ class EstimationController extends Controller
         ->where('job_cards.branch_id', Auth::user()->branch_id)
         ->groupBy('job_cards.job_card_no', 'job_cards.created_date', 'clients.place', 
         'estimations.customer_name', 'users.fname', 'job_cards.job_card_ID',
-        'users.lname', 'invoices.invoice_number', 'job_cards.status', 'estimations.reference', 'estimations.vehicle_reg', 'clients.client_name', 'estimations.created_date') // Removed duplicate grouping
+        'users.lname', 'invoices.invoice_number', 'job_cards.status', 
+        'estimations.reference', 'estimations.vehicle_reg', 'clients.client_name',
+         'estimations.created_date', 'job_cards.delivery_date') // Removed duplicate grouping
         ->orderBy('job_cards.job_card_ID', 'desc')
         ->get();
     
@@ -480,23 +483,25 @@ class EstimationController extends Controller
        $pdf->loadView('estimations.delivery_note_pdf', compact('sales', 'total_discounts', 'user_role', 'vat_charges', 'grand_total_amount', 'labours', 'total_labours', 'total_sales', 'id', 'products', 'client_name', 'vat_calculations', 'vehicle', 'settings'));
        return $pdf->stream();
       }
+
    public function editDeliveryNote($reference) {
 
         $edit = DB::table('job_cards')
-                    ->select('job_cards.id', 'job_cards.job_card_no', 'job_cards.estimate_reference', 'job_cards.created_date')
+                    ->select('job_cards.id', 'job_cards.job_card_no', 'job_cards.estimate_reference',
+                     'job_cards.delivery_date')
                     ->where('job_cards.branch_id', Auth::user()->branch_id)
                     ->where('job_cards.estimate_reference', $reference)
                     ->get();
-
-       return $edit;  
+        return $edit;  
 
     }
+
      public function updateDeliveryNote(Request $request) {
 
         $update = DB::table('job_cards')
                     ->where('estimate_reference', $request->reference_no)
                     ->where('branch_id', Auth::user()->branch_id)
-                    ->update(["created_date" => $request->created_date
+                    ->update(["delivery_date" => $request->delivery_date
                             ]);
  
         return redirect()->back()->with('message', 'Delivery updated successful');
@@ -1134,8 +1139,10 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
          public function editInvoice($id) {
 
             $invoice = DB::table('invoices')
-                    ->select('invoices.client_id', 'clients.client_name', 'invoices.reference', 'invoices.account_name', 'invoices.account_number'
-                              ,'invoices.branch_name', 'invoices.swift_code', 'invoices.invoice_number', 'invoices.bank_name', 'invoices.id')
+                    ->select('invoices.client_id', 'clients.client_name', 'invoices.reference', 
+                      'invoices.account_name', 'invoices.account_number', 'invoices.created_date'
+                              ,'invoices.branch_name', 'invoices.swift_code',
+                               'invoices.invoice_number', 'invoices.bank_name', 'invoices.id')
                     ->join('clients', 'clients.id', 'invoices.client_id')
                     ->where('invoices.id', $id)
                     ->get();
@@ -1174,7 +1181,7 @@ $job_card  = DB::table('job_cards')->max('job_card_ID');
             // If passed, update record
             $invoice->update([
                 'client_id' => $request->client_name,
-                // 'invoice_number' => $request->invoice_number,
+                'created_date' => $request->created_date,
                 'estimate_reference' => $request->reference,
                 'account_number' => $request->account_number,
                 'account_name' => $request->account_name,

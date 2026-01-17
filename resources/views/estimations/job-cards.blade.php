@@ -43,7 +43,7 @@
                                 <th> Client Name </th>
                                 <th> Vehicle Reg.  </th>
                                 <th> Job Card No. </th>
-                                <th> Date CREATED</th>
+                                <th> CREATED date</th>
                                 <th> Invoice No. </th>
                                 <th> Status </th>
                                 <th> Delivery Note </th>
@@ -65,7 +65,11 @@
                                      <a href="#">{{ $product->job_card_no }}</a>
                                 </td>
                                 <td width="150px">
-                                    {{ $product->created_date }}
+                                {{ 
+                                    $product->delivery_date
+                                        ? \Carbon\Carbon::parse($product->delivery_date)->format('Y M, d')
+                                        : \Carbon\Carbon::parse($product->created_date)->format('Y M, d')
+                                }}
                                 </td>
                                 <td> 
                               @if ($product->invoice_number == NULL)
@@ -195,8 +199,8 @@
                     <div class="row">
                         <div class="col-md-8">
                             <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Reference No  : </label>
-                                <input type="text" name="job_card_no" class="form-control" id="job_card_no" readonly>
+                                <label for="inputEmail3" class="control-label">Job Card No  : </label>
+                                <input type="text" name="job_card_no" class="form-control job_card_no" readonly>
                                 <input type="hidden" name="reference_no"  id="reference_no" class="form-control">
                             </div>
                         </div>
@@ -206,7 +210,7 @@
                             <div class="form-group">
                             <label for="inputEmail3" class="control-label">Date </label>
                         <div class="input-group">
-                            <input type="text" class="form-control created_date" required autocomplete="off" name="created_date" placeholder="Date Supplied" id="datepicker-autoclose" data-date-format="yyyy-mm-dd">
+                            <input type="text" class="form-control delivery_date" required autocomplete="off" name="delivery_date" placeholder="Date " id="datepicker-autoclose" data-date-format="yyyy-mm-dd">
                             <span class="input-group-addon bg-info b-0 text-white"><i class="ti-calendar"></i></span>
                          </div>
                         </div>
@@ -258,8 +262,8 @@
              success: function (response) {
                  console.log(response[0]);
                  $('#edit_sale_modal').modal('show');
-                 $("#job_card_no").val(response[0].job_card_no);
-                 $(".created_date").val(response[0].created_date);
+                 $(".job_card_no").val(response[0].job_card_no);
+                 $(".delivery_date").val(response[0].delivery_date);
                  $("#reference_no").val(response[0].estimate_reference);
              }
          });

@@ -128,7 +128,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                        <h2 class="modal-title" id="myLargeModalLabel">Edit Invoice  </h2> 
+                        <h2 class="modal-title" id="myLargeModalLabel">Edit Tax Invoice  </h2> 
                     </div>
                     
                     <div class="modal-body">
@@ -161,6 +161,15 @@
                                 <label for="inputEmail3" class="control-label">Reference No.   </label>
                                 <input type="text" name="reference_no" id="reference_no" readonly class="form-control">
                              </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="inputEmail3" class="control-label">Invoice Date </label>
+                                  <div class="input-group">
+                                  <input type="text" class="form-control" id="created_date" autocomplete="off" name="created_date" placeholder="Date " id="datepicker-autoclose" data-date-format="yyyy-mm-dd">
+                                  <span class="input-group-addon bg-info b-0 text-white"><i class="ti-calendar"></i></span>
+                              </div><!-- input-group -->                           
+                            </div>
                         </div>
                     </div>
                     @endif
@@ -704,6 +713,7 @@
                  $("#client_id").val(response[0].client_id);
                  $("#id").val(response[0].id);
                  $("#client_name").val(response[0].client_name);
+                $("#created_date").val(response[0].created_date);
                 $("#client_name_value").html(response[0].client_name); // Set client name value
              }
          });
