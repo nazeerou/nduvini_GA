@@ -350,7 +350,25 @@ pointer-events: none;
                                 <td> {{ $product->discount ? : ''  }} {{ $product->discount ? '%' : ''  }}    </td>
                                 <td> {{number_format($product->total_sales, 2) }} </td>   
                             </tr>
-                          @endforeach  
+                     @if (($key + 1) % 17 == 0 && $key + 1 < count($sales))
+                </tbody>
+                </table>
+
+                <div class="page-break"></div>
+
+                <table id="sales_report" class="table table-striped table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Parts</th>
+                            <th>Qty </th>
+                            <th>Unit </th>
+                            <th>D </th>
+                            <th>Sub Total </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @endif
+                @endforeach
                     </tbody>
                     </table>
                     <br/>
