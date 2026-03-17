@@ -128,9 +128,9 @@ pointer-events: none;
         /* padding-bottom: 20px; */
        }
        
-       .page-break  {
-            page-break-before: always;
-            margin-top: 620px;
+       .page-break {
+        page-break-before: always;
+        margin-top: 155px;
         }
 
         header {
@@ -398,7 +398,7 @@ pointer-events: none;
                         
                   @if (count($sales) % 13 == '0' OR count($sales) % 14 == '0' OR count($sales) % 15 == 0 OR count($sales) % 15 == '0' OR count($sales) % 16 == '0' OR count($sales) % 17 == 0 OR count($sales) % 18 == '0' OR count($sales) % 19 == '0' OR count($sales) % 20 == 0 OR
                     count($sales) % 21 == '0' OR count($sales) % 22 == '0' OR count($sales) % 23 == 0 OR count($sales) % 24 == '0' OR count($sales) % 25 == '0' OR count($sales) % 26 == 0 OR count($sales) % 27 == '0' OR count($sales) % 28 == '0' OR count($sales) % 29 == 0 OR count($sales) % 30 == '0' OR count($sales) % 31 == '0' ) <!-- Apply page break after every 10 rows -->
-                    <div class="page-break"></div>
+                    <div class="page-break-after"></div>
                     <br/>
                    
                 <div id="footer_details">
