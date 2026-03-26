@@ -394,7 +394,7 @@ pointer-events: none;
                           @endforeach  
                     </tbody>
                 </table>
-                  <br/><br/>
+                
                         
                   @if (count($sales) % 13 == '0' OR count($sales) % 14 == '0' OR count($sales) % 15 == 0 OR count($sales) % 15 == '0' OR count($sales) % 16 == '0' OR count($sales) % 17 == 0 OR count($sales) % 18 == '0' OR count($sales) % 19 == '0' OR count($sales) % 20 == 0 OR
                     count($sales) % 21 == '0' OR count($sales) % 22 == '0' OR count($sales) % 23 == 0 OR count($sales) % 24 == '0' OR count($sales) % 25 == '0' OR count($sales) % 26 == 0 OR count($sales) % 27 == '0' OR count($sales) % 28 == '0' OR count($sales) % 29 == 0 OR count($sales) % 30 == '0' OR count($sales) % 31 == '0' ) <!-- Apply page break after every 10 rows -->
@@ -405,11 +405,11 @@ pointer-events: none;
                     <div class="account_details" style="color: #000;">
                     @if($sales[0]->account_number > 0)
                     <table>
-                    <tr<td> BANK DETAILS : <br/> {{ $sales[0]->bank_name ? : '' }}</td></tr>
-                    <tr<td> ACCOUNT NAME : {{ $sales[0]->account_name ? : '' }}</td></tr>
-                    <tr<td> ACCOUNT NO:   {{ $sales[0]->account_number ? : '' }} </td></tr>
-                    <tr<td> BRANCH :  {{ $sales[0]->branch_name ? : '' }}</td></tr>
-                    <tr<td> SWIFT CODE : {{ $sales[0]->swift_code ? : '' }}</td></tr>
+                    <tr><td> BANK DETAILS : <br/> {{ $sales[0]->bank_name ? : '' }}</td></tr>
+                    <tr><td> ACCOUNT NAME : {{ $sales[0]->account_name ? : '' }}</td></tr>
+                    <tr><td> ACCOUNT NO:   {{ $sales[0]->account_number ? : '' }} </td></tr>
+                    <tr><td> BRANCH :  {{ $sales[0]->branch_name ? : '' }}</td></tr>
+                    <tr><td> SWIFT CODE : {{ $sales[0]->swift_code ? : '' }}</td></tr>
                   </table>
                   @else 
                   @endif
