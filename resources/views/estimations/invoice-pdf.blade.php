@@ -146,7 +146,7 @@ pointer-events: none;
         }
         footer {
             position: fixed; 
-            bottom: -85px; 
+            bottom: -45px; 
             left: 0px; 
             right: 0px;
             height: 115px; 
