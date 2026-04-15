@@ -146,7 +146,7 @@ pointer-events: none;
         }
         footer {
             position: fixed; 
-            bottom: -75px; 
+            bottom: -85px; 
             left: 0px; 
             right: 0px;
             height: 115px; 
@@ -323,7 +323,7 @@ pointer-events: none;
                             </tr>
                         </tbody>
                    </table>
-            <br/><br/>
+            <br/>
         <div class="container table-responsive">
                <table id="sales_report" class="table table-striped table-bordered">
                         <thead>
