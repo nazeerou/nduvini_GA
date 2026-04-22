@@ -1,5 +1,7 @@
 @extends('layouts.app_header')
-
+<!-- Add these in your head section if not already present -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 @section('content')
 
 <style>
@@ -166,7 +168,7 @@
                             <div class="form-group">
                                 <label for="inputEmail3" class="control-label">Invoice Date </label>
                                   <div class="input-group">
-                                  <input type="text" class="form-control" id="created_date" autocomplete="off" name="created_date" placeholder="Date " id="datepicker-autoclose" data-date-format="yyyy-mm-dd">
+                                  <input type="text" class="form-control" id="created_date" autocomplete="off" name="created_date" placeholder="Date"  data-date-format="yyyy-mm-dd">
                                   <span class="input-group-addon bg-info b-0 text-white"><i class="ti-calendar"></i></span>
                               </div><!-- input-group -->                           
                             </div>
@@ -447,15 +449,15 @@
                                         <label for="inlineRadio2"> Without VAT </label>
                                   </div>
                         </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                        <label for="inputEmail3" class="control-label">Date  *</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control created_date" required autocomplete="off" name="created_date" placeholder="Date " id="datepicker-autoclose" data-date-format="yyyy-mm-dd">
-                            <span class="input-group-addon bg-primary b-0 text-white"><i class="ti-calendar"></i></span>
-                        </div><!-- input-group -->                           
-                       </div>
-                    </div>
+                 <div class="col-md-3">
+    <div class="form-group">
+        <label for="inputEmail3" class="control-label">Date *</label>
+        <div class="input-group">
+            <input type="text" class="form-control" required autocomplete="off" name="created_date" placeholder="YYYY-MM-DD" id="datepicker-autoclose">
+            <span class="input-group-addon bg-primary b-0 text-white"><i class="ti-calendar"></i></span>
+        </div>
+    </div>
+</div>
                    </div>
               </div>
               <div class="row">
@@ -474,8 +476,66 @@
     </div><!-- /.modal -->
 
 
+
 <script>
-  $(document).ready(function () {
+    $(document).ready(function() {
+
+     // ========== DATE PICKER INITIALIZATION ==========
+    // Initialize datepicker for create invoice modal
+    $('#datepicker-autoclose').datepicker({
+        format: 'yyyy-mm-dd',
+        autoclose: true,
+        todayHighlight: true,
+        todayBtn: 'linked',
+        clearBtn: true,
+        orientation: 'bottom'
+    });
+    
+    // Set today's date as default for create invoice
+    var today = new Date();
+    var todayFormatted = today.getFullYear() + '-' + 
+                       String(today.getMonth() + 1).padStart(2, '0') + '-' + 
+                       String(today.getDate()).padStart(2, '0');
+    
+    if ($('#datepicker-autoclose').val() === '') {
+        $('#datepicker-autoclose').val(todayFormatted);
+    }
+    
+    // Re-initialize datepicker when modal opens (fixes modal positioning)
+    $('#invoice_modal').on('shown.bs.modal', function() {
+        $('#datepicker-autoclose').datepicker({
+            format: 'yyyy-mm-dd',
+            autoclose: true,
+            todayHighlight: true,
+            todayBtn: 'linked',
+            clearBtn: true
+        });
+        // Reset to today if empty
+        if ($('#datepicker-autoclose').val() === '') {
+            $('#datepicker-autoclose').val(todayFormatted);
+        }
+    });
+    
+    // Initialize datepicker for edit modal
+    $('#created_date').datepicker({
+        format: 'yyyy-mm-dd',
+        autoclose: true,
+        todayHighlight: true,
+        todayBtn: 'linked',
+        clearBtn: true
+    });
+    
+    // Re-initialize edit modal datepicker when modal opens
+    $('#edit_modal').on('shown.bs.modal', function() {
+        $('#created_date').datepicker({
+            format: 'yyyy-mm-dd',
+            autoclose: true,
+            todayHighlight: true,
+            todayBtn: 'linked',
+            clearBtn: true
+        });
+    });
+    
     $.ajaxSetup({
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
