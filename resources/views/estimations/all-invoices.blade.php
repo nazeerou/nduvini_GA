@@ -150,7 +150,7 @@
                      </div> <hr/>
                      <input type="hidden" name="id" id="id" class="form-control">
 
-                     @if (Auth::user()->role_id === 1 || Auth::user()->role_id === 2)
+                     <!-- @if (Auth::user()->role_id === 1 || Auth::user()->role_id === 2) -->
                         <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
@@ -174,7 +174,7 @@
                             </div>
                         </div>
                     </div>
-                    @endif
+                    <!-- @endif -->
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">
