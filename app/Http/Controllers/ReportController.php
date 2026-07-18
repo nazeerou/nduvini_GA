@@ -108,12 +108,13 @@ public function getClientStatementPDF(Request $request) {
     $endDate = $request->input('enddate');
 
 
- $saless = DB::table('invoices')
+$query = DB::table('invoices')
     ->select([
         'invoices.invoice_number',
         'invoices.vehicle_reg',
         'invoices.bill_amount',
         'clients.client_name',
+        'clients.place',
         'invoices.created_date',
         DB::raw('COALESCE(SUM(client_payments.paid_amount), 0) as paid_amount')
     ])
@@ -121,25 +122,31 @@ public function getClientStatementPDF(Request $request) {
     ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
     ->where('invoices.branch_id', Auth::user()->branch_id)
     ->where('invoices.client_id', $request->client_id)
-    ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
-        return $query->whereBetween('invoices.created_date', [$startDate, $endDate]);
-    })
     ->groupBy(
         'invoices.invoice_number',
         'invoices.vehicle_reg',
         'invoices.bill_amount',
         'clients.client_name',
+        'clients.place',
         'invoices.created_date'
-    )
-    ->when($paymentStatus === '1', function ($query) {
-        return $query->having('paid_amount', '>', 0);
-    })
-    ->when($paymentStatus === '2', function ($query) {
-        return $query->having('paid_amount', '=', 0);
-    })
-    // No need for paymentStatus = 0 (show all)
-    ->orderBy('invoices.invoice_number', 'desc')
-    ->get();
+    );
+
+// Payment status filtering (using HAVING on the aggregated field)
+if ($paymentStatus == '1') {
+    $query->having('paid_amount', '>', 0);
+} elseif ($paymentStatus == '2') {
+    $query->having('paid_amount', '=', 0);
+}
+// For $paymentStatus == '0' -> no filter (show all)
+
+if (!empty($startDate)) {
+    $query->whereDate('invoices.created_date', '>=', $startDate);
+}
+if (!empty($endDate)) {
+    $query->whereDate('invoices.created_date', '<=', $endDate);
+}
+
+$sales = $query->orderBy('invoices.created_date', 'desc')->get();
 
 
 
