@@ -592,7 +592,7 @@ $sales = DB::table('invoices')
     ->where('invoices.branch_id', Auth::user()->branch_id)
     ->orderBy('invoices.created_date', 'desc')
     ->get();
-    
+
         $accounts = Account::where('is_active', '!=', '')->get();
 
         return view('pages.client-payments', compact('sales', 'accounts', 'clients'));
@@ -779,6 +779,8 @@ return response()->json($stocks);
                     ->where('client_payments.branch_id', Auth::user()->branch_id)
                      ->distinct()
                      ->get();
+
+                     return $client_name;
 
         return view('pages.client-payment-details', compact('client_payments', 'bill', 'total_paid', 'client_name'));
     }
