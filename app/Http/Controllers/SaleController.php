@@ -559,14 +559,38 @@ $clients =  DB::table('clients')->select('*')
             ->where('clients.branch_id', Auth::user()->branch_id)
             ->get();
 
+// $sales = DB::table('invoices')
+//         ->select([DB::raw("SUM(client_payments.paid_amount) as paid_amount"), 'invoices.vehicle_reg', 'invoices.invoice_number', 'invoices.bill_amount', 'clients.client_name', 'clients.place', 'invoices.created_date'])
+//         ->leftjoin('client_payments', 'invoices.invoice_number', '=', 'client_payments.bill_no')
+//         ->leftjoin('clients', 'clients.id', '=', 'invoices.client_id')
+//         ->groupBy('invoices.bill_amount', 'invoices.vehicle_reg', 'invoices.invoice_number', 'client_payments.bill_amount', 'clients.client_name',  'clients.place', 'invoices.created_date')
+//         ->where('invoices.branch_id', Auth::user()->branch_id)
+//         ->orderBy('invoices.created_date', 'desc')
+//         ->get();
+
 $sales = DB::table('invoices')
-        ->select([DB::raw("SUM(client_payments.paid_amount) as paid_amount"), 'invoices.vehicle_reg', 'invoices.invoice_number', 'invoices.bill_amount', 'clients.client_name', 'clients.place', 'invoices.created_date'])
-        ->leftjoin('client_payments', 'invoices.invoice_number', '=', 'client_payments.bill_no')
-        ->leftjoin('clients', 'clients.id', '=', 'invoices.client_id')
-        ->groupBy('invoices.bill_amount', 'invoices.vehicle_reg', 'invoices.invoice_number', 'client_payments.bill_amount', 'clients.client_name',  'clients.place', 'invoices.created_date')
-        ->where('invoices.branch_id', Auth::user()->branch_id)
-        ->orderBy('invoices.created_date', 'desc')
-        ->get();
+    ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+    ->leftJoinSub(
+        DB::table('client_payments')
+            ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
+            ->groupBy('bill_no'),
+        'payments',
+        'invoices.invoice_number',
+        '=',
+        'payments.bill_no'
+    )
+    ->select([
+        'invoices.vehicle_reg',
+        'invoices.invoice_number',
+        'invoices.bill_amount',
+        'clients.client_name',
+        'clients.place',
+        'invoices.created_date',
+        DB::raw('COALESCE(payments.total_paid, 0) as paid_amount')
+    ])
+    ->where('invoices.branch_id', Auth::user()->branch_id)
+    ->orderBy('invoices.created_date', 'desc')
+    ->get();
 
         $accounts = Account::where('is_active', '!=', '')->get();
 
