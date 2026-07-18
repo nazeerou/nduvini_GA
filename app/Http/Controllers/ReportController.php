@@ -108,18 +108,17 @@ public function getClientStatementPDF(Request $request) {
     $endDate = $request->input('enddate');
 
 
-    $saless = DB::table('invoices')
+ $saless = DB::table('invoices')
     ->select([
-        DB::raw("SUM(client_payments.paid_amount) as paid_amount"),
-        'invoices.vehicle_reg',
         'invoices.invoice_number',
+        'invoices.vehicle_reg',
         'invoices.bill_amount',
         'clients.client_name',
         'invoices.created_date',
+        DB::raw('COALESCE(SUM(client_payments.paid_amount), 0) as paid_amount')
     ])
     ->leftJoin('client_payments', 'invoices.invoice_number', '=', 'client_payments.bill_no')
     ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
-    ->leftJoin('estimations', 'estimations.reference', 'invoices.estimate_ref')
     ->where('invoices.branch_id', Auth::user()->branch_id)
     ->where('invoices.client_id', $request->client_id)
     ->when($startDate && $endDate, function ($query) use ($startDate, $endDate) {
@@ -130,73 +129,17 @@ public function getClientStatementPDF(Request $request) {
         'invoices.vehicle_reg',
         'invoices.bill_amount',
         'clients.client_name',
-        'invoices.created_date',
-    
+        'invoices.created_date'
     )
     ->when($paymentStatus === '1', function ($query) {
-        return $query->havingRaw('SUM(client_payments.paid_amount) > 0');
+        return $query->having('paid_amount', '>', 0);
     })
     ->when($paymentStatus === '2', function ($query) {
-        return $query->havingRaw('SUM(client_payments.paid_amount) IS NULL OR SUM(client_payments.paid_amount) = 0');
+        return $query->having('paid_amount', '=', 0);
     })
+    // No need for paymentStatus = 0 (show all)
     ->orderBy('invoices.invoice_number', 'desc')
     ->get();
-
-
-    $query = DB::table('invoices')
-    ->select([
-        'client_payments.paid_amount',
-        'invoices.account',
-        'invoices.vehicle_reg',
-        'invoices.invoice_number',
-        'invoices.bill_amount',
-        'clients.client_name',
-        'clients.place',
-        'invoices.created_date'
-    ])
-    ->leftjoin('client_payments', 'invoices.invoice_number', '=', 'client_payments.bill_no')
-    ->leftjoin('clients', 'clients.id', '=', 'invoices.client_id')
-    ->groupBy(
-        'invoices.bill_amount',
-        'invoices.vehicle_reg',
-        'invoices.account',
-        'invoices.invoice_number',
-        'client_payments.bill_amount',
-        'clients.client_name',
-        'clients.place',
-        'client_payments.paid_amount',
-        'invoices.created_date'
-    )
-    ->where('invoices.branch_id', Auth::user()->branch_id)
-    ->where('invoices.client_id', $request->client_id);
-
-if ($paymentStatus == '1') {
-    // For Paid invoices (paid_amount > 0)
-    $query->where('client_payments.paid_amount', '>', 0);
-} elseif ($paymentStatus == '2') {
-    // For Unpaid invoices (paid_amount is NULL or 0)
-    $query->where(function ($query) {
-        $query->whereNull('client_payments.paid_amount')
-              ->orWhere('client_payments.paid_amount', '=', 0);
-    });
-} elseif ($paymentStatus == '0') {
-    // To show both Paid and Unpaid (when paid_amount is NULL or > 0)
-    // This part handles showing both paid and unpaid invoices
-    $query->where(function ($query) {
-        $query->whereNull('client_payments.paid_amount')
-              ->orWhere('client_payments.paid_amount', '>', 0);
-    });
-}
-
-if (!empty($startDate)) {
-    $query->whereDate('invoices.created_date', '>=', $startDate);
-}
-
-if (!empty($endDate)) {
-    $query->whereDate('invoices.created_date', '<=', $endDate);
-}
-
-$sales = $query->orderBy('invoices.created_date', 'desc')->get();
 
 
 
