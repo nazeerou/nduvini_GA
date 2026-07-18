@@ -103,56 +103,65 @@ class ReportController extends Controller
 
  
 public function getClientStatementPDF(Request $request) {
-    $paymentStatus = $request->input('payment'); // Assuming payment type can be 'all', 'credit', or 'debit'
+    $paymentStatus = $request->input('payment'); // '0'=all, '1'=paid, '2'=unpaid
     $startDate = $request->input('startdate');
     $endDate = $request->input('enddate');
+    $clientId = $request->client_id;
+    $branchId = Auth::user()->branch_id;
 
+    // --------------------------------------------
+    // 1. Invoice list with aggregated paid amount
+    // --------------------------------------------
+    $salesQuery = DB::table('invoices')
+        ->select([
+            'invoices.invoice_number',
+            'invoices.vehicle_reg',
+            'invoices.bill_amount',
+            'clients.client_name',
+            'clients.place',
+            'invoices.created_date',
+            DB::raw('COALESCE(SUM(client_payments.paid_amount), 0) as paid_amount')
+        ])
+        // Join payments with branch condition to avoid cross‑branch mixing
+        ->leftJoin('client_payments', function ($join) use ($branchId) {
+            $join->on('invoices.invoice_number', '=', 'client_payments.bill_no')
+                 ->where('client_payments.branch_id', '=', $branchId);
+        })
+        ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+        ->where('invoices.branch_id', $branchId)
+        ->where('invoices.client_id', $clientId)
+        ->groupBy(
+            'invoices.invoice_number',
+            'invoices.vehicle_reg',
+            'invoices.bill_amount',
+            'clients.client_name',
+            'clients.place',
+            'invoices.created_date'
+        );
 
-$query = DB::table('invoices')
-    ->select([
-        'invoices.invoice_number',
-        'invoices.vehicle_reg',
-        'invoices.bill_amount',
-        'clients.client_name',
-        'clients.place',
-        'invoices.created_date',
-        DB::raw('COALESCE(SUM(client_payments.paid_amount), 0) as paid_amount')
-    ])
-    ->leftJoin('client_payments', 'invoices.invoice_number', '=', 'client_payments.bill_no')
-    ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
-    ->where('invoices.branch_id', Auth::user()->branch_id)
-    ->where('invoices.client_id', $request->client_id)
-    ->groupBy(
-        'invoices.invoice_number',
-        'invoices.vehicle_reg',
-        'invoices.bill_amount',
-        'clients.client_name',
-        'clients.place',
-        'invoices.created_date'
-    );
+    // Date filters
+    if (!empty($startDate)) {
+        $salesQuery->whereDate('invoices.created_date', '>=', $startDate);
+    }
+    if (!empty($endDate)) {
+        $salesQuery->whereDate('invoices.created_date', '<=', $endDate);
+    }
 
-// Payment status filtering (using HAVING on the aggregated field)
-if ($paymentStatus == '1') {
-    $query->having('paid_amount', '>', 0);
-} elseif ($paymentStatus == '2') {
-    $query->having('paid_amount', '=', 0);
-}
-// For $paymentStatus == '0' -> no filter (show all)
+    // Payment status filter using HAVING on the aggregated paid_amount
+    if ($paymentStatus == '1') {          // Paid
+        $salesQuery->having('paid_amount', '>', 0);
+    } elseif ($paymentStatus == '2') {    // Unpaid
+        $salesQuery->having('paid_amount', '=', 0);
+    }
+    // $paymentStatus == '0' -> show all (no HAVING)
 
-if (!empty($startDate)) {
-    $query->whereDate('invoices.created_date', '>=', $startDate);
-}
-if (!empty($endDate)) {
-    $query->whereDate('invoices.created_date', '<=', $endDate);
-}
+    $sales = $salesQuery->orderBy('invoices.created_date', 'desc')->get();
 
-$sales = $query->orderBy('invoices.created_date', 'desc')->get();
-
-
-
-    $total_credit = ClientPayment::
-        where('client_id', $request->client_id)
-        ->where('branch_id', Auth::user()->branch_id)
+    // --------------------------------------------
+    // 2. Total payments (credit) for the client
+    // --------------------------------------------
+    $total_credit = ClientPayment::where('client_id', $clientId)
+        ->where('branch_id', $branchId)
         ->when(!empty($startDate), function ($query) use ($startDate) {
             return $query->whereDate('created_date', '>=', $startDate);
         })
@@ -161,9 +170,11 @@ $sales = $query->orderBy('invoices.created_date', 'desc')->get();
         })
         ->sum('paid_amount');
 
-    $total_charges = Invoice::
-        where('branch_id', Auth::user()->branch_id)
-        ->where('client_id', $request->client_id)
+    // --------------------------------------------
+    // 3. Total charges (bills) for the client
+    // --------------------------------------------
+    $total_charges = Invoice::where('branch_id', $branchId)
+        ->where('client_id', $clientId)
         ->when(!empty($startDate), function ($query) use ($startDate) {
             return $query->whereDate('created_date', '>=', $startDate);
         })
@@ -172,21 +183,29 @@ $sales = $query->orderBy('invoices.created_date', 'desc')->get();
         })
         ->sum('bill_amount');
 
-    $settings = DB::table('general_settings')->select('business_name', 'logo_file', 'type', 'address')->get();
-
-    $clients = DB::table('clients')->select('client_name', 'address', 'place', 'vrn', 'tin')
-        ->where('id', $request->client_id)
-        ->where('branch_id', Auth::user()->branch_id)
+    // --------------------------------------------
+    // 4. Client & settings data
+    // --------------------------------------------
+    $settings = DB::table('general_settings')
+        ->select('business_name', 'logo_file', 'type', 'address')
         ->get();
-    $payment = $paymentStatus;
-   $startdate = $startDate;
-   $enddate = $endDate;
+
+    $clients = DB::table('clients')
+        ->select('client_name', 'address', 'place', 'vrn', 'tin')
+        ->where('id', $clientId)
+        ->where('branch_id', $branchId)
+        ->get();
+
+    // --------------------------------------------
+    // 5. Generate PDF
+    // --------------------------------------------
     $pdf = \App::make('dompdf.wrapper');
-    $pdf->loadView('clients.client_statement_pdf',
- compact('settings', 'payment', 'clients', 'total_credit', 'total_charges', 'sales', 'startdate', 'enddate'));
+    $pdf->loadView('clients.client_statement_pdf', compact(
+        'settings', 'paymentStatus', 'clients', 'total_credit',
+        'total_charges', 'sales', 'startDate', 'endDate'
+    ));
     return $pdf->stream();
 }
-
 
 
         public function getPettyCashReports () {
