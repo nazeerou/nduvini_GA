@@ -761,7 +761,7 @@ return response()->json($stocks);
     public function getClientPaymentDetails($bill) {
                    
         $client_payments = ClientPayment::where('bill_no', $bill)
-                           ->where('client_payments.branch_id', Auth::user()->branch_id)
+                           ->where('branch_id', Auth::user()->branch_id)
                            ->get();
 
         $total_paid = DB::table('client_payments')
