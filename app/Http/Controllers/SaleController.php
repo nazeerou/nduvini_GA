@@ -770,16 +770,16 @@ return response()->json($stocks);
                     ->where('branch_id', Auth::user()->branch_id)   
                     ->sum('paid_amount');
                     
-        $client_name = DB::table('client_payments')
-                     ->select('client_payments.bill_no', 'estimations.client_name', 'clients.client_name as client_name', 'clients.place')
-                     ->join('invoices', 'invoices.invoice_number', 'client_payments.bill_no')
-                     ->join('estimations', 'estimations.job_card_no', 'invoices.job_card_no')
-                     ->join('clients', 'clients.id', 'estimations.client_name')
-                     ->where('client_payments.bill_no', $bill)
+       $client_name = DB::table('client_payments')
+                    ->select('client_payments.bill_no', 'clients.client_name', 'clients.place')
+                    ->join('invoices', function ($join) {
+                        $join->on('invoices.invoice_number', '=', 'client_payments.bill_no')
+                            ->where('invoices.branch_id', '=', Auth::user()->branch_id);
+                    })
+                    ->join('clients', 'clients.id', '=', 'invoices.client_id')
+                    ->where('client_payments.bill_no', $bill)
                     ->where('client_payments.branch_id', Auth::user()->branch_id)
-                     ->get();
-
-                     return $client_name;
+                    ->get();
 
         return view('pages.client-payment-details', compact('client_payments', 'bill', 'total_paid', 'client_name'));
     }
