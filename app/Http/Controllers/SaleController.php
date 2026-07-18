@@ -573,6 +573,7 @@ $sales = DB::table('invoices')
     ->leftJoinSub(
         DB::table('client_payments')
             ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
+            ->where('client_payments.branch_id', Auth::user()->branch_id) // ← fix: only payments from the same branch
             ->groupBy('bill_no'),
         'payments',
         'invoices.invoice_number',
@@ -591,7 +592,7 @@ $sales = DB::table('invoices')
     ->where('invoices.branch_id', Auth::user()->branch_id)
     ->orderBy('invoices.created_date', 'desc')
     ->get();
-
+    
         $accounts = Account::where('is_active', '!=', '')->get();
 
         return view('pages.client-payments', compact('sales', 'accounts', 'clients'));
@@ -766,7 +767,7 @@ return response()->json($stocks);
 
        $total_paid = DB::table('client_payments')
                     ->where('bill_no', $bill)
-                    ->where('branch_id', Auth::user()->branch_id)   // or 'client_payments.branch_id'
+                    ->where('branch_id', Auth::user()->branch_id)   
                     ->sum('paid_amount');
                     
         $client_name = DB::table('client_payments')
