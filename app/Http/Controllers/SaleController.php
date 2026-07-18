@@ -764,10 +764,11 @@ return response()->json($stocks);
                            ->where('branch_id', Auth::user()->branch_id)
                            ->get();
 
-        $total_paid = DB::table('client_payments')
-                        ->where('bill_no', $bill)->sum('paid_amount')
-                        ->where('client_payments.branch_id', Auth::user()->branch_id);
-
+       $total_paid = DB::table('client_payments')
+                    ->where('bill_no', $bill)
+                    ->where('branch_id', Auth::user()->branch_id)   // or 'client_payments.branch_id'
+                    ->sum('paid_amount');
+                    
         $client_name = DB::table('client_payments')
                      ->select('client_payments.bill_no', 'estimations.client_name', 'clients.client_name as client_name', 'clients.place')
                      ->join('invoices', 'invoices.invoice_number', 'client_payments.bill_no')
