@@ -196,6 +196,11 @@ public function getClientStatementPDF(Request $request) {
         ->where('branch_id', $branchId)
         ->get();
 
+
+   $payment = $paymentStatus;
+   $startdate = $startDate;
+   $enddate = $endDate;
+
     // --------------------------------------------
     // 5. Generate PDF
     // --------------------------------------------
@@ -206,7 +211,6 @@ public function getClientStatementPDF(Request $request) {
     ));
     return $pdf->stream();
 }
-
 
         public function getPettyCashReports () {
             $clients = Supplier::all();
