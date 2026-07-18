@@ -769,7 +769,7 @@ return response()->json($stocks);
                      ->join('invoices', 'invoices.invoice_number', 'client_payments.bill_no')
                      ->join('estimations', 'estimations.job_card_no', 'invoices.job_card_no')
                      ->join('clients', 'clients.id', 'estimations.client_name')
-                     ->where('invoices.invoice_number', $bill)
+                     ->where('client_payments.bill_no', $bill)
                     ->where('client_payments.branch_id', Auth::user()->branch_id)
                      ->distinct()
                      ->get();
