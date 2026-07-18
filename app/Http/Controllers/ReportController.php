@@ -206,7 +206,7 @@ public function getClientStatementPDF(Request $request) {
     // --------------------------------------------
     $pdf = \App::make('dompdf.wrapper');
     $pdf->loadView('clients.client_statement_pdf', compact(
-        'settings', 'paymentStatus', 'clients', 'total_credit',
+        'settings', 'payment', 'clients', 'total_credit',
         'total_charges', 'sales', 'startdate', 'enddate'
     ));
     return $pdf->stream();
