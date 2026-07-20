@@ -67,6 +67,8 @@
                                 <td width="150px">
                                 {{ 
                                     $product->delivery_date
+                                        ? $product->delivery_date->format('Y M, d')
+                                        : $product->created_date->format('Y M, d')
                                 }}
                                 </td>
                                 <td> 
