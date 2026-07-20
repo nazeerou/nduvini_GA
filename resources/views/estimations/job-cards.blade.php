@@ -65,10 +65,10 @@
                                      <a href="#">{{ $product->job_card_no }}</a>
                                 </td>
                                 <td width="150px">
-                               {{ 
+                              {{ 
                                     !empty($product->delivery_date)
-                                        ? \Carbon\Carbon::parse($product->delivery_date)->format('Y M, d')
-                                        : \Carbon\Carbon::parse($product->created_date)->format('Y M, d')
+                                        ? \Carbon\Carbon::createFromFormat('d/m/Y', $product->delivery_date)->format('Y M, d')
+                                        : \Carbon\Carbon::createFromFormat('d/m/Y', $product->created_date)->format('Y M, d')
                                 }}
                                 </td>
                                 <td> 
