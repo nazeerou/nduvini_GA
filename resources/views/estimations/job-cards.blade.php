@@ -66,9 +66,7 @@
                                 </td>
                                 <td width="150px">
                              {{ 
-                                  !empty($product->delivery_date)
-                                      ? \Carbon\Carbon::parse(str_replace('/', '-', $product->delivery_date))->format('Y M, d')
-                                      : \Carbon\Carbon::parse($product->created_date)->format('Y M, d')
+                                  $product->delivery_date ?? $product->created_date
                               }}
                                 </td>
                                 <td> 
