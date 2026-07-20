@@ -65,9 +65,11 @@
                                      <a href="#">{{ $product->job_card_no }}</a>
                                 </td>
                                 <td width="150px">
-                             {{ 
-                                  $product->delivery_date ?? $product->created_date
-                              }}
+                               {{ 
+                      !empty($product->delivery_date)
+                          ? \Carbon\Carbon::parse($product->delivery_date)->format('Y M, d')
+                          : \Carbon\Carbon::parse($product->created_date)->format('Y M, d')
+                  }}
                                 </td>
                                 <td> 
                               @if ($product->invoice_number == NULL)
