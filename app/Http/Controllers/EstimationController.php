@@ -524,24 +524,24 @@ class EstimationController extends Controller
      public function updateProfomaDetails(Request $request)
     {
         // ----- 1. Validation -----
-        $validator = Validator::make($request->all(), [
-            'id'              => 'required|integer|exists:estimations,id',
-            'vehicle_reg'     => 'nullable|string|max:255',
-            'reference'       => 'nullable|string|max:255',
-            'proforma_invoice'=> 'nullable|string|max:255',
-            'make'            => 'nullable|string|max:255',
-            'model'           => 'nullable|string|max:255',
-            'chassis'         => 'nullable|string|max:255',
-            'milleage'        => 'nullable|string|max:255',
-            'temesa_fee'      => 'nullable|numeric|in:0,0.08',
-            'created_date'    => 'nullable|date',
-        ]);
+        // $validator = Validator::make($request->all(), [
+        //     'id'              => 'required|integer|exists:estimations,id',
+        //     'vehicle_reg'     => 'nullable|string|max:255',
+        //     'reference'       => 'nullable|string|max:255',
+        //     'proforma_invoice'=> 'nullable|string|max:255',
+        //     'make'            => 'nullable|string|max:255',
+        //     'model'           => 'nullable|string|max:255',
+        //     'chassis'         => 'nullable|string|max:255',
+        //     'milleage'        => 'nullable|string|max:255',
+        //     'temesa_fee'      => 'nullable|numeric|in:0,0.08',
+        //     'created_date'    => 'nullable|date',
+        // ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
+        // if ($validator->fails()) {
+        //     return redirect()->back()
+        //         ->withErrors($validator)
+        //         ->withInput();
+        // }
 
         // ----- 2. Find the estimation record -----
         // Primary lookup by hidden ID (recommended)
