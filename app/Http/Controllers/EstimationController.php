@@ -520,81 +520,71 @@ class EstimationController extends Controller
 
     }
 
+public function updateProfomaDetails(Request $request)
+{
+    // ----- 1. Validation -----
+    $request->validate([
+        'reference'        => 'required|string|max:255',
+        'proforma_invoice' => 'nullable|string|max:255',
+        'vehicle_reg'      => 'nullable|string|max:255',
+        'make'             => 'nullable|string|max:255',
+        'model'            => 'nullable|string|max:255',
+        'chassis'          => 'nullable|string|max:255',
+        'milleage'         => 'nullable|string|max:255',
+        'temesa_fee'       => 'nullable|numeric|in:0,0.08',
+        'created_date'     => 'nullable|date',
+    ]);
 
-     public function updateProfomaDetails(Request $request)
-    {
-        // ----- 1. Validation -----
-        // $validator = Validator::make($request->all(), [
-        //     'id'              => 'required|integer|exists:estimations,id',
-        //     'vehicle_reg'     => 'nullable|string|max:255',
-        //     'reference'       => 'nullable|string|max:255',
-        //     'proforma_invoice'=> 'nullable|string|max:255',
-        //     'make'            => 'nullable|string|max:255',
-        //     'model'           => 'nullable|string|max:255',
-        //     'chassis'         => 'nullable|string|max:255',
-        //     'milleage'        => 'nullable|string|max:255',
-        //     'temesa_fee'      => 'nullable|numeric|in:0,0.08',
-        //     'created_date'    => 'nullable|date',
-        // ]);
+    // ----- 2. Check that at least one row exists for this reference -----
+    $exists = DB::table('estimations')
+        ->where('reference', $request->reference)
+        // ->where('branch_id', Auth::user()->branch_id) // uncomment if needed
+        ->exists();
 
-        // if ($validator->fails()) {
-        //     return redirect()->back()
-        //         ->withErrors($validator)
-        //         ->withInput();
-        // }
+    if (!$exists) {
+        return redirect()->back()->with('error', 'Proforma not found.');
+    }
 
-        // ----- 2. Find the estimation record -----
-        // Primary lookup by hidden ID (recommended)
-        $invoice = DB::table('estimations')
-            ->where('id', $request->id)
-            // ->where('branch_id', Auth::user()->branch_id) // uncomment if needed
-            ->first();
+    // ----- 3. Prepare shared update data (applies to ALL rows with this reference) -----
+    $updateData = [
+        'proforma_invoice' => $request->proforma_invoice,
+        'created_date'     => $request->created_date,
+        'temesa_fee'       => $request->temesa_fee ?? 0,
+    ];
 
-        // Fallback: if no ID (e.g., old modal), try reference / proforma invoice
-        if (!$invoice) {
-            $invoice = DB::table('estimations')
-                ->where(function ($query) use ($request) {
-                    $query->where('reference', $request->reference)
-                          ->orWhere('profoma_invoice', $request->proforma_invoice);
-                })
-                // ->where('branch_id', Auth::user()->branch_id)
-                ->first();
-        }
+    // ----- 4. Per-vehicle fields (only update the specific row identified by hidden ID) -----
+    $vehicleData = [
+        'vehicle_reg' => $request->vehicle_reg,
+        'make'        => $request->make,
+        'model'       => $request->model,
+        'chassis'     => $request->chassis,
+        'milleage'    => $request->milleage,
+    ];
 
-        if (!$invoice) {
-            return redirect()->back()->with('error', 'Proforma not found.');
-        }
-
-        // ----- 3. Prepare update data -----
-        $updateData = [
-            'vehicle_reg'   => $request->vehicle_reg,
-            'make'          => $request->make,
-            'model'         => $request->model,
-            'chassis'       => $request->chassis,
-            'milleage'      => $request->milleage,
-            'temesa_fee'    => $request->temesa_fee ?? 0, // default to 0 if not set
-            'created_date'  => $request->created_date,
-        ];
-
-        // Only update reference if it was provided and differs
-        if ($request->filled('reference') && $request->reference !== $invoice->reference) {
-            $updateData['reference'] = $request->reference;
-        }
-
-        // Only update proforma invoice if provided and differs
-        // NOTE: DB column is `profoma_invoice` (misspelled in your schema)
-        if ($request->filled('proforma_invoice') && $request->proforma_invoice !== $invoice->profoma_invoice) {
-            $updateData['profoma_invoice'] = $request->proforma_invoice;
-        }
-
-        // ----- 4. Perform the update -----
+    DB::beginTransaction();
+    try {
+        // 4a. Update shared/reference-level fields on ALL rows with this reference
         DB::table('estimations')
-            ->where('id', $invoice->id)
+            ->where('reference', $request->reference)
+            // ->where('branch_id', Auth::user()->branch_id)
             ->update($updateData);
 
-        // ----- 5. Redirect back with success -----
-        return redirect()->back()->with('message', 'Proforma updated successfully!');
+        // 4b. Update the specific vehicle row (identified by hidden ID)
+        if ($request->filled('id')) {
+            DB::table('estimations')
+                ->where('id', $request->id)
+                ->update($vehicleData);
+        }
+
+        DB::commit();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Update failed: ' . $e->getMessage());
     }
+
+    // ----- 5. Redirect back with success -----
+    return redirect()->back()->with('message', 'Proforma updated successfully for all related items!');
+}
 
 
     public function updateP(Request $request)
