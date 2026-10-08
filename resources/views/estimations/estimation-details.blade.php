@@ -446,7 +446,7 @@
             <div class="col-md-6">
               <div class="form-group">
                 <label class="control-label">Reference #</label>
-                <input type="text" name="reference" id="reference" class="form-control" readonly>
+                <input type="text" name="reference" id="reference" value="{{ $id }}" class="form-control" readonly>
               </div>
             </div>
           </div>
