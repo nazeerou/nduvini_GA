@@ -679,6 +679,7 @@ $(function() {
                  $("#proforma_invoice").val(response[0].profoma_invoice);
                  $("#milleage").val(response[0].milleage);
                  $("#created_date").val(response[0].created_date);
+                $("#temesa_fee").val(response[0].temesa_fee);
              }
          });
     });

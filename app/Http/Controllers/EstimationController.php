@@ -525,7 +525,7 @@ public function updateProfomaDetails(Request $request)
     // ----- 1. Validation -----
     $request->validate([
         'reference'        => 'required|string|max:255',
-        'proforma_invoice' => 'nullable|string|max:255',
+        'profoma_invoice' => 'nullable|string|max:255',
         'vehicle_reg'      => 'nullable|string|max:255',
         'make'             => 'nullable|string|max:255',
         'model'            => 'nullable|string|max:255',
@@ -547,7 +547,7 @@ public function updateProfomaDetails(Request $request)
 
     // ----- 3. Prepare shared update data (applies to ALL rows with this reference) -----
     $updateData = [
-        'proforma_invoice' => $request->proforma_invoice,
+        'profoma_invoice' => $request->proforma_invoice,
         'created_date'     => $request->created_date,
         'temesa_fee'       => $request->temesa_fee ?? 0,
     ];
@@ -587,64 +587,7 @@ public function updateProfomaDetails(Request $request)
 }
 
 
-    public function updateP(Request $request)
-{
-    $invoice = DB::table('estimations')
-        ->where('reference', $request->reference)
-        ->where('branch_id', Auth::user()->branch_id)
-        ->first();
-
-    if (!$invoice) {
-        return redirect()->back()->with('error', 'Proforma not found.');
-    }
-
-    // Check if fields changed
-    $referenceChanged = $request->reference !== $invoice->reference;
-    $proformaChanged = $request->proforma_invoice !== $invoice->profoma_invoice;
-
-    if ($referenceChanged && $proformaChanged) {
-        return redirect()->back()->with('error', 'You cannot update Reference and Proforma Invoice at the same time.');
-    }
-
-    if (!$referenceChanged && !$proformaChanged) {
-        return redirect()->back()->with('error', 'You must update either Reference or Proforma Invoice.');
-    }
-
-    // Perform update
-    DB::table('estimations')
-        ->where('id', $invoice->id)
-        ->update([
-            "vehicle_reg"      => $request->vehicle_reg,
-            "make"             => $request->make, 
-            "model"            => $request->model, 
-            "chassis"          => $request->chassis, 
-            "milleage"         => $request->milleage, 
-            "profoma_invoice"  => $request->proforma_invoice,
-            "created_date"     => $request->created_date,
-            "reference"        => $request->reference
-        ]);
-
-    return redirect()->back()->with('message', 'Proforma updated successfully!');
-}
-
-
-    //  public function updateProfomaDetails(Request $request) {
-
-    //     $update = DB::table('estimations')
-    //                 ->where('reference', $request->reference)
-    //                 ->where('branch_id', Auth::user()->branch_id)
-    //                 ->update(["vehicle_reg" => $request->vehicle_reg,
-    //                          "make" => $request->make, 
-    //                         "model"=> $request->model, 
-    //                         "chassis"=> $request->chassis, 
-    //                         "milleage"=> $request->milleage, 
-    //                         "profoma_invoice" => $request->proforma_invoice,
-    //                         "created_date" => $request->created_date,
-    //                         "reference" => $request->reference
-    //                     ]);
- 
-    //     return redirect()->back()->with('message', 'Proforma updated successful');
-    //  } 
+   
     public function getEstimationDetailsPDF($id) {
     
         $settings= DB::table('general_settings')->select('business_name', 'logo_file', 'type', 'address')->get();
