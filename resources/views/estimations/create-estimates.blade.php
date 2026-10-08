@@ -284,11 +284,11 @@ table {
                             <label for="inputEmail3" class="control-label">TEMESA Fee ? </label>
                          </div>
                         <div class="radio radio-info radio-inline">
-                                <input type="radio" name="temesa_fee" value="0.08" name="radioInline" checked required>
+                                <input type="radio" name="temesa_fee" value="0.08" name="radioInline"  required>
                                 <label for="inlineRadio1">Yes</label>
                             </div>
                             <div class="radio radio-inline">
-                                <input type="radio" name="temesa_fee" value="0" name="radioInline" required>
+                                <input type="radio" name="temesa_fee" value="0" name="radioInline" checked required>
                                 <label for="inlineRadio2">No</label>
                         </div>
                        </div>               
