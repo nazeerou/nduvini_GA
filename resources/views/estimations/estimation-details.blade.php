@@ -416,99 +416,118 @@
 </div>
 <!-- Edit Profoma -->
 <!-- Modal -->
-<div class="modal fade" id="editProfomaModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-<form id="form" method="post" action="{{ url('../estimations/update-profoma-details') }}">
-  @csrf  
-<div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-        <h4 class="modal-title" id="editProfomaModalLabel">Edit Proforma Details  </h4>
-      </div>
-      <div class="modal-body">
-      <div class="row">
-      <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Vehicle Reg # </label>
-                                <input type="text" name="vehicle_reg" id="vehicle_registration" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-               <div class="row">
-               <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Reference # </label>
-                                <input type="text" name="reference" value="{{ $id }}" class="form-control">
-                             </div>
-                        </div>
-                         <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Proforma Invoice # </label>
-                                <input type="text" name="proforma_invoice" id="proforma_invoice" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Make  </label>
-                                <input type="text" name="make" id="make_" class="form-control">
-                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Model </label>
-                                <input type="text" name="model" id="model_" class="form-control">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row m-b-10">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Chassis No.   </label>
-                                <input type="text" name="chassis" id="chassis" class="form-control" placeholder="Amount">
-                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Milleage </label>
-                                <input type="text" name="milleage" id="milleage" class="form-control">
-                             </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                    <div class="col-md-6">
-                           <div class="form-group">
-                            <label for="inputEmail3" class="control-label">TEMESA Fee ? </label>
-                         </div>
-                        <div class="radio radio-info radio-inline">
-                                <input type="radio" name="temesa_fee" value="0.08" name="radioInline">
-                                <label for="inlineRadio1">Yes</label>
-                            </div>
-                            <div class="radio radio-inline">
-                                <input type="radio" name="temesa_fee" value="0" name="radioInline">
-                                <label for="inlineRadio2">No</label>
-                        </div>
-                       </div>               
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="inputEmail3" class="control-label">Created Date </label>
-                                  <div class="input-group">
-                                  <input type="text" class="form-control" id="created_date" autocomplete="off" name="created_date" placeholder="Date " id="datepicker-autoclose" data-date-format="yyyy-mm-dd">
-                                  <span class="input-group-addon bg-info b-0 text-white"><i class="ti-calendar"></i></span>
-                              </div><!-- input-group -->                           
-                            </div>
-                        </div>
-                    </div>
-      </div>
-      <div class="modal-footer">
-        <button type="submit" class="btn btn-success btn-rounded">Update Changes</button>
+<!-- ============ EDIT PROFORMA MODAL ============ -->
+<div class="modal fade" id="editProfomaModal" tabindex="-1" role="dialog"
+     aria-labelledby="editProfomaModalLabel" aria-hidden="true">
+  <form id="editProfomaForm" method="post" action="{{ url('estimations/update-profoma-details') }}">
+    @csrf
+    {{-- Hidden PK so the controller can find the row reliably --}}
+    <input type="hidden" name="id" id="edit_id">
+
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+          <h4 class="modal-title" id="editProfomaModalLabel">Edit Proforma Details</h4>
+        </div>
+
+        <div class="modal-body">
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="control-label">Vehicle Reg #</label>
+                <input type="text" name="vehicle_reg" id="vehicle_registration" class="form-control">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="control-label">Reference #</label>
+                <input type="text" name="reference" id="reference" class="form-control" readonly>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="control-label">Proforma Invoice #</label>
+                <input type="text" name="proforma_invoice" id="proforma_invoice" class="form-control">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="control-label">Make</label>
+                <input type="text" name="make" id="make_" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="control-label">Model</label>
+                <input type="text" name="model" id="model_" class="form-control">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="control-label">Chassis No.</label>
+                <input type="text" name="chassis" id="chassis" class="form-control">
+              </div>
+            </div>
+          </div>
+
+          <div class="row m-b-10">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="control-label">Milleage</label>
+                <input type="text" name="milleage" id="milleage" class="form-control">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label class="control-label">Created Date</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" id="created_date" name="created_date"
+                         autocomplete="off" placeholder="Date" data-date-format="yyyy-mm-dd">
+                  <span class="input-group-addon bg-info b-0 text-white"><i class="ti-calendar"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-12">
+              <div class="form-group">
+                <label class="control-label">TEMESA Fee ?</label>
+                <div>
+                  <div class="radio radio-info radio-inline">
+                    <input type="radio" id="temesa_yes" name="temesa_fee" value="0.08">
+                    <label for="temesa_yes">Yes</label>
+                  </div>
+                  <div class="radio radio-inline">
+                    <input type="radio" id="temesa_no" name="temesa_fee" value="0">
+                    <label for="temesa_no">No</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>{{-- /modal-body --}}
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default btn-rounded" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success btn-rounded">Update Proforma</button>
+        </div>
+
       </div>
     </div>
-  </div>
-</form>
+  </form>
 </div>
         
 
