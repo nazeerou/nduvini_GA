@@ -75,11 +75,22 @@
 
         /* DETAIL ROWS */
         .ledger-table tr.detail-row td {
-            font-size: 9.5px; color: #6b7280;
+            font-size: 10px; 
+            color: #515c70;
             background-color: #fdfdfd !important;
             padding-top: 3px; padding-bottom: 3px;
             border-bottom: 1px dashed #eef0f3;
             border-top: none;
+        }
+
+         /* DETAIL ROWS */
+        .value_num {
+            font-size: 10px; 
+            color: #1b68f7 !important;
+            /* background-color: #fdfdfd !important; */
+            /* padding-top: 3px; padding-bottom: 3px; */
+            /* border-bottom: 1px dashed #eef0f3; */
+            /* border-top: none; */
         }
         .ledger-table tr.detail-row td.category {
             padding-left: 22px; font-style: italic;
@@ -130,8 +141,8 @@
         .logo-watermark {
             position: fixed;
             top: 25%;
-            left: 22%;
-            width: 56%;
+            left: 12%;
+            width: 76%;
             opacity: 0.05;
             z-index: -2;
         }
@@ -346,7 +357,7 @@
                         <td class="num text-right">
                             {{ $row['debit'] > 0 ? number_format($detail['amount'], 2) : '' }}
                         </td>
-                        <td class="num text-right">
+                        <td class="num text-right value_num">
                             {{ $row['credit'] > 0 ? number_format($detail['amount'], 2) : '' }}
                         </td>
                         <td></td><td></td>
