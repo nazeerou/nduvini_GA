@@ -3,7 +3,7 @@
 @section('content')
 
 <style>
-    /* ================= Ledger Report – Professional Monochrome UI ================= */
+    /* ================= Ledger Report – Bootstrap + Monochrome ================= */
     :root{
         --lr-ink:#111827;
         --lr-ink-soft:#374151;
@@ -59,35 +59,34 @@
     .lr-btn-ghost:hover{background:var(--lr-line-soft);color:var(--lr-ink);border-color:#d1d5db;}
     .lr-btn-ghost.is-spinning .fa{animation:lr-spin .8s linear infinite;}
 
-    /* ---------- Grid & fields ---------- */
-    .lr-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;}
-    .lr-field{grid-column:span 3;min-width:0;}
-    @media (max-width:1199px){ .lr-field{grid-column:span 6;} }
-    @media (max-width:575px){ .lr-field{grid-column:span 12;} }
-
-    .lr-label{
-        display:block;margin-bottom:8px;font-size:12px;font-weight:600;
-        letter-spacing:.02em;color:var(--lr-ink-soft);
+    /* ---------- Bootstrap form tweaks ---------- */
+    .lr-wrap .control-label{
+        font-size:12px;font-weight:600;letter-spacing:.02em;color:var(--lr-ink-soft);
+        margin-bottom:8px;display:block;
     }
-    .lr-label .lr-req{color:#dc2626;font-weight:700;}
-
-    .lr-control{
-        width:100%;height:44px;padding:0 14px;font-size:14px;color:var(--lr-ink);
-        background:var(--lr-white);border:1px solid var(--lr-line);border-radius:8px;
-        outline:none;box-shadow:none;transition:all .18s ease;
+    .lr-wrap .control-label .lr-req{color:#dc2626;font-weight:700;}
+    .lr-wrap .form-control{
+        height:44px;font-size:14px;color:var(--lr-ink);
+        border:1px solid var(--lr-line);border-radius:8px;
+        box-shadow:none;transition:all .18s ease;
     }
-    select.lr-control{
-        appearance:none;-webkit-appearance:none;-moz-appearance:none;
-        padding-right:38px;cursor:pointer;
-        background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
-        background-repeat:no-repeat;background-position:right 14px center;background-size:11px;
-    }
-    .lr-control:hover{border-color:#d1d5db;}
-    .lr-control:focus{
-        border-color:var(--lr-ink);background:var(--lr-white);
+    .lr-wrap select.form-control{height:44px;padding:0 14px;}
+    .lr-wrap .form-control:hover{border-color:#d1d5db;}
+    .lr-wrap .form-control:focus{
+        border-color:var(--lr-ink);
         box-shadow:0 0 0 3px rgba(17,24,39,.06);
     }
-    .lr-control.lr-invalid{border-color:#dc2626;background:#fef2f2;}
+    .lr-wrap .form-control.lr-invalid{border-color:#dc2626;background:#fef2f2;}
+
+    /* ---------- Actions divider ---------- */
+    .lr-actions{
+        /* margin-top:28px;padding-top:22px;border-top:1px solid var(--lr-line); */
+        text-align:right;
+    }
+    #btnGenerate:disabled,
+    #btnGenerate.is-loading{
+        opacity:.7;cursor:not-allowed;
+    }
 
     /* ---------- Category format panel ---------- */
     .lr-format{
@@ -130,31 +129,7 @@
     .lr-skeleton span:nth-child(3){width:60%;}
     @keyframes lr-shimmer{0%{background-position:100% 50%;}100%{background-position:0 50%;}}
 
-    /* ---------- Actions ---------- */
-    .lr-actions{
-        display:flex;flex-wrap:wrap;align-items:center;gap:14px;
-        margin-top:28px;padding-top:22px;border-top:1px solid var(--lr-line);
-    }
-    .lr-btn-primary{
-        display:inline-flex;align-items:center;gap:10px;padding:12px 24px;border:none;
-        border-radius:8px;font-size:14px;font-weight:600;letter-spacing:.01em;
-        color:var(--lr-white);cursor:pointer;background:var(--lr-black);
-        box-shadow:0 1px 2px rgba(17,24,39,.10);transition:all .2s ease;
-    }
-    .lr-btn-primary:hover{background:#000;transform:translateY(-1px);box-shadow:0 4px 12px rgba(17,24,39,.15);}
-    .lr-btn-primary:disabled{opacity:.7;cursor:not-allowed;transform:none;box-shadow:none;}
-
-    .lr-spin{
-        display:none;width:15px;height:15px;border-radius:50%;
-        border:2px solid rgba(255,255,255,.45);border-top-color:#fff;
-        animation:lr-spin .7s linear infinite;
-    }
-    .is-loading .lr-spin{display:inline-block;}
-    .is-loading .lr-btn-icon{display:none;}
     @keyframes lr-spin{to{transform:rotate(360deg);}}
-
-    .lr-hint{font-size:12px;color:var(--lr-muted);}
-    .lr-hint .fa{color:var(--lr-muted);}
 
     /* ---------- Download modal ---------- */
     #downloadModal .modal-content{
@@ -209,60 +184,69 @@
                           action="{{ route('reports.petty-cash-report') }}"
                           data-category-format-url="">
 
-                        <div class="lr-grid">
+                        <div class="row">
 
                             {{-- Account : REQUIRED --}}
-                            <div class="lr-field">
-                                <label class="lr-label" for="account_id">
-                                    Account <span class="lr-req">*</span>
-                                </label>
-                                <select name="account_id" id="account_id" class="lr-control" required>
-                                    <option value="">-- Select Account --</option>
-                                    @foreach($accounts as $acc)
-                                        <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>
-                                            {{ $acc->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label" for="account_id">
+                                        Account <span class="lr-req">*</span>
+                                    </label>
+                                    <select name="account_id" id="account_id" class="form-control" required>
+                                        <option value="">-- Select Account --</option>
+                                        @foreach($accounts as $acc)
+                                            <option value="{{ $acc->id }}" {{ request('account_id') == $acc->id ? 'selected' : '' }}>
+                                                {{ $acc->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
 
                             {{-- Category : OPTIONAL --}}
-                            <div class="lr-field">
-                                <label class="lr-label" for="category_id">
-                                    Category <small style="text-transform:none;letter-spacing:0;color:var(--lr-muted);font-weight:400;">(optional)</small>
-                                </label>
-                                <select name="category_id" id="category_id" class="lr-control">
-                                    <option value="">-- All Categories --</option>
-                                    @foreach($categories as $cat)
-                                        <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>
-                                            {{ $cat->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label" for="category_id">
+                                        Category
+                                        <small style="text-transform:none;letter-spacing:0;color:var(--lr-muted);font-weight:400;">(optional)</small>
+                                    </label>
+                                    <select name="category_id" id="category_id" class="form-control">
+                                        <option value="">-- All Categories --</option>
+                                        @foreach($categories as $cat)
+                                            <option value="{{ $cat->id }}" {{ request('category_id') == $cat->id ? 'selected' : '' }}>
+                                                {{ $cat->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             </div>
 
                             {{-- From date : REQUIRED --}}
-                            <div class="lr-field">
-                                <label class="lr-label" for="startdate">
-                                    From <span class="lr-req">*</span>
-                                </label>
-                                <input type="date" name="startdate" id="startdate" class="lr-control"
-                                       value="{{ request('startdate') }}" required>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label" for="startdate">
+                                        From <span class="lr-req">*</span>
+                                    </label>
+                                    <input type="date" name="startdate" id="startdate" class="form-control"
+                                           value="{{ request('startdate') }}" required>
+                                </div>
                             </div>
 
                             {{-- To date : REQUIRED --}}
-                            <div class="lr-field">
-                                <label class="lr-label" for="enddate">
-                                    To <span class="lr-req">*</span>
-                                </label>
-                                <input type="date" name="enddate" id="enddate" class="lr-control"
-                                       value="{{ request('enddate') }}" required>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="form-group">
+                                    <label class="control-label" for="enddate">
+                                        To <span class="lr-req">*</span>
+                                    </label>
+                                    <input type="date" name="enddate" id="enddate" class="form-control"
+                                           value="{{ request('enddate') }}" required>
+                                </div>
                             </div>
 
                         </div>
 
                         {{-- Extra dynamic fields injected per category --}}
-                        <div id="extraFieldsWrap" class="lr-grid" style="margin-top:20px;"></div>
+                        <div id="extraFieldsWrap" class="row" style="margin-top:20px;"></div>
 
                         {{-- Category-specific report format preview --}}
                         <div id="categoryFormatPanel" class="lr-format" style="display:none;">
@@ -270,16 +254,11 @@
                         </div>
 
                         <div class="lr-actions">
-                            <button type="submit" id="btnGenerate" class="lr-btn-primary">
-                                <span class="lr-spin"></span>
-                                <i class="fa fa-download lr-btn-icon"></i>
-                                <span>Generate Report</span>
+                            <button type="submit" id="btnGenerate"
+                                    class="btn btn-rounded"
+                                    style="background:#E74C3C;color:#ffffff;">
+                                <i class="fa fa-arrow-circle-o-right"></i> Generate Report
                             </button>
-
-                            <span class="lr-hint">
-                                <i class="fa fa-info-circle"></i>
-                                Fields marked <strong>*</strong> are required.
-                            </span>
                         </div>
 
                     </form>
@@ -299,7 +278,7 @@
                 <p id="dlText">Please wait while we build your ledger report.</p>
 
                 <div class="lr-dl-close" id="dlCloseWrap">
-                    <button type="button" class="lr-btn-primary" id="dlCloseBtn">
+                    <button type="button" class="btn btn-rounded btn-default" id="dlCloseBtn">
                         <i class="fa fa-times"></i> <span>Close</span>
                     </button>
                 </div>
@@ -468,18 +447,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         formatBody.innerHTML = html;
 
-        /* ---- Extra fields this category requires ---- */
+        /* ---- Extra fields this category requires (Bootstrap columns) ---- */
         (data.extra_fields || []).forEach(function (f) {
             var col = document.createElement('div');
-            col.className = 'lr-field';
+            col.className = 'col-md-3 col-sm-6';
 
             var label = esc(f.label || f.name) +
                         (f.required ? ' <span class="lr-req">*</span>' : '');
             var req   = f.required ? ' required' : '';
-            var inner = '<label class="lr-label">' + label + '</label>';
+            var inner = '<div class="form-group">';
+            inner    += '<label class="control-label">' + label + '</label>';
 
             if (f.type === 'select') {
-                inner += '<select class="lr-control" name="' + esc(f.name) + '"' + req + '>';
+                inner += '<select class="form-control" name="' + esc(f.name) + '"' + req + '>';
                 inner += '<option value="">-- Select --</option>';
                 (f.options || []).forEach(function (o) {
                     var val = (o && typeof o === 'object') ? o.value : o;
@@ -488,12 +468,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 inner += '</select>';
             } else if (f.type === 'date') {
-                inner += '<input type="date" class="lr-control" name="' + esc(f.name) + '"' + req + '>';
+                inner += '<input type="date" class="form-control" name="' + esc(f.name) + '"' + req + '>';
             } else {
-                inner += '<input type="text" class="lr-control" name="' + esc(f.name) + '" '
+                inner += '<input type="text" class="form-control" name="' + esc(f.name) + '" '
                        + 'placeholder="' + esc(f.placeholder || '') + '"' + req + '>';
             }
 
+            inner += '</div>';
             col.innerHTML = inner;
             extraWrap.appendChild(col);
         });
@@ -524,12 +505,10 @@ document.addEventListener('DOMContentLoaded', function () {
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        // clear previous invalid marks
         [accountSel, startDate, endDate].forEach(function (el) {
             el.classList.remove('lr-invalid');
         });
 
-        // Required-field validation (category is optional)
         var missing = [];
         if (!accountSel.value) { accountSel.classList.add('lr-invalid'); missing.push('Account'); }
         if (!startDate.value)  { startDate.classList.add('lr-invalid');  missing.push('From date'); }
@@ -574,12 +553,10 @@ document.addEventListener('DOMContentLoaded', function () {
             var blob = await response.blob();
 
             if (contentType.indexOf('html') !== -1) {
-                // The report is returned as a rendered page -> show in a new tab
                 var tabUrl = URL.createObjectURL(blob);
                 window.open(tabUrl, '_blank');
                 setTimeout(function () { URL.revokeObjectURL(tabUrl); }, 60000);
             } else {
-                // File download (xlsx / csv / pdf ...)
                 var filename = getFilename(response) || 'ledger-report';
                 var dlUrl = URL.createObjectURL(blob);
                 var a = document.createElement('a');
@@ -603,7 +580,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     dlCloseBtn.addEventListener('click', closeModal);
 
-    /* Keep modal state clean for the next run */
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.modal) {
         window.jQuery(modalEl).on('hidden.bs.modal', function () {
             setButtonLoading(false);
