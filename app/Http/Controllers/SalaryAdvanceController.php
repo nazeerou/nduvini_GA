@@ -78,8 +78,10 @@ class SalaryAdvanceController extends Controller
     
    public function downloadPdf() {
 
-    $salary_advances = SalaryAdvance::with('employee')->where('branch_id', Auth::user()->branch_id)->get();
-
+   $salary_advances = SalaryAdvance::with('employee')
+    ->where('branch_id', Auth::user()->branch_id)
+    ->where('month', now()->format('Y-m'))   // e.g. "2025-08"
+    ->get();
 
     $pdf = Pdf::loadView('payrolls.salary_advances_pdf', compact('salary_advances'))
         ->setPaper('A4', 'portrait');

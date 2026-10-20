@@ -8,8 +8,6 @@ use App\Models\Contribution;
 use App\Models\Branch;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Auth;
-use DB;
 use PDF;
 use App\Models\PayrollContribution;
 use App\Models\Loan;
@@ -17,7 +15,9 @@ use App\Models\SalaryAdvance;
 use App\Models\LoanRepayment;
 use App\Models\AssignedEmployeeContribution;
 use App\Models\SalaryGroup;
-
+    use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PayrollController extends Controller
 {
@@ -94,17 +94,20 @@ class PayrollController extends Controller
         });
 
     // Loop through all months of the current year
-    $currentYear = now()->year;
-    $currentMonthNum = now()->month;
-    $months = collect();
+   $currentYear = now()->year;
+$currentMonthNum = now()->month;
+$currentMonth = now()->format('Y-m'); // "2025-08"
 
-    // Cache loans & advances for performance
-    $loans = Loan::with(['employee', 'loanRepayments'])
-             ->where('branch_id', Auth::user()->branch_id)
-             ->get();
-    $salary_advances = SalaryAdvance::with('employee')
-             ->where('branch_id', Auth::user()->branch_id)
-             ->get();
+$months = collect();
+
+$loans = Loan::with(['employee', 'loanRepayments'])
+         ->where('branch_id', Auth::user()->branch_id)
+         ->get();
+
+$salary_advances = SalaryAdvance::with('employee')
+         ->where('branch_id', Auth::user()->branch_id)
+         ->where('month', $currentMonth)  // matches "2025-08"
+         ->get();;
     
     for ($m = $currentMonthNum; $m >= 1; $m--) {
         $monthStr = Carbon::createFromDate($currentYear, $m, 1)->format('Y-m');
@@ -225,132 +228,315 @@ class PayrollController extends Controller
         return view('payrolls.create');
     }
 
-    public function store(Request $request)
-    {
-        $month = $request->input('month');
-        $employees = $request->input('employees');
-        $loanDeductions = [];
+    // public function store(Request $request)
+    // {
+    //     $month = $request->input('month');
+    //     $employees = $request->input('employees');
+    //     $loanDeductions = [];
     
+    //     foreach ($employees as $employeeId => $data) {
+    //         if (!isset($data['selected'])) continue;
+    
+    //         $basicSalary = $data['basic_salary'];
+    //         $allowance = $data['allowance'] ?? 0;
+    //         $gross_salary = $basicSalary + $allowance;
+    //         $deduction = 0;
+    
+    //         // Fetch loan for selected employee
+    //             $loan = DB::table('loans')
+    //                 ->where('employee_id', $employeeId)
+    //                 // ->where('status', 'active')
+    //                 ->where('balance', '>', 0)
+    //                 ->orderBy('id', 'desc')
+    //                 ->first();
+    
+    //             if ($loan) {
+    //                 $deductAmount = min($loan->monthly_deduction, $loan->balance);
+    //                 $deduction += $deductAmount;
+    
+    //                 DB::table('loans')->where('id', $loan->id)->update([
+    //                     'balance' => $loan->balance - $deductAmount,
+    //                     'status' => ($loan->balance - $deductAmount) <= 0 ? 'paid' : 'active',
+    //                 ]);
+    
+    //                 DB::table('loan_repayments')->insert([
+    //                     'loan_id'       => $loan->id,
+    //                     'branch_id' => Auth::user()->branch_id,
+    //                     'employee_id'   => $employeeId,
+    //                     'amount'        => $deductAmount,
+    //                     'deduction_date' => $month, // assumes YYYY-MM format input
+    //                     'created_at'    => now(),
+    //                     'updated_at'    => now(),
+    //                 ]);
+
+    //                 $loanDeductions[] = [
+    //                     'employee_id' => $employeeId,
+    //                     'loan_id' => $loan->id,
+    //                     'deducted' => $deductAmount,
+    //                 ];
+    //             }
+    //         // }
+    
+    //         // 2. SALARY ADVANCE Deduction
+    //         $advance = DB::table('salary_advances')
+    //             ->where('employee_id', $employeeId)
+    //             ->where('month', $month)
+    //             ->first();
+
+    //         if ($advance) {
+    //             $deduction += $advance->amount;
+
+    //             // Optional: mark it as deducted if you add a `status` column
+    //             DB::table('salary_advances')->where('id', $advance->id)->update([
+    //                 'status' => 'deducted',
+    //                 'updated_at' => now()
+    //             ]);
+
+    //             $advanceDeductions[] = [
+    //                 'employee_id' => $employeeId,
+    //                 'amount' => $advance->amount,
+    //             ];
+    //         }
+    //     // }
+
+    //     $nssf = 0;
+
+    //     // Check if 'NSSF' is selected in contributions
+    //     if (!empty($data['contributions']) && in_array('1', array_map('strtolower', $data['contributions']))) {
+    //         // Assume 10% NSSF on gross salary as an example
+    //         $nssf = 0.10 * $gross_salary;
+    //     }
+
+    //     // 4. Calculate TAXABLE INCOME (only NSSF is deductible)
+    //     $taxable_income = $gross_salary - $nssf;
+
+    //     // 5. PAYE
+    //     if ($taxable_income <= 270000) {
+    //         $paye = 0 ;
+    //     } elseif ($taxable_income <= 520000) {
+    //         $paye = ($taxable_income - 270000) * 0.08;
+    //     } elseif ($taxable_income <= 760000) {
+    //         $paye = 20000 + ($taxable_income - 520000) * 0.20;
+    //     } elseif ($taxable_income <= 1000000) {
+    //         $paye = 68000 + ($taxable_income - 760000) * 0.25;
+    //     } else {
+    //         $paye = 128000 + ($taxable_income - 1000000) * 0.30;
+    //     }
+
+    //         $netSalary = ($basicSalary + $allowance) - $deduction;
+    
+    //         $payroll = Payroll::create([
+    //             'employee_id' => $employeeId,
+    //             'branch_id' => Auth::user()->branch_id,
+    //             'reference' => date('YhisH'),
+    //             'month' => $month,
+    //             'basic_salary' => $basicSalary,
+    //             'allowance' => $allowance,
+    //             'paye' => $paye,
+    //             'net_salary' => $netSalary,
+    //         ]);
+    
+    //         if (!empty($data['contributions'])) {
+    //             foreach ($data['contributions'] as $contribName) {
+    //                 PayrollContribution::create([
+    //                     'payroll_id' => $payroll->id,
+    //                     'contribution_id' => $contribName,
+    //                     'name' => $contribName,
+    //                     'rate' => null,
+    //                     'branch_id' => Auth::user()->branch_id
+    //                 ]);
+    //             }
+    //         }
+    //     }
+    
+
+    //     return redirect()->back()->with('message', 'Payroll generated.');
+
+    // }
+    
+
+
+public function store(Request $request)
+{
+    $request->validate([
+        'month'     => 'required|date_format:Y-m',
+        'employees' => 'required|array',
+    ]);
+
+    $month     = $request->input('month');
+    $employees = $request->input('employees');
+    $branchId  = Auth::user()->branch_id;
+
+    $loanDeductions    = [];
+    $advanceDeductions = [];
+    $created           = 0;
+    $skipped           = 0;
+
+    DB::beginTransaction();
+
+    try {
         foreach ($employees as $employeeId => $data) {
-            if (!isset($data['selected'])) continue;
-    
-            $basicSalary = $data['basic_salary'];
-            $allowance = $data['allowance'] ?? 0;
-            $gross_salary = $basicSalary + $allowance;
-            $deduction = 0;
-    
-            // Fetch loan for selected employee
-                $loan = DB::table('loans')
-                    ->where('employee_id', $employeeId)
-                    // ->where('status', 'active')
-                    ->where('balance', '>', 0)
-                    ->orderBy('id', 'desc')
-                    ->first();
-    
-                if ($loan) {
-                    $deductAmount = min($loan->monthly_deduction, $loan->balance);
-                    $deduction += $deductAmount;
-    
+            // Skip employees whose checkbox isn't ticked
+            if (empty($data['selected'])) {
+                continue;
+            }
+
+            // Idempotency — skip if payroll for this month already exists
+            if (Payroll::where('employee_id', $employeeId)
+                       ->where('month', $month)
+                       ->exists()) {
+                $skipped++;
+                continue;
+            }
+
+            $basicSalary = (float) ($data['basic_salary'] ?? 0);
+            $allowance   = (float) ($data['allowance'] ?? 0);
+            $grossSalary = $basicSalary + $allowance;
+            $deduction   = 0;
+
+            /* ---------- 1. LOAN DEDUCTION ---------- */
+            $loan = DB::table('loans')
+                ->where('employee_id', $employeeId)
+                ->where('balance', '>', 0)
+                ->orderBy('id', 'desc')
+                ->lockForUpdate()          // prevent race on balance
+                ->first();
+
+            if ($loan) {
+                $deductAmount = min((float) $loan->monthly_deduction, (float) $loan->balance);
+
+                if ($deductAmount > 0) {
+                    $newBalance = $loan->balance - $deductAmount;
+
                     DB::table('loans')->where('id', $loan->id)->update([
-                        'balance' => $loan->balance - $deductAmount,
-                        'status' => ($loan->balance - $deductAmount) <= 0 ? 'paid' : 'active',
-                    ]);
-    
-                    DB::table('loan_repayments')->insert([
-                        'loan_id'       => $loan->id,
-                        'branch_id' => Auth::user()->branch_id,
-                        'employee_id'   => $employeeId,
-                        'amount'        => $deductAmount,
-                        'deduction_date' => $month, // assumes YYYY-MM format input
-                        'created_at'    => now(),
-                        'updated_at'    => now(),
+                        'balance'    => $newBalance,
+                        'status'     => $newBalance <= 0 ? 'paid' : 'active',
+                        'updated_at' => now(),
                     ]);
 
+                    DB::table('loan_repayments')->insert([
+                        'loan_id'        => $loan->id,
+                        'branch_id'      => $branchId,
+                        'employee_id'    => $employeeId,
+                        'amount'         => $deductAmount,
+                        'deduction_date' => $month,
+                        'created_at'     => now(),
+                        'updated_at'     => now(),
+                    ]);
+
+                    $deduction       += $deductAmount;
                     $loanDeductions[] = [
                         'employee_id' => $employeeId,
-                        'loan_id' => $loan->id,
-                        'deducted' => $deductAmount,
+                        'loan_id'     => $loan->id,
+                        'deducted'    => $deductAmount,
                     ];
                 }
-            // }
-    
-            // 2. SALARY ADVANCE Deduction
+            }
+
+            /* ---------- 2. SALARY ADVANCE ---------- */
             $advance = DB::table('salary_advances')
                 ->where('employee_id', $employeeId)
                 ->where('month', $month)
+                ->where('status', '!=', 'deducted')
                 ->first();
 
-            if ($advance) {
-                $deduction += $advance->amount;
+            if ($advance && (float) $advance->amount > 0) {
+                $deduction += (float) $advance->amount;
 
-                // Optional: mark it as deducted if you add a `status` column
                 DB::table('salary_advances')->where('id', $advance->id)->update([
-                    'status' => 'deducted',
-                    'updated_at' => now()
+                    'status'     => 'deducted',
+                    'updated_at' => now(),
                 ]);
 
                 $advanceDeductions[] = [
                     'employee_id' => $employeeId,
-                    'amount' => $advance->amount,
+                    'amount'      => (float) $advance->amount,
                 ];
             }
-        // }
 
-        $nssf = 0;
+            /* ---------- 3. CONTRIBUTIONS + NSSF ---------- */
+            $contributionIds = array_filter((array) ($data['contributions'] ?? []));
 
-        // Check if 'NSSF' is selected in contributions
-        if (!empty($data['contributions']) && in_array('1', array_map('strtolower', $data['contributions']))) {
-            // Assume 10% NSSF on gross salary as an example
-            $nssf = 0.10 * $gross_salary;
-        }
+            $contributions = empty($contributionIds)
+                ? collect()
+                : DB::table('contributions')
+                    ->whereIn('id', $contributionIds)
+                    ->get()
+                    ->keyBy('id');
 
-        // 4. Calculate TAXABLE INCOME (only NSSF is deductible)
-        $taxable_income = $gross_salary - $nssf;
-
-        // 5. PAYE
-        if ($taxable_income <= 270000) {
-            $paye = 0 ;
-        } elseif ($taxable_income <= 520000) {
-            $paye = ($taxable_income - 270000) * 0.08;
-        } elseif ($taxable_income <= 760000) {
-            $paye = 20000 + ($taxable_income - 520000) * 0.20;
-        } elseif ($taxable_income <= 1000000) {
-            $paye = 68000 + ($taxable_income - 760000) * 0.25;
-        } else {
-            $paye = 128000 + ($taxable_income - 1000000) * 0.30;
-        }
-
-            $netSalary = ($basicSalary + $allowance) - $deduction;
-    
-            $payroll = Payroll::create([
-                'employee_id' => $employeeId,
-                'branch_id' => Auth::user()->branch_id,
-                'reference' => date('YhisH'),
-                'month' => $month,
-                'basic_salary' => $basicSalary,
-                'allowance' => $allowance,
-                'paye' => $paye,
-                'net_salary' => $netSalary,
-            ]);
-    
-            if (!empty($data['contributions'])) {
-                foreach ($data['contributions'] as $contribName) {
-                    PayrollContribution::create([
-                        'payroll_id' => $payroll->id,
-                        'contribution_id' => $contribName,
-                        'name' => $contribName,
-                        'rate' => null,
-                        'branch_id' => Auth::user()->branch_id
-                    ]);
+            $nssf = 0;
+            foreach ($contributions as $c) {
+                if (stripos($c->name, 'nssf') !== false) {
+                    $rate  = !empty($c->rate) ? (float) $c->rate : 0.10;
+                    $nssf += $grossSalary * $rate;
                 }
             }
+
+            /* ---------- 4. PAYE ---------- */
+            $taxableIncome = max(0, $grossSalary - $nssf);
+
+            if ($taxableIncome <= 270000) {
+                $paye = 0;
+            } elseif ($taxableIncome <= 520000) {
+                $paye = ($taxableIncome - 270000) * 0.08;
+            } elseif ($taxableIncome <= 760000) {
+                $paye = 20000 + ($taxableIncome - 520000) * 0.20;
+            } elseif ($taxableIncome <= 1000000) {
+                $paye = 68000 + ($taxableIncome - 760000) * 0.25;
+            } else {
+                $paye = 128000 + ($taxableIncome - 1000000) * 0.30;
+            }
+
+            /* ---------- 5. NET SALARY (include PAYE + NSSF) ---------- */
+            $netSalary = $grossSalary - $nssf - $paye - $deduction;
+
+            /* ---------- 6. UNIQUE REFERENCE PER EMPLOYEE ---------- */
+            $reference = sprintf(
+                $month,
+                $employeeId,
+                now()->format('YmdHisv')   // millisecond precision
+            );
+
+            $payroll = Payroll::create([
+                'employee_id'  => $employeeId,
+                'branch_id'    => $branchId,
+                'reference'    => $reference,
+                'month'        => $month,
+                'basic_salary' => $basicSalary,
+                'allowance'    => $allowance,
+                'paye'         => $paye,
+                'net_salary'   => $netSalary,
+                // 'nssf' => $nssf,  // uncomment if column exists
+            ]);
+
+            /* ---------- 7. PAYROLL CONTRIBUTIONS ---------- */
+            foreach ($contributions as $c) {
+                PayrollContribution::create([
+                    'payroll_id'      => $payroll->id,
+                    'contribution_id' => $c->id,
+                    'name'            => $c->name,
+                    'rate'            => $c->rate ?? null,
+                    'branch_id'       => $branchId,
+                ]);
+            }
+
+            $created++;
         }
-    
 
-        return redirect()->back()->with('message', 'Payroll generated.');
+        DB::commit();
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        Log::error('Payroll generation failed', ['error' => $e->getMessage()]);
 
+        return redirect()->back()->with('error', 'Payroll generation failed: ' . $e->getMessage());
     }
-    
+
+    return redirect()->back()->with(
+        'message',
+        "Payroll generated for {$created} employee(s)." .
+        ($skipped ? " {$skipped} skipped (already generated)." : '')
+    );
+}
 
 public function store11(Request $request)
 {

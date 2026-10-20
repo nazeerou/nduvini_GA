@@ -459,76 +459,122 @@
                     </div>
 
                     <!-- Salary Advance Tab -->
-                    <div role="tabpanel" class="tab-pane fade" id="salary-advances">
-                       
-                        <a href="{{ url('salary-advances/pdf') }}" class="btn btn-pink" style="float:right;">
-                           <i class="fa fa-file-pdf-o"></i>&nbsp; Salary Advance PDF
-                        </a>
-                        <button class="btn btn-primary" data-toggle="modal" data-target="#addAdvanceModal" style="float:right;">
-                            + Add Salary Advance
-                        </button> &nbsp;&nbsp;
-                        <h4>Employee Salary Advances</h4>
-                        <div class="clearfix"></div>
+                  <div role="tabpanel" class="tab-pane fade" id="salary-advances">
 
-                        <table class="table table-bordered table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Employee</th>
-                                    <th>Amount (TZS)</th>
-                                    <th>Month</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                            @foreach($salary_advances as $advance)
-                            <tr>
-                                <td>
-                                    @if ($advance->employee)
-                                        {{ $advance->employee->firstname }} {{ $advance->employee->surname }}
-                                    @else
-                                        <em>No employee</em>
-                                    @endif
-                                </td>
-                                <td>{{ number_format($advance->amount, 2) }}</td>
-                                <td>{{ \Carbon\Carbon::parse($advance->month . '-01')->format('M Y') }}</td>
-                                <td>
-                                    <button class="btn btn-xs btn-info" data-toggle="modal"
-                                            data-target="#editAdvanceModal{{ $advance->id }}">Edit</button>
+    {{-- ===== Toolbar ===== --}}
+    <a href="{{ url('salary-advances/pdf') }}" class="btn btn-pink" style="float:right;">
+        <i class="fa fa-file-pdf-o"></i>&nbsp; Salary Advance PDF
+    </a>
+    <button class="btn btn-primary" data-toggle="modal"
+            data-target="#addAdvanceModal" style="float:right;">
+        + Add Salary Advance
+    </button>&nbsp;&nbsp;
+    <h4>Employee Salary Advances</h4>
+    <div class="clearfix"></div>
 
-                                    <form method="POST" action="{{ route('salary-advances.destroy', $advance->id) }}"
-                                        style="display:inline;">
-                                        @csrf @method('DELETE')
-                                        <button class="btn btn-xs btn-danger"
-                                                onclick="return confirm('Delete this advance?')">Delete</button>
-                                    </form>
-                                </td>
-                                </tr>
+    {{-- ===== Filter bar ===== --}}
+    <div class="row m-t-2 m-b-2" style="background:#ddd; padding:10px; margin-bottom:15px;">
+        <div class="col-md-3">
+            <label for="advanceFilterMonth">Month</label>
+            <select id="advanceFilterMonth" class="form-control">
+                <option value="">All Month</option>
+                @for ($m = 1; $m <= 12; $m++)
+                    <option value="{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}">
+                        {{ \DateTime::createFromFormat('!m', $m)->format('F') }}
+                    </option>
+                @endfor
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="advanceFilterYear">Year</label>
+            <select id="advanceFilterYear" class="form-control">
+                <option value="">All Year</option>
+            </select>
+        </div>
+        <div class="col-md-3" style="padding-top:25px;">
+            <!-- <button type="button" id="clearAdvanceFilter" class="btn btn-default">
+                <i class="fa fa-times"></i> Clear
+            </button> -->
+            <span id="advanceFilterCount" class="text-muted" style="margin-left:10px;"></span>
+        </div>
+    </div>
 
-                                <!-- Edit Salary Advance Modal -->
-                                <div class="modal fade" id="editAdvanceModal{{ $advance->id }}">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <form method="POST" action="{{ route('salary-advances.update', $advance->id) }}">
-                                                @csrf @method('PUT')
-                                                <div class="modal-header">
-                                                    <h4>Edit Salary Advance</h4>
-                                                </div>
-                                                <div class="modal-body">
-                                                    @include('payrolls.advance_form_fields', ['advance' => $advance])
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button class="btn btn-success">Update</button>
-                                                    <button type="button" class="btn btn-default"
-                                                            data-dismiss="modal">Cancel</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+    {{-- ===== Table ===== --}}
+    <table class="table table-bordered table-striped" id="advancesTable">
+        <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Amount (TZS)</th>
+                <th>Month</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        @forelse($salary_advances ?? [] as $advance)
+            @php
+                [$advYear, $advMonth] = array_pad(explode('-', $advance->month), 2, null);
+            @endphp
+            <tr class="advance-row"
+                data-year="{{ $advYear }}"
+                data-month="{{ $advMonth }}">
+                <td>
+                    @if ($advance->employee)
+                        {{ $advance->employee->firstname }} {{ $advance->employee->surname }}
+                    @else
+                        <em>No employee</em>
+                    @endif
+                </td>
+                <td>{{ number_format($advance->amount, 2) }}</td>
+                <td>{{ \Carbon\Carbon::parse($advance->month . '-01')->format('M Y') }}</td>
+                <td>
+                    <button class="btn btn-xs btn-info" data-toggle="modal"
+                            data-target="#editAdvanceModal{{ $advance->id }}">Edit</button>
+
+                    <form method="POST"
+                          action="{{ route('salary-advances.destroy', $advance->id) }}"
+                          style="display:inline;">
+                        @csrf @method('DELETE')
+                        <button class="btn btn-xs btn-danger"
+                                onclick="return confirm('Delete this advance?')">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="4" class="text-center text-muted">
+                    No salary advances found.
+                </td>
+            </tr>
+        @endforelse
+        </tbody>
+    </table>
+
+    {{-- ===== Modals OUTSIDE the table (valid HTML) ===== --}}
+    @foreach($salary_advances ?? [] as $advance)
+        <div class="modal fade" id="editAdvanceModal{{ $advance->id }}">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST"
+                          action="{{ route('salary-advances.update', $advance->id) }}">
+                        @csrf @method('PUT')
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            <h4>Edit Salary Advance</h4>
+                        </div>
+                        <div class="modal-body">
+                            @include('payrolls.advance_form_fields', ['advance' => $advance])
+                        </div>
+                        <div class="modal-footer">
+                            <button class="btn btn-success">Update</button>
+                            <button type="button" class="btn btn-default"
+                                    data-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endforeach
+</div>
 
                     <!-- Attendance Tab -->
                     <div role="tabpanel" class="tab-pane fade" id="attendance">
@@ -1001,6 +1047,51 @@ $(document).on('click', '.view-tuico-btn', function () {
         document.body.innerHTML = originalContents;
         location.reload(); // Optional: Refresh page
     }
+
+
+    /* ---------- Salary Advances filter ---------- */
+$(function () {
+    var $rows   = $('#advancesTable tbody tr.advance-row');
+    var $month  = $('#advanceFilterMonth');
+    var $year   = $('#advanceFilterYear');
+    var $count  = $('#advanceFilterCount');
+
+    function applyAdvanceFilter() {
+        var m = $month.val();
+        var y = $year.val();
+        var visible = 0;
+
+        $rows.each(function () {
+            var rowMonth = $(this).data('month') ? String($(this).data('month')).padStart(2, '0') : '';
+            var rowYear  = String($(this).data('year') || '');
+
+            var okMonth = !m || rowMonth === m;
+            var okYear  = !y || rowYear === y;
+            var ok      = okMonth && okYear;
+
+            $(this).toggle(ok);
+            if (ok) visible++;
+        });
+
+        if (!m && !y) {
+            $count.text('');
+        } else {
+            $count.text(visible + ' of ' + $rows.length + ' shown');
+        }
+    }
+
+    $month.on('change', applyAdvanceFilter);
+    $year.on('change',  applyAdvanceFilter);
+
+    $('#clearAdvanceFilter').on('click', function () {
+        $month.val('');
+        $year.val('');
+        applyAdvanceFilter();
+    });
+
+    // Initialise (no filter applied)
+    applyAdvanceFilter();
+});
 </script>
 
 @endsection
