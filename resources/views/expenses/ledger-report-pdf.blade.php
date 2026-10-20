@@ -76,17 +76,17 @@
         /* DETAIL ROWS */
         .ledger-table tr.detail-row td {
             font-size: 10px; 
-            color: #515c70;
+            color: #0a0d13;
             background-color: #fdfdfd !important;
             padding-top: 3px; padding-bottom: 3px;
-            border-bottom: 1px dashed #eef0f3;
+            border-bottom: 1px dashed #e1e6ee;
             border-top: none;
         }
 
          /* DETAIL ROWS */
         .value_num {
             font-size: 10px; 
-            color: #1b68f7 !important;
+            color: #0a0c0f !important;
             /* background-color: #fdfdfd !important; */
             /* padding-top: 3px; padding-bottom: 3px; */
             /* border-bottom: 1px dashed #eef0f3; */
