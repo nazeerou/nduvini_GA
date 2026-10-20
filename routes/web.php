@@ -31,7 +31,9 @@ use App\Http\Controllers\{
     LeaveTypeController,
     EmployeeNSSFController,
     LoanController,
-    SalaryAdvanceController
+    SalaryAdvanceController,
+    AccountTransactionController,
+    DebtController
 };
 
 /*
@@ -341,7 +343,8 @@ Route::middleware('auth')->group(function() {
         Route::get('accounts/client-statements', 'getClientStatement')->name('client-statement');
         Route::get('accounts/client-statements/pdf', 'getClientStatementPDF');
         
-        Route::get('accounts/petty-cash-reports', 'getPettyCashReports')->name('petty-cash-reports');
+                // Route::get('accounts/petty-cash-reports', 'getPettyCashReports')->name('petty-cash-reports');
+
         Route::get('accounts/petty-cash-reports/pdf', 'getPettyCashReportsPDF')->name('petty-cash-pdf');
         
         Route::get('accounts/suppliers-statements', 'getSupplierStatement')->name('client-statement');
@@ -368,14 +371,23 @@ Route::middleware('auth')->group(function() {
         Route::get('petty-cash-settings/delete/{id}', 'deletePettyCashSettings')->name('delete-petty-cash-settings');
         
         Route::get('accounts/expenditures/petty-cash', 'index')->name('index');
-        Route::post('accounts/add-petty-cash', 'saveExpenditure')->name('post-petty-cash');
+        // Route::post('accounts/add-petty-cash', 'saveExpenditure')->name('post-petty-cash');addPettyCash
+        Route::post('accounts/add-petty-cash', 'addPettyCash')->name('post-petty-cash');
+        
+        Route::get('accounts/petty-cash-reports', 'ledgerReport')->name('reports.petty-cash');
+
+        Route::get('/reports/ledger/pdf',  'downloadPdf')->name('reports.petty-cash-report');
+
+
         Route::get('accounts/expenditures/petty-cash/{date}', 'getExpenditureDetails')->name('index');
         Route::post('accounts/update-petty-cash', 'updateExpenditure')->name('update-petty-cash');
         Route::get('accounts/expenditures/petty-cash/delete-by-date/{id}', 'deleteExpenseByDate')->name('by-date');
         Route::get('accounts/expenditures/petty-cash/delete-by-id/{date}', 'deleteExpenseByID')->name('by-id');
         Route::get('accounts/expenditures/petty-cash/{id}/edit', 'editExpenditure')->name('edit');
         
+         Route::get('/category-report', 'categoryReportPettyCash')->name('category-report');
         Route::get('accounts/account-statements', 'getAccountStatement')->name('account-statemt');
+        Route::post('/accounts/add-cash-collection', 'addCashCollection')->name('accounts.addCashCollection');
     });
 
     // Accounts Routes
@@ -410,7 +422,7 @@ Route::get('/staffs/managements/employees/{id}', [EmployeeController::class, 'ge
 Route::post('/staffs/managements/employees/save', [EmployeeController::class, 'saveEmployee'])->name('employees.save');
 Route::get('/employees/filter', [EmployeeController::class, 'filter'])->name('employees.filtered');
 
-Route::resource('attendances', AttendanceController::class);
+// Route::resource('attendances', AttendanceController::class);
 Route::resource('payrolls', PayrollController::class);
 Route::resource('hr-settings', HRController::class);
 
@@ -509,4 +521,29 @@ Route::get('/salary-advances/pdf', [SalaryAdvanceController::class, 'downloadPdf
 
 Route::get('/loans/pdf', [LoanController::class, 'downloadPdf'])->name('loans.pdf');
 
+
+    Route::resource(
+        'account-transactions',
+        AccountTransactionController::class
+    )->except(['show']);
+
+    
+Route::get(
+    '/account-transactions/report',
+    [AccountTransactionController::class, 'report']
+)->name('account-transactions.report');
+
+});
+route::prefix('/accounting')->middleware(['auth'])->group(function () {
+    Route::get('/debts',                [DebtController::class, 'index'])->name('debts.index');
+    Route::post('/debts',               [DebtController::class, 'store'])->name('debts.store');
+    Route::post('/debts/categories',     [DebtController::class, 'storeCategory'])->name('debts.categories.store');
+    Route::get('/debts/statement-all',   [DebtController::class, 'statementAll'])->name('debts.statement.all');
+    Route::post('/debts/{debt}/pay',     [DebtController::class, 'pay'])->name('debts.pay');
+    Route::get('/debts/{debt}/statement',[DebtController::class, 'statement'])->name('debts.statement');
+    Route::get('/debts/statement-all/pdf',[DebtController::class, 'statementAllPdf'])->name('debts.statement.all.pdf');
+    Route::get('/debts/{debt}/pdf',       [DebtController::class, 'statementPdf'])->name('debts.statement.pdf');
+
+    Route::patch('/payments/{payment}', [DebtController::class, 'updatePayment'])->name('debts.payments.update');
+Route::delete('/payments/{payment}', [DebtController::class, 'destroyPayment'])->name('debts.payments.destroy');
 });

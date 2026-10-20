@@ -11,4 +11,9 @@ class AccountHistory extends Model
     protected $fillable =[
         "account_id", "amount", "branch_id", "created_date", 
     ];
+
+    public function account()
+{
+    return $this->belongsTo(Account::class, 'account_id');
+}
 }

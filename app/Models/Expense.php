@@ -15,4 +15,9 @@ class Expense extends Model
     public function expenseCategory() {
     	return $this->belongsTo('App\ExpenseCategory');
     }
+
+    public function category()
+{
+    return $this->belongsTo(PettyCashCategory::class, 'expense_category_id');
+}
 }

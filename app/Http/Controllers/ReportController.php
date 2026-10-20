@@ -223,85 +223,179 @@ public function getClientStatementPDF(Request $request) {
         }
     
 
-      public function getPettyCashReportsPDF(Request $request) {
+public function getPettyCashReportsPDF(Request $request)
+{
+    $request->validate([
+        'startdate' => 'required|date',
+        'enddate' => 'required|date|after_or_equal:startdate',
+        'expense_category_id' => 'nullable|integer',
+    ]);
+
+    $startdate = Carbon::parse($request->startdate)->toDateString();
+    $enddate = Carbon::parse($request->enddate)->toDateString();
+
+    $branchId = Auth::user()->branch_id;
+    $expenseCategory = $request->expense_category_id;
+
+    $petty = $expenseCategory
+        ? PettyCashCategory::find($expenseCategory)
+        : null;
+
+    $settings = DB::table('general_settings')
+        ->select('business_name', 'logo_file', 'type', 'address')
+        ->first();
+
+    // Base query: only the current user's branch.
+    $baseQuery = DB::table('account_transactions')
+        ->where('branch_id', $branchId);
+
+    if (!empty($expenseCategory)) {
+        $baseQuery->where(
+            'expense_category_id',
+            $expenseCategory
+        );
+    }
+
+    // Opening balance = all debits minus all credits
+    // posted before the selected start date.
+    $openingQuery = clone $baseQuery;
+
+    $openingBalance = $openingQuery
+        ->where('transaction_date', '<', $startdate)
+        ->selectRaw(
+            'COALESCE(SUM(debit), 0) -
+             COALESCE(SUM(credit), 0) AS balance'
+        )
+        ->value('balance');
+
+    $openingBalance = (float) ($openingBalance ?? 0);
+
+    // Ledger entries within the selected reporting period.
+    $petty_cash = (clone $baseQuery)
+        ->whereBetween('transaction_date', [
+            $startdate,
+            $enddate
+        ])
+        ->orderBy('transaction_date')
+        ->orderBy('id')
+        ->get();
+
+    // Period totals.
+    $totalDebit = (clone $baseQuery)
+        ->whereBetween('transaction_date', [
+            $startdate,
+            $enddate
+        ])
+        ->sum('debit');
+
+    $totalCredit = (clone $baseQuery)
+        ->whereBetween('transaction_date', [
+            $startdate,
+            $enddate
+        ])
+        ->sum('credit');
+
+    $closingBalance = $openingBalance
+        + (float) $totalDebit
+        - (float) $totalCredit;
+
+    $pdf = App::make('dompdf.wrapper');
+
+    $pdf->loadView('clients.petty_cash_report_pdf', compact(
+        'startdate',
+        'enddate',
+        'petty_cash',
+        'settings',
+        'petty',
+        'openingBalance',
+        'totalDebit',
+        'totalCredit',
+        'closingBalance'
+    ));
+
+    $pdf->setPaper('A4', 'landscape');
+
+    return $pdf->stream('petty_cash_ledger.pdf');
+}
+    //   public function getPettyCashReportsPDF(Request $request) {
                  
-            $startdate= $request->startdate;
-            $enddate= $request->enddate;
-            $expense_category = $request->expense_category_id;
+    //         $startdate= $request->startdate;
+    //         $enddate= $request->enddate;
+    //         $expense_category = $request->expense_category_id;
 
-            $petty = PettyCashCategory::where('id', $request->expense_category_id)->select('name')->first();
+    //         $petty = PettyCashCategory::where('id', $request->expense_category_id)->select('name')->first();
 
-            $settings= DB::table('general_settings')->select('business_name', 'logo_file', 'type', 'address')->get();
+    //         $settings= DB::table('general_settings')->select('business_name', 'logo_file', 'type', 'address')->get();
 
-            if($expense_category == NULL) {
-                if($expense_category == NULL) {
-                    $petty_cash_query = DB::table('expenses')
-                        ->select(DB::raw("SUM(expenses.amount) as amount"), 'expenses.reference_no', 'expenses.paid_to', 'expenses.user_id', 'expenses.note', 'expenses.voucher_no', 'expenses.account_id', 'users.fname', 'users.lname', 
-                            DB::raw("COALESCE(expenses.created_date, '0000-00-00') as created_date")) // Handle NULL created_date as empty
-                        ->leftJoin('users', 'users.id', 'expenses.user_id')
-                        ->where('expenses.branch_id', Auth::user()->branch_id);
+    //         if($expense_category == NULL) {
+    //             if($expense_category == NULL) {
+    //                 $petty_cash_query = DB::table('expenses')
+    //                     ->select(DB::raw("SUM(expenses.amount) as amount"), 'expenses.reference_no', 'expenses.paid_to', 'expenses.user_id', 'expenses.note', 'expenses.voucher_no', 'expenses.account_id', 'users.fname', 'users.lname', 
+    //                         DB::raw("COALESCE(expenses.created_date, '0000-00-00') as created_date")) // Handle NULL created_date as empty
+    //                     ->leftJoin('users', 'users.id', 'expenses.user_id')
+    //                     ->where('expenses.branch_id', Auth::user()->branch_id);
                 
-                    // Add whereBetween only if both startdate and enddate are provided
-                    if (!empty($request->startdate) && !empty($request->enddate)) {
-                        $petty_cash_query->whereBetween('expenses.created_date', [$request->startdate, $request->enddate]);
-                    }
+    //                 // Add whereBetween only if both startdate and enddate are provided
+    //                 if (!empty($request->startdate) && !empty($request->enddate)) {
+    //                     $petty_cash_query->whereBetween('expenses.created_date', [$request->startdate, $request->enddate]);
+    //                 }
                 
-                    $petty_cash = $petty_cash_query
-                        ->groupBy('expenses.paid_to', 'expenses.user_id', 'expenses.reference_no', 'expenses.note', 'expenses.voucher_no', 'expenses.account_id', 'users.fname', 'users.lname', 'expenses.created_date')
-                        ->orderBy('expenses.created_date', 'asc')
-                        ->get();
+    //                 $petty_cash = $petty_cash_query
+    //                     ->groupBy('expenses.paid_to', 'expenses.user_id', 'expenses.reference_no', 'expenses.note', 'expenses.voucher_no', 'expenses.account_id', 'users.fname', 'users.lname', 'expenses.created_date')
+    //                     ->orderBy('expenses.created_date', 'asc')
+    //                     ->get();
                 
-                    // Total amounts
-                    $total_amounts_query = DB::table('expenses')
-                        ->select(DB::raw("SUM(amount) as total_amount"));
+    //                 // Total amounts
+    //                 $total_amounts_query = DB::table('expenses')
+    //                     ->select(DB::raw("SUM(amount) as total_amount"));
                 
-                    // Apply date filter only if startdate and enddate are provided
-                    if (!empty($request->startdate) && !empty($request->enddate)) {
-                        $total_amounts_query->whereBetween('created_date', [$request->startdate, $request->enddate]);
-                    }
+    //                 // Apply date filter only if startdate and enddate are provided
+    //                 if (!empty($request->startdate) && !empty($request->enddate)) {
+    //                     $total_amounts_query->whereBetween('created_date', [$request->startdate, $request->enddate]);
+    //                 }
                 
-                    $total_amounts = $total_amounts_query->get();
-                }
+    //                 $total_amounts = $total_amounts_query->get();
+    //             }
                 
-            }   else {     
-                $petty_cash_query = DB::table('expenses')
-                               ->select(DB::raw("SUM(expenses.amount) as amount"), 'expenses.reference_no', 'expenses.paid_to', 'expenses.user_id', 'expenses.note', 'expenses.voucher_no', 'expenses.account_id', 'users.fname', 'users.lname', 
-                                   DB::raw("COALESCE(expenses.created_date, '0000-00-00') as created_date")) // Handle NULL created_date as empty
-                               ->leftJoin('users', 'users.id', 'expenses.user_id')
-                               ->where('expenses.branch_id', Auth::user()->branch_id)
-                                ->where('expense_category_id', $expense_category);
+    //         }   else {     
+    //             $petty_cash_query = DB::table('expenses')
+    //                            ->select(DB::raw("SUM(expenses.amount) as amount"), 'expenses.reference_no', 'expenses.paid_to', 'expenses.user_id', 'expenses.note', 'expenses.voucher_no', 'expenses.account_id', 'users.fname', 'users.lname', 
+    //                                DB::raw("COALESCE(expenses.created_date, '0000-00-00') as created_date")) // Handle NULL created_date as empty
+    //                            ->leftJoin('users', 'users.id', 'expenses.user_id')
+    //                            ->where('expenses.branch_id', Auth::user()->branch_id)
+    //                             ->where('expense_category_id', $expense_category);
 
-                           // Add whereBetween only if both startdate and enddate are provided
-                           if (!empty($request->startdate) && !empty($request->enddate)) {
-                               $petty_cash_query->whereBetween('expenses.created_date', [$request->startdate, $request->enddate]);
-                           }
+    //                        // Add whereBetween only if both startdate and enddate are provided
+    //                        if (!empty($request->startdate) && !empty($request->enddate)) {
+    //                            $petty_cash_query->whereBetween('expenses.created_date', [$request->startdate, $request->enddate]);
+    //                        }
                        
-                           $petty_cash = $petty_cash_query
-                               ->groupBy('expenses.paid_to', 'expenses.user_id', 'expenses.reference_no', 'expenses.note', 'expenses.voucher_no', 'expenses.account_id', 'users.fname', 'users.lname', 'expenses.created_date')
-                               ->orderBy('expenses.created_date', 'asc')
-                               ->get();
+    //                        $petty_cash = $petty_cash_query
+    //                            ->groupBy('expenses.paid_to', 'expenses.user_id', 'expenses.reference_no', 'expenses.note', 'expenses.voucher_no', 'expenses.account_id', 'users.fname', 'users.lname', 'expenses.created_date')
+    //                            ->orderBy('expenses.created_date', 'asc')
+    //                            ->get();
                        
-                           // Total amounts
-                           $total_amounts_query = DB::table('expenses')
-                               ->select(DB::raw("SUM(amount) as total_amount"))
-                               ->where('expense_category_id', $expense_category);
+    //                        // Total amounts
+    //                        $total_amounts_query = DB::table('expenses')
+    //                            ->select(DB::raw("SUM(amount) as total_amount"))
+    //                            ->where('expense_category_id', $expense_category);
                 
                        
-                           // Apply date filter only if startdate and enddate are provided
-                           if (!empty($request->startdate) && !empty($request->enddate)) {
-                               $total_amounts_query->whereBetween('created_date', [$request->startdate, $request->enddate]);
-                           }
+    //                        // Apply date filter only if startdate and enddate are provided
+    //                        if (!empty($request->startdate) && !empty($request->enddate)) {
+    //                            $total_amounts_query->whereBetween('created_date', [$request->startdate, $request->enddate]);
+    //                        }
                        
-                           $total_amounts = $total_amounts_query->get();
-            }
+    //                        $total_amounts = $total_amounts_query->get();
+    //         }
 
                        
-        $pdf = App::make('dompdf.wrapper');
-        $pdf->loadView('clients.petty_cash_report_pdf', 
-        compact('startdate', 'enddate', 'petty_cash', 'settings', 'total_amounts', 'petty'));
-        return $pdf->stream();
+    //     $pdf = App::make('dompdf.wrapper');
+    //     $pdf->loadView('clients.petty_cash_report_pdf', 
+    //     compact('startdate', 'enddate', 'petty_cash', 'settings', 'total_amounts', 'petty'));
+    //     return $pdf->stream();
 
-        }
+    //     }
 
 
       public function getSupplierStatement() {

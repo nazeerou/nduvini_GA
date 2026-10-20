@@ -1,7 +1,5 @@
 @extends('layouts.app_header')
-
 @section('content')
-
 <style>
     .filter {
         border: 2px solid #DDDFE1;

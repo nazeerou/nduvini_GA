@@ -19,35 +19,50 @@
         #sales_report th {
             background-color: #eee;
         }
-        #sales_report tr:hover {
-            background-color: #ddd;
-        }
+
+        /* ---- page-break control ---- */
+        #sales_report thead { display: table-header-group; }
+        #sales_report tr    { page-break-inside: avoid; }
+
+        /* ---- repeating header ---- */
         header {
             position: fixed;
-            top: -136px;
+            top: -270px;                 /* 280 - 270 = 10px from page top */
             width: 100%;
-            height: 130px;
+            height: auto;                /* auto — do not clip content */
         }
+        header img {
+            height: 130px;
+            width: 100%;
+        }
+        /* header hr { margin: 4px 0; } */
+        header table,
+        header table td { border: none; padding: 2px 0; }
+        header p { margin: 2px 0; }
+
+        /* ---- repeating footer ---- */
         footer {
             position: fixed;
-            bottom: -95px;
-            height: 90px;
+            bottom: -90px;               /* -margin-bottom − 10 */
+            height: auto;
             width: 100%;
             text-align: right;
             font-size: 13px;
         }
-        .page-number:before {
-            content: counter(page);
-        }
-        main {
-            margin-top: 160px;
-        }
-        .page-break {
-            page-break-before: always;
-        }
+
+        .page-number:before { content: counter(page); }
+
+        /* @page margin-top must cover the FULL header height (~250px) */
         @page {
-            margin: 140px 25px 100px 25px;
+            margin: 280px 25px 100px 25px;
         }
+
+        main {
+            margin-top: 0;               /* the @page margin handles the gap */
+        }
+
+        .page-break { page-break-before: always; }
+
         .total-row {
             font-weight: bold;
             background-color: #f0f0f0;
@@ -63,9 +78,9 @@
 <body>
 
 <header>
-    <img src="{{ public_path('assets/images/nduvini_header.png') }}" alt="Header Image" style="height: 130px; width: 100%;">
+    <img src="{{ public_path('assets/images/nduvini_header.png') }}" alt="Header Image">
     <hr>
-    <table style="border: none;">
+    <table>
         <tr>
             <td width="70%">
                 @if (count($purchases))
@@ -111,23 +126,23 @@
         <tbody>
             @php
                 $totalInvoice = 0;
-                $totalDebit = 0;
-                $totalCredit = 0;
+                $totalDebit   = 0;
+                $totalCredit  = 0;
                 $totalBalance = 0;
             @endphp
 
             @forelse ($purchases as $s)
                 @php
                     $invoiceAmount = $s->total_amount;
-                    $creditAmount = $s->paid_amount;
-                    $debitAmount = max(0, $s->total_amount - $s->paid_amount);
-                    $balance = $s->total_amount - $s->paid_amount;
+                    $creditAmount  = $s->paid_amount;
+                    $debitAmount   = max(0, $s->total_amount - $s->paid_amount);
+                    $balance       = $s->total_amount - $s->paid_amount;
 
                     $totalInvoice += $invoiceAmount;
                     if ($payment == '1') {
                         $totalCredit += $creditAmount;
                     } elseif ($payment == '') {
-                        $totalDebit += $debitAmount;
+                        $totalDebit  += $debitAmount;
                         $totalCredit += $creditAmount;
                     } else {
                         $totalDebit += $debitAmount;
@@ -159,7 +174,6 @@
                 </tr>
             @endforelse
 
-            {{-- Totals Row --}}
             <tr class="total-row">
                 <td colspan="3" style="text-align: right;">TOTAL</td>
                 <td>{{ number_format($totalInvoice, 2) }}</td>
