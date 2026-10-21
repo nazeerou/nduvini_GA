@@ -270,4 +270,21 @@ public function statementAllPdf(Request $request)
         $payment->delete();
         return back()->with('message', 'Payment deleted successfully.');
     }
+
+    public function destroy(Debt $debt)
+{
+    try {
+        DB::beginTransaction();
+        // Delete related payments first
+        $debt->payments()->delete();
+        $debt->delete();
+        DB::commit();
+
+        return redirect()->route('debts.index')->with('message', 'Debt deleted successfully.');
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        Log::error('Failed to delete debt: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Unable to delete debt. Please try again.');
+    }
+}
 }

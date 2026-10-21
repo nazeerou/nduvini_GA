@@ -448,6 +448,18 @@
         .filter-form .col-md-2 { margin-bottom: 10px; }
     }
     @media print { .no-print { display: none !important; } }
+
+    .btn-danger {
+    background: var(--danger) !important;
+    border-color: var(--danger) !important;
+    color: #fff !important;
+}
+.btn-danger:hover, .btn-danger:focus {
+    background: #a52f22 !important;
+    border-color: #a52f22 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(192, 57, 43, 0.25);
+}
 </style>
 
 <div class="row">
@@ -647,6 +659,17 @@
                                        class="btn btn-sm btn-default btn-rounded">
                                         <i class="fa fa-file-text-o"></i> View
                                     </a>
+                                      @if (Auth::user()->role_id == 1 OR Auth::user()->role_id == 2)
+                                    <form action="{{ route('debts.destroy', $d->id) }}" method="POST" style="display:inline-block;"
+                                    onsubmit="return confirm('Delete this debt? This will also remove its payment history.');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger btn-rounded">
+                                        <i class="fa fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                                @else 
+                                @endif
                                 </td>
                             </tr>
                         @empty

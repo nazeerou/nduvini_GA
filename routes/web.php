@@ -430,6 +430,8 @@ Route::get('staffs/managements/employees/generate-pdf/view', [EmployeeController
 Route::resource('payrolls', PayrollController::class);
 Route::resource('hr-settings', HRController::class);
 
+Route::delete('/debts/{debt}', [DebtController::class, 'destroy'])->name('debts.destroy');
+
 // Departments
 Route::resource('departments', DepartmentController::class)->only(['store', 'update', 'destroy']);
 
