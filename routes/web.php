@@ -420,7 +420,11 @@ Route::get('/staffs/managements', [EmployeeController::class, 'index'])->name('e
 Route::resource('employees', EmployeeController::class);
 Route::get('/staffs/managements/employees/{id}', [EmployeeController::class, 'getEmployeeDetails'])->name('employees.details');
 Route::post('/staffs/managements/employees/save', [EmployeeController::class, 'saveEmployee'])->name('employees.save');
-Route::get('/employees/filter', [EmployeeController::class, 'filter'])->name('employees.filtered');
+// Route::get('/employees/filter', [EmployeeController::class, 'filter'])->name('employees.filtered');
+
+Route::get('staffs/managements/filter', [EmployeeController::class, 'filter'])->name('employees.filter');
+
+Route::get('staffs/managements/employees/generate-pdf/view', [EmployeeController::class, 'generatePdf'])->name('employees.generatePdf');
 
 // Route::resource('attendances', AttendanceController::class);
 Route::resource('payrolls', PayrollController::class);
