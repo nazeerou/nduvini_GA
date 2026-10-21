@@ -460,6 +460,78 @@
     transform: translateY(-1px);
     box-shadow: 0 4px 10px rgba(192, 57, 43, 0.25);
 }
+
+/* ============================================================
+   PAID (completed) indicator — success-tinted status pill
+   ============================================================ */
+.btn-paid-disabled {
+    background: var(--success-50) !important;
+    color: var(--success) !important;
+    border: 1px solid var(--success-200) !important;
+    cursor: default;
+    font-weight: 600;
+    box-shadow: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+.btn-paid-disabled i {
+    color: var(--success);
+    font-size: 11px;
+}
+.btn-paid-disabled:hover {
+    /* keep static — it's a status, not an action */
+    background: var(--success-50) !important;
+    color: var(--success) !important;
+    border-color: var(--success-200) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* ============================================================
+   VIEW action — refined ghost/outline with brand fill on hover
+   ============================================================ */
+.btn-view-action {
+    background: #fff;
+    color: var(--brand-700);
+    border: 1px solid var(--brand-200);
+    font-weight: 500;
+    box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.18s var(--ease);
+}
+.btn-view-action:hover,
+.btn-view-action:focus {
+    background: var(--brand-700);
+    color: #fff;
+    border-color: var(--brand-700);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(23, 45, 73, 0.22);
+    outline: none;
+    text-decoration: none;
+}
+.btn-view-action i {
+    font-size: 11px;
+}
+
+/* ============================================================
+   Actions cell — even spacing
+   ============================================================ */
+#datatable tbody td.actions-cell {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+#datatable tbody td.actions-cell > * {
+    margin: 0 !important;
+}
+#datatable tbody td.actions-cell form {
+    margin: 0 !important;
+    display: inline-flex;
+}
 </style>
 
 <div class="row">
