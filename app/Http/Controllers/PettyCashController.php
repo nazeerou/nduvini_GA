@@ -85,25 +85,25 @@ class PettyCashController extends Controller
         return redirect('accounts/expenditures/petty-cash')->with('message', 'Expenditure added successfully');
     }
 
-    public function addPettyCash(Request $request)
+  public function addPettyCash(Request $request)
 {
     $validated = $request->validate([
-        'account_id' => 'required|integer|exists:accounts,id',
+        'account_id'   => 'required|integer|exists:accounts,id',
         'created_date' => 'required|date_format:Y-m-d',
-        'voucher_no' => 'nullable|string|max:100',
+        'voucher_no'   => 'nullable|string|max:100',
 
         'expenses' => 'required|array|min:1',
         'expenses.*.expense_category_id' =>
             'required|integer|exists:petty_cash_categories,id',
         'expenses.*.amount' =>
             'required|numeric|gt:0|max:9999999999999999.99',
-        'expenses.*.note' => 'nullable|string|max:255',
+        'expenses.*.note'    => 'nullable|string|max:255',
         'expenses.*.paid_to' => 'nullable|string|max:191',
     ]);
 
     $user = Auth::user();
 
-    if (!$user) {
+    if (! $user) {
         abort(401, 'Please log in to continue.');
     }
 
@@ -116,98 +116,74 @@ class PettyCashController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if (!$account) {
-                throw ValidationException::withMessages([
-                    'account_id' => 'The selected account was not found.',
-                ]);
+            if (! $account) {
+                $this->failValidation('account_id', 'The selected account was not found.');
             }
 
             if ((int) $account->is_active !== 1) {
-                throw ValidationException::withMessages([
-                    'account_id' => 'The selected account is inactive.',
-                ]);
+                $this->failValidation('account_id', 'The selected account is inactive.');
             }
 
-            // Allow shared accounts with a NULL branch_id.
             if (
                 $account->branch_id !== null &&
                 (int) $account->branch_id !== (int) $user->branch_id
             ) {
-                throw ValidationException::withMessages([
-                    'account_id' =>
-                        'You cannot record expenses for this account.',
-                ]);
+                $this->failValidation('account_id', 'You cannot record expenses for this account.');
             }
 
-            // Validate and total all rows.
+            // Total the rows.
             $totalAmount = 0;
-
             foreach ($validated['expenses'] as $expense) {
                 $totalAmount += round((float) $expense['amount'], 2);
             }
-
             $totalAmount = round($totalAmount, 2);
 
             $currentBalance = (float) (
-                $account->total_balance !== null &&
-                $account->total_balance !== ''
+                $account->total_balance !== null && $account->total_balance !== ''
                     ? $account->total_balance
                     : ($account->initial_balance ?? 0)
             );
 
-            // Prevent spending more than the available account balance.
             if ($totalAmount > $currentBalance) {
-                throw ValidationException::withMessages([
-                    'expenses' => 'Insufficient account balance. Available balance: ' .
-                        number_format($currentBalance, 2) .
-                        '. Total expenses: ' .
-                        number_format($totalAmount, 2) . '.',
-                ]);
+                $this->failValidation(
+                    'expenses',
+                    'Insufficient account balance. ' .
+                    'Available balance: ' . number_format($currentBalance, 2) .
+                    '. Total expenses: ' . number_format($totalAmount, 2) . '.'
+                );
             }
 
             foreach ($validated['expenses'] as $expense) {
-                $amount = round((float) $expense['amount'], 2);
-
+                $amount    = round((float) $expense['amount'], 2);
                 $reference = now()->format('YmdHis');
 
-                /*
-                 * Assumes these columns exist in your expenses table.
-                 * Add business_id or other required columns if your
-                 * existing schema requires them.
-                 */
                 DB::table('expenses')->insert([
-                    'branch_id' => $user->branch_id,
-                    'user_id' => $user->id,
-                    'expense_category_id' =>
-                        $expense['expense_category_id'],
-                    'amount' => number_format($amount, 2, '.', ''),
-                    'note' => $expense['note'] ?? null,
-                    'paid_to' => $expense['paid_to'] ?? null,
-                    'voucher_no' => $validated['voucher_no'] ?? null,
-                    'created_date' => $validated['created_date'],
-                     'account_id' => $account->id,
-                    'reference' => $reference,
+                    'branch_id'           => $user->branch_id,
+                    'user_id'             => $user->id,
+                    'expense_category_id' => $expense['expense_category_id'],
+                    'amount'              => number_format($amount, 2, '.', ''),
+                    'note'                => $expense['note']    ?? null,
+                    'paid_to'             => $expense['paid_to'] ?? null,
+                    'voucher_no'          => $validated['voucher_no'] ?? null,
+                    'created_date'        => $validated['created_date'],
+                    'account_id'          => $account->id,
+                    'reference'           => $reference,
                 ]);
 
-                // Record the outgoing transaction in account history.
                 DB::table('account_histories')->insert([
-                    'branch_id' => $user->branch_id,
-                    'user_id' => $user->id,
-                    'account_id' => $account->id,
-                    'amount' => number_format(-$amount, 2, '.', ''),
-                    'reference' => $reference,
-                    'note' => 'Petty cash expense: ' .
-                        ($expense['note'] ?? 'Expense') .
-                        (
-                            !empty($validated['voucher_no'])
-                                ? ' | Voucher: ' . $validated['voucher_no']
-                                : ''
-                        ),
+                    'branch_id'    => $user->branch_id,
+                    'user_id'      => $user->id,
+                    'account_id'   => $account->id,
+                    'amount'       => number_format(-$amount, 2, '.', ''),
+                    'reference'    => $reference,
+                    'note'         => 'Petty cash expense: ' . ($expense['note'] ?? 'Expense')
+                                     . (! empty($validated['voucher_no'])
+                                         ? ' | Voucher: ' . $validated['voucher_no']
+                                         : ''),
                     'created_date' => $validated['created_date'],
                 ]);
             }
 
-            // Deduct the entire bulk expense total once.
             DB::update(
                 "UPDATE accounts
                  SET total_balance =
@@ -236,19 +212,28 @@ class PettyCashController extends Controller
 
     } catch (\Throwable $e) {
         Log::error('Bulk petty cash expense failed', [
-            'user_id' => $user->id,
+            'user_id'    => $user->id,
             'account_id' => $validated['account_id'] ?? null,
-            'error' => $e->getMessage(),
+            'error'      => $e->getMessage(),
         ]);
 
         return redirect()
             ->back()
             ->withInput()
-            ->with(
-                'error',
-                'Unable to save petty cash expenses. Please try again.'
-            );
+            ->with('error', 'Unable to save petty cash expenses. Please try again.');
     }
+}
+
+/**
+ * Flash a message to BOTH channels (session('error') and the $errors bag)
+ * so any view style can display it without changing the controller logic.
+ */
+protected function failValidation(string $field, string $message): void
+{
+    session()->flash('error', $message);
+    session()->flash('error_field', $field);
+
+    throw ValidationException::withMessages([$field => $message]);
 }
 
   public function getExpenditureDetails($date) {
