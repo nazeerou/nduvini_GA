@@ -18,6 +18,8 @@ use App\Models\SalaryGroup;
     use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
 
 class PayrollController extends Controller
 {
@@ -359,210 +361,309 @@ $salary_advances = SalaryAdvance::with('employee')
 public function store(Request $request)
 {
     $request->validate([
-        'month'     => 'required|date_format:Y-m',
-        'employees' => 'required|array',
+        'month' => 'required|date_format:Y-m',
+        'employees' => 'required|array|min:1',
     ]);
 
-    $month     = $request->input('month');
-    $employees = $request->input('employees');
-    $branchId  = Auth::user()->branch_id;
+    $month = $request->input('month');
+    $employees = $request->input('employees', []);
+    $branchId = Auth::user()->branch_id;
 
-    $loanDeductions    = [];
-    $advanceDeductions = [];
-    $created           = 0;
-    $skipped           = 0;
+    $created = 0;
+    $skipped = 0;
 
-    DB::beginTransaction();
+    /*
+     * IMPORTANT:
+     * One reference for the entire payroll batch.
+     * Do not generate a different reference inside the loop.
+     */
+    $batchReference = 'PAY-'
+        . str_replace('-', '', $month)
+        . '-'
+        . strtoupper(Str::random(8));
 
     try {
-        foreach ($employees as $employeeId => $data) {
-            // Skip employees whose checkbox isn't ticked
-            if (empty($data['selected'])) {
-                continue;
-            }
-
-            // Idempotency — skip if payroll for this month already exists
-            if (Payroll::where('employee_id', $employeeId)
-                       ->where('month', $month)
-                       ->exists()) {
-                $skipped++;
-                continue;
-            }
-
-            $basicSalary = (float) ($data['basic_salary'] ?? 0);
-            $allowance   = (float) ($data['allowance'] ?? 0);
-            $grossSalary = $basicSalary + $allowance;
-            $deduction   = 0;
-
-            /* ---------- 1. LOAN DEDUCTION ---------- */
-            $loan = DB::table('loans')
-                ->where('employee_id', $employeeId)
-                ->where('balance', '>', 0)
-                ->orderBy('id', 'desc')
-                ->lockForUpdate()          // prevent race on balance
-                ->first();
-
-            if ($loan) {
-                $deductAmount = min((float) $loan->monthly_deduction, (float) $loan->balance);
-
-                if ($deductAmount > 0) {
-                    $newBalance = $loan->balance - $deductAmount;
-
-                    DB::table('loans')->where('id', $loan->id)->update([
-                        'balance'    => $newBalance,
-                        'status'     => $newBalance <= 0 ? 'paid' : 'active',
-                        'updated_at' => now(),
-                    ]);
-
-                    DB::table('loan_repayments')->insert([
-                        'loan_id'        => $loan->id,
-                        'branch_id'      => $branchId,
-                        'employee_id'    => $employeeId,
-                        'amount'         => $deductAmount,
-                        'deduction_date' => $month,
-                        'created_at'     => now(),
-                        'updated_at'     => now(),
-                    ]);
-
-                    $deduction       += $deductAmount;
-                    $loanDeductions[] = [
-                        'employee_id' => $employeeId,
-                        'loan_id'     => $loan->id,
-                        'deducted'    => $deductAmount,
-                    ];
+        DB::transaction(function () use (
+            $employees,
+            $month,
+            $branchId,
+            $batchReference,
+            &$created,
+            &$skipped
+        ) {
+            foreach ($employees as $key => $data) {
+                if (!is_array($data)) {
+                    continue;
                 }
-            }
 
-            /* ---------- 2. SALARY ADVANCE ---------- */
-            $advance = DB::table('salary_advances')
-                ->where('employee_id', $employeeId)
-                ->where('month', $month)
-                ->where('status', '!=', 'deducted')
-                ->first();
+                // Support employees[12][selected] checkbox submissions.
+                $selectedValue = $data['selected'] ?? false;
 
-            if ($advance && (float) $advance->amount > 0) {
-                $deduction += (float) $advance->amount;
+                $isSelected = in_array(
+                    $selectedValue,
+                    [true, 1, '1', 'on', 'yes'],
+                    true
+                );
 
-                DB::table('salary_advances')->where('id', $advance->id)->update([
-                    'status'     => 'deducted',
-                    'updated_at' => now(),
-                ]);
-
-                $advanceDeductions[] = [
-                    'employee_id' => $employeeId,
-                    'amount'      => (float) $advance->amount,
-                ];
-            }
-
-            /* ---------- 3. CONTRIBUTIONS + NSSF ---------- */
-            $contributionIds = array_filter((array) ($data['contributions'] ?? []));
-
-            $contributions = empty($contributionIds)
-                ? collect()
-                : DB::table('contributions')
-                    ->whereIn('id', $contributionIds)
-                    ->get()
-                    ->keyBy('id');
-
-            $nssf = 0;
-            foreach ($contributions as $c) {
-                if (stripos($c->name, 'nssf') !== false) {
-                    $rate  = !empty($c->rate) ? (float) $c->rate : 0.10;
-                    $nssf += $grossSalary * $rate;
+                if (!$isSelected) {
+                    continue;
                 }
-            }
 
-            /* ---------- 4. PAYE ---------- */
-            $taxableIncome = max(0, $grossSalary - $nssf);
+                $employeeId = (int) ($data['employee_id'] ?? $key);
 
-            if ($taxableIncome <= 270000) {
+                if ($employeeId <= 0) {
+                    continue;
+                }
+
+                // Confirm employee belongs to the logged-in user's branch.
+                $employee = Employee::where('id', $employeeId)
+                    ->where('branch_id', $branchId)
+                    ->first();
+
+                if (!$employee) {
+                    continue;
+                }
+
+                // Avoid generating the same employee's payroll twice.
+                $exists = Payroll::where('employee_id', $employeeId)
+                    ->where('branch_id', $branchId)
+                    ->where('month', $month)
+                    ->exists();
+
+                if ($exists) {
+                    $skipped++;
+                    continue;
+                }
+
+                $basicSalary = max(
+                    0,
+                    (float) ($data['basic_salary'] ?? 0)
+                );
+
+                $allowance = max(
+                    0,
+                    (float) ($data['allowance'] ?? 0)
+                );
+
+                $grossSalary = $basicSalary + $allowance;
+
+                $loanDeduction = 0;
+                $advanceDeduction = 0;
+                $nssf = 0;
                 $paye = 0;
-            } elseif ($taxableIncome <= 520000) {
-                $paye = ($taxableIncome - 270000) * 0.08;
-            } elseif ($taxableIncome <= 760000) {
-                $paye = 20000 + ($taxableIncome - 520000) * 0.20;
-            } elseif ($taxableIncome <= 1000000) {
-                $paye = 68000 + ($taxableIncome - 760000) * 0.25;
-            } else {
-                $paye = 128000 + ($taxableIncome - 1000000) * 0.30;
-            }
 
-            /* ---------- 5. NET SALARY (include PAYE + NSSF) ---------- */
-            $netSalary = $grossSalary - $nssf - $paye - $deduction;
+                /*
+                 * Outstanding loan.
+                 */
+                $loan = DB::table('loans')
+                    ->where('employee_id', $employeeId)
+                    ->where('branch_id', $branchId)
+                    ->where('balance', '>', 0)
+                    ->orderByDesc('id')
+                    ->lockForUpdate()
+                    ->first();
 
-            /* ---------- 6. UNIQUE REFERENCE PER EMPLOYEE ---------- */
-            $reference = sprintf(
-                $month,
-                $employeeId,
-                now()->format('YmdHisv')   // millisecond precision
-            );
+                if ($loan) {
+                    $balance = max(0, (float) $loan->balance);
 
-            $payroll = Payroll::create([
-                'employee_id'  => $employeeId,
-                'branch_id'    => $branchId,
-                'reference'    => $reference,
-                'month'        => $month,
-                'basic_salary' => $basicSalary,
-                'allowance'    => $allowance,
-                'paye'         => $paye,
-                'net_salary'   => $netSalary,
-                // 'nssf' => $nssf,  // uncomment if column exists
-            ]);
+                    $monthlyAmount = max(
+                        0,
+                        (float) ($loan->monthly_deduction ?? 0)
+                    );
 
-            /* ---------- 7. PAYROLL CONTRIBUTIONS ---------- */
-            foreach ($contributions as $c) {
-                PayrollContribution::create([
-                    'payroll_id'      => $payroll->id,
-                    'contribution_id' => $c->id,
-                    'name'            => $c->name,
-                    'rate'            => $c->rate ?? null,
-                    'branch_id'       => $branchId,
+                    $loanDeduction = min($monthlyAmount, $balance);
+
+                    if ($loanDeduction > 0) {
+                        $newBalance = round(
+                            $balance - $loanDeduction,
+                            2
+                        );
+
+                        DB::table('loans')
+                            ->where('id', $loan->id)
+                            ->update([
+                                'balance' => $newBalance,
+                                'status' => $newBalance <= 0
+                                    ? 'paid'
+                                    : 'active',
+                                'updated_at' => now(),
+                            ]);
+
+                        DB::table('loan_repayments')->insert([
+                            'loan_id' => $loan->id,
+                            'branch_id' => $branchId,
+                            'employee_id' => $employeeId,
+                            'amount' => $loanDeduction,
+                            'deduction_date' => $month,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+
+                /*
+                 * Salary advance.
+                 */
+                $advance = DB::table('salary_advances')
+                    ->where('employee_id', $employeeId)
+                    ->where('branch_id', $branchId)
+                    ->where('month', $month)
+                    ->where(function ($query) {
+                        $query->whereNull('status')
+                            ->orWhere('status', '!=', 'deducted');
+                    })
+                    ->orderByDesc('id')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($advance && (float) $advance->amount > 0) {
+                    $advanceDeduction = (float) $advance->amount;
+
+                    DB::table('salary_advances')
+                        ->where('id', $advance->id)
+                        ->update([
+                            'status' => 'deducted',
+                            'updated_at' => now(),
+                        ]);
+                }
+
+                /*
+                 * Selected contributions.
+                 */
+                $contributionIds = array_values(array_unique(
+                    array_filter(
+                        (array) ($data['contributions'] ?? []),
+                        fn ($id) => is_numeric($id) && (int) $id > 0
+                    )
+                ));
+
+                $contributions = empty($contributionIds)
+                    ? collect()
+                    : Contribution::whereIn('id', $contributionIds)
+                        ->get()
+                        ->keyBy('id');
+
+                foreach ($contributions as $contribution) {
+                    if (stripos(
+                        (string) $contribution->name,
+                        'NSSF'
+                    ) !== false) {
+                        $rate = (float) $contribution->rate;
+
+                        if (strtolower($contribution->type) === 'percentage') {
+                            $nssf += $grossSalary * $rate / 100;
+                        } elseif (strtolower($contribution->type) === 'fixed') {
+                            $nssf += $rate;
+                        }
+                    }
+                }
+
+                $nssf = round($nssf, 2);
+
+                /*
+                 * PAYE calculation using your existing tax brackets.
+                 */
+                $taxableIncome = max(0, $grossSalary - $nssf);
+
+                if ($taxableIncome <= 270000) {
+                    $paye = 0;
+                } elseif ($taxableIncome <= 520000) {
+                    $paye = ($taxableIncome - 270000) * 0.08;
+                } elseif ($taxableIncome <= 760000) {
+                    $paye = 20000
+                        + ($taxableIncome - 520000) * 0.20;
+                } elseif ($taxableIncome <= 1000000) {
+                    $paye = 68000
+                        + ($taxableIncome - 760000) * 0.25;
+                } else {
+                    $paye = 128000
+                        + ($taxableIncome - 1000000) * 0.30;
+                }
+
+                $paye = round(max(0, $paye), 2);
+
+                $netSalary = round(
+                    $grossSalary
+                    - $loanDeduction
+                    - $advanceDeduction
+                    - $nssf
+                    - $paye,
+                    2
+                );
+
+                /*
+                 * SAVE PAYROLL.
+                 *
+                 * Every employee in this batch receives the same
+                 * reference, so the details page can retrieve all.
+                 */
+                $payroll = new Payroll();
+
+                $payroll->employee_id = $employeeId;
+                $payroll->branch_id = $branchId;
+                $payroll->reference = $batchReference;
+                $payroll->month = $month;
+                $payroll->basic_salary = $basicSalary;
+                $payroll->allowance = $allowance;
+                $payroll->paye = $paye;
+                $payroll->net_salary = $netSalary;
+
+                $payroll->save();
+
+                /*
+                 * Save the selected contribution records.
+                 */
+                foreach ($contributions as $contribution) {
+                    PayrollContribution::create([
+                        'payroll_id' => $payroll->id,
+                        'contribution_id' => $contribution->id,
+                        'name' => $contribution->name,
+                        'rate' => $contribution->rate,
+                        'branch_id' => $branchId,
+                    ]);
+                }
+
+                $created++;
+
+                Log::info('Employee payroll generated', [
+                    'employee_id' => $employeeId,
+                    'payroll_id' => $payroll->id,
+                    'reference' => $batchReference,
+                    'month' => $month,
                 ]);
             }
 
-            $created++;
-        }
+            if ($created === 0) {
+                throw new \RuntimeException(
+                    'No new payroll records were generated. Check employee selection and existing payroll records.'
+                );
+            }
+        });
 
-        DB::commit();
     } catch (\Throwable $e) {
-        DB::rollBack();
-        Log::error('Payroll generation failed', ['error' => $e->getMessage()]);
-
-        return redirect()->back()->with('error', 'Payroll generation failed: ' . $e->getMessage());
-    }
-
-    return redirect()->back()->with(
-        'message',
-        "Payroll generated for {$created} employee(s)." .
-        ($skipped ? " {$skipped} skipped (already generated)." : '')
-    );
-}
-
-public function store11(Request $request)
-{
-    $request->validate([
-        'month' => 'required|date_format:Y-m',
-        'employees' => 'required|array',
-    ]);
-
-    foreach ($request->employees as $id => $data) {
-        if (!isset($data['selected'])) continue;
-
-        Payroll::create([
-            'employee_id' => $id,
-            'branch_id' => Auth::user()->branch_id,
-            'reference' => date('YhisH'),
-            'month' => $request->month,
-            'basic_salary' => $data['basic_salary'],
-            'allowance' => $data['allowance'] ?? 0,
-            'deduction' => $data['deduction'] ?? 0,
-            'description' => $data['description'] ?? null,
-            'net_salary' => ($data['basic_salary'] + ($data['allowance'] ?? 0)) - ($data['deduction'] ?? 0),
+        Log::error('Payroll generation failed', [
+            'month' => $month,
+            'branch_id' => $branchId,
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
         ]);
+
+        return redirect()->back()->with(
+            'error',
+            'Payroll generation failed: ' . $e->getMessage()
+        );
     }
 
-    return redirect()->route('payrolls.index')->with('success', 'Payroll generated successfully!');
+    $message = "Payroll generated successfully for {$created} employee(s).";
+
+    if ($skipped > 0) {
+        $message .= " {$skipped} employee(s) skipped because payroll already exists.";
+    }
+
+    return redirect()->back()->with('message', $message);
 }
+
 
     public function saveSalaryGroup(Request $request)
 {
