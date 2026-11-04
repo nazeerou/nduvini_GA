@@ -403,62 +403,64 @@ public function getPettyCashReportsPDF(Request $request)
             return view('clients.supplier_statement', compact('clients'));
         }
     
-      public function getSupplierStatementPDF(Request $request)
+public function getSupplierStatementPDF(Request $request)
 {
     $startdate  = $request->startdate;
     $enddate    = $request->enddate;
     $payment    = $request->payment;
     $supplierId = $request->supplier_id;
-    $branchId   = Auth::user()->branch_id;
+    $branchId   = (int) Auth::user()->branch_id;
+
+    $startDateTime = $startdate ? \Carbon\Carbon::parse($startdate)->startOfDay() : null;
+    $endDateTime   = $enddate   ? \Carbon\Carbon::parse($enddate)->endOfDay()     : null;
 
     // -------------------------------------------------------------
-    // Base purchase query (paid_amount pulled from payments)
+    // Purchases — one row per invoice, line items aggregated
     // -------------------------------------------------------------
     $purchasesQuery = DB::table('purchases')
         ->select(
-            DB::raw("((purchases.total_purchase * purchases.vat_amount) + purchases.total_purchase) as total_amount"),
-            'purchases.total_purchase',
-            'purchases.vat_amount',
             'purchases.invoice_number',
+            'purchases.supplier_id',
             'purchases.lpo_number',
-            DB::raw("(
-                SELECT COALESCE(SUM(payments.paid_amount), 0)
-                FROM payments
-                WHERE payments.invoice_number = purchases.invoice_number
-                  AND payments.supplier_id    = purchases.supplier_id
-            ) as paid_amount"),
+            'purchases.created_date',
             'suppliers.supplier_name',
             'suppliers.address',
             'suppliers.place',
-            'purchases.created_date'
+            // aggregate the line items
+            DB::raw('SUM(purchases.purchase_price * purchases.quantity) AS subtotal'),
+            DB::raw('SUM(purchases.purchase_price * purchases.quantity * purchases.vat_amount) AS vat_amount'),
+            DB::raw('SUM(purchases.purchase_price * purchases.quantity * (1 + purchases.vat_amount)) AS total_amount'),
+            // paid amount for this invoice (one row per invoice now)
+            DB::raw("(
+                SELECT COALESCE(SUM(p.paid_amount), 0)
+                FROM payments p
+                WHERE p.invoice_number = purchases.invoice_number
+                  AND p.supplier_id    = purchases.supplier_id
+                  AND p.branch_id      = {$branchId}
+            ) AS paid_amount")
         )
         ->leftJoin('suppliers', 'suppliers.id', '=', 'purchases.supplier_id')
         ->where('purchases.branch_id', $branchId)
         ->groupBy(
             'purchases.invoice_number',
             'purchases.supplier_id',
-            'suppliers.address',
-            'suppliers.place',
             'purchases.lpo_number',
-            'suppliers.supplier_name',
             'purchases.created_date',
-            'purchases.total_purchase',
-            'purchases.vat_amount'
+            'suppliers.supplier_name',
+            'suppliers.address',
+            'suppliers.place'
         );
 
-    // Supplier scope: specific supplier OR all suppliers
     if (!empty($supplierId)) {
         $purchasesQuery->where('purchases.supplier_id', $supplierId)
                        ->orderBy('purchases.created_date', 'desc');
     } else {
-        // All suppliers: sort by supplier name, then most recent first
         $purchasesQuery->orderBy('suppliers.supplier_name', 'asc')
                        ->orderBy('purchases.created_date', 'desc');
     }
 
-    // Date range
-    if (!empty($startdate) && !empty($enddate)) {
-        $purchasesQuery->whereBetween('purchases.created_date', [$startdate, $enddate]);
+    if ($startDateTime && $endDateTime) {
+        $purchasesQuery->whereBetween('purchases.created_date', [$startDateTime, $endDateTime]);
     }
 
     $purchases = $purchasesQuery->get();
@@ -466,32 +468,29 @@ public function getPettyCashReportsPDF(Request $request)
     // -------------------------------------------------------------
     // Total credit (payments)
     // -------------------------------------------------------------
-    $totalCreditQuery = DB::table('payments');
-
+    $totalCreditQuery = DB::table('payments')->where('branch_id', $branchId);
     if (!empty($supplierId)) {
         $totalCreditQuery->where('supplier_id', $supplierId);
     }
-
-    if (!empty($startdate) && !empty($enddate)) {
-        $totalCreditQuery->whereBetween('created_date', [$startdate, $enddate]);
+    if ($startDateTime && $endDateTime) {
+        $totalCreditQuery->whereBetween('created_date', [$startDateTime, $endDateTime]);
     }
-
     $total_credit = $totalCreditQuery->sum('paid_amount');
 
     // -------------------------------------------------------------
-    // Total charges (purchases)
+    // Total charges (purchases) — same math, same branch filter
     // -------------------------------------------------------------
-    $totalChargesQuery = DB::table('purchases');
-
+    $totalChargesQuery = DB::table('purchases')->where('branch_id', $branchId);
     if (!empty($supplierId)) {
         $totalChargesQuery->where('supplier_id', $supplierId);
     }
-
-    if (!empty($startdate) && !empty($enddate)) {
-        $totalChargesQuery->whereBetween('created_date', [$startdate, $enddate]);
+    if ($startDateTime && $endDateTime) {
+        $totalChargesQuery->whereBetween('created_date', [$startDateTime, $endDateTime]);
     }
-
-    $total_charges = $totalChargesQuery->sum(DB::raw("(total_purchase * vat_amount) + total_purchase"));
+    $total_charges = $totalChargesQuery
+        ->selectRaw('COALESCE(SUM((purchases.purchase_price * purchases.quantity * purchases.vat_amount)
+                                 + (purchases.purchase_price * purchases.quantity)), 0) AS total')
+        ->value('total');
 
     // -------------------------------------------------------------
     // Generate PDF
@@ -504,12 +503,11 @@ public function getPettyCashReportsPDF(Request $request)
         'purchases',
         'total_credit',
         'total_charges',
-        'supplierId'   // <-- new, needed for the template
+        'supplierId'
     ));
 
     return $pdf->stream();
-}
-        
+}    
     //     public function getSupplierStatementPDF(Request $request) {
                  
     //         $startdate= $request->startdate;
