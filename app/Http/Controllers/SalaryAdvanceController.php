@@ -76,24 +76,43 @@ class SalaryAdvanceController extends Controller
     }
 
     
-   public function downloadPdf() {
+   public function downloadPdf(Request $request)
+{
+    $month = $request->input('month');   // '' or '01'..'12'
+    $year  = $request->input('year');    // '' or 'YYYY'
 
-   $salary_advances = SalaryAdvance::with('employee')
-    ->where('branch_id', Auth::user()->branch_id)
-    ->where('month', now()->format('Y-m'))   // e.g. "2025-08"
-    ->get();
+    $query = SalaryAdvance::with('employee');
 
-    $pdf = Pdf::loadView('payrolls.salary_advances_pdf', compact('salary_advances'))
-        ->setPaper('A4', 'portrait');
+    if ($year && $month) {
+        $query->where('month', $year . '-' . $month);
+    } elseif ($year) {
+        $query->where('month', 'LIKE', $year . '-%');
+    } elseif ($month) {
+        $query->where('month', 'LIKE', '%-' . $month);
+    }
 
-    return $pdf->download('salary_advances.pdf');
+    $salary_advances = $query->orderBy('month', 'desc')->get();
 
-    // $pdf = App::make('dompdf.wrapper');
-       
-    // $pdf->loadView('payrolls.salary_advances_pdf', compact('salary_advances'));
-    // return $pdf->stream();
+    // Human-readable period for the PDF header
+    $period = 'All Period';
+    if ($year && $month) {
+        $period = \Carbon\Carbon::createFromFormat('Y-m', $year . '-' . $month)->format('F Y');
+    } elseif ($year) {
+        $period = (string) $year;
+    } elseif ($month) {
+        $period = \Carbon\Carbon::createFromFormat('m', $month)->format('F');
+    }
 
-   }
+    $pdf = App::make('dompdf.wrapper');
+    $pdf->loadView('payrolls.salary_advances_pdf', compact(
+        'salary_advances',
+        'month',
+        'year',
+        'period'
+    ));
+
+    return $pdf->stream('salary-advances-' . ($year ?: 'all') . '-' . ($month ?: 'all') . '.pdf');
+}
   
 //    public function show() {
 

@@ -444,6 +444,8 @@ Route::resource('contract-types', ContractTypeController::class)->only(['store',
 // Salary Groups
 Route::resource('salary-groups', SalaryGroupController::class)->only(['store', 'update', 'destroy']);
 
+Route::get('salary-advances/filter', [PayrollController::class, 'filterSalaryAdvances'])->name('salary-advances.filter');
+
 Route::resource('contributions', ContributionController::class)->only(['index', 'store', 'update', 'destroy']);
 
 

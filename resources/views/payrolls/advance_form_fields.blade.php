@@ -1,3 +1,10 @@
+@php
+    // Fallback in case the parent view did not pass $employees
+    if (!isset($employees)) {
+        $employees = \App\Models\Employee::orderBy('firstname')->get();
+    }
+@endphp
+
 <div class="form-group">
     <label>Employee</label>
     <select name="employee_id" class="form-control select2" required>

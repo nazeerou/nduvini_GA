@@ -459,122 +459,69 @@
                     </div>
 
                     <!-- Salary Advance Tab -->
-                  <div role="tabpanel" class="tab-pane fade" id="salary-advances">
+                    <div role="tabpanel" class="tab-pane fade" id="salary-advances">
 
-    {{-- ===== Toolbar ===== --}}
-    <a href="{{ url('salary-advances/pdf') }}" class="btn btn-pink" style="float:right;">
-        <i class="fa fa-file-pdf-o"></i>&nbsp; Salary Advance PDF
-    </a>
-    <button class="btn btn-primary" data-toggle="modal"
-            data-target="#addAdvanceModal" style="float:right;">
-        + Add Salary Advance
-    </button>&nbsp;&nbsp;
-    <h4>Employee Salary Advances</h4>
-    <div class="clearfix"></div>
+                        {{-- ===== Toolbar ===== --}}
+                        <!-- <a href="{{ url('salary-advances/pdf') }}" class="btn btn-pink" style="float:right;">
+                            <i class="fa fa-file-pdf-o"></i>&nbsp; Salary Advance PDF
+                        </a> -->
+                        <a href="{{ route('salary-advances.pdf', [
+                                'month' => str_pad(now()->month, 2, '0', STR_PAD_LEFT),
+                                'year'  => now()->year,
+                            ]) }}"
+                        id="advancePdfBtn" target="_blank"
+                        class="btn btn-pink" style="float:right;">
+                            <i class="fa fa-file-pdf-o"></i>&nbsp; Salary Advance PDF
+                        </a>                        <button class="btn btn-primary" data-toggle="modal"
+                                data-target="#addAdvanceModal" style="float:right;">
+                            + Add Salary Advance
+                        </button>&nbsp;&nbsp;
+                        <h4>Employee Salary Advances</h4>
+                        <div class="clearfix"></div>
 
-    {{-- ===== Filter bar ===== --}}
-    <div class="row m-t-2 m-b-2" style="background:#ddd; padding:10px; margin-bottom:15px;">
-        <div class="col-md-3">
-            <label for="advanceFilterMonth">Month</label>
-            <select id="advanceFilterMonth" class="form-control">
-                <option value="">All Month</option>
-                @for ($m = 1; $m <= 12; $m++)
-                    <option value="{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}">
-                        {{ \DateTime::createFromFormat('!m', $m)->format('F') }}
-                    </option>
-                @endfor
-            </select>
-        </div>
-        <div class="col-md-3">
-            <label for="advanceFilterYear">Year</label>
-            <select id="advanceFilterYear" class="form-control">
-                <option value="">All Year</option>
-            </select>
-        </div>
-        <div class="col-md-3" style="padding-top:25px;">
-            <!-- <button type="button" id="clearAdvanceFilter" class="btn btn-default">
-                <i class="fa fa-times"></i> Clear
-            </button> -->
-            <span id="advanceFilterCount" class="text-muted" style="margin-left:10px;"></span>
-        </div>
-    </div>
-
-    {{-- ===== Table ===== --}}
-    <table class="table table-bordered table-striped" id="advancesTable">
-        <thead>
-            <tr>
-                <th>Employee</th>
-                <th>Amount (TZS)</th>
-                <th>Month</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        @forelse($salary_advances ?? [] as $advance)
-            @php
-                [$advYear, $advMonth] = array_pad(explode('-', $advance->month), 2, null);
-            @endphp
-            <tr class="advance-row"
-                data-year="{{ $advYear }}"
-                data-month="{{ $advMonth }}">
-                <td>
-                    @if ($advance->employee)
-                        {{ $advance->employee->firstname }} {{ $advance->employee->surname }}
-                    @else
-                        <em>No employee</em>
-                    @endif
-                </td>
-                <td>{{ number_format($advance->amount, 2) }}</td>
-                <td>{{ \Carbon\Carbon::parse($advance->month . '-01')->format('M Y') }}</td>
-                <td>
-                    <button class="btn btn-xs btn-info" data-toggle="modal"
-                            data-target="#editAdvanceModal{{ $advance->id }}">Edit</button>
-
-                    <form method="POST"
-                          action="{{ route('salary-advances.destroy', $advance->id) }}"
-                          style="display:inline;">
-                        @csrf @method('DELETE')
-                        <button class="btn btn-xs btn-danger"
-                                onclick="return confirm('Delete this advance?')">Delete</button>
-                    </form>
-                </td>
-            </tr>
-        @empty
-            <tr>
-                <td colspan="4" class="text-center text-muted">
-                    No salary advances found.
-                </td>
-            </tr>
-        @endforelse
-        </tbody>
-    </table>
-
-    {{-- ===== Modals OUTSIDE the table (valid HTML) ===== --}}
-    @foreach($salary_advances ?? [] as $advance)
-        <div class="modal fade" id="editAdvanceModal{{ $advance->id }}">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <form method="POST"
-                          action="{{ route('salary-advances.update', $advance->id) }}">
-                        @csrf @method('PUT')
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal">&times;</button>
-                            <h4>Edit Salary Advance</h4>
+                        {{-- ===== Filter bar (defaults: current month + current year) ===== --}}
+                        <div class="row m-t-2 m-b-2" style="background:#ddd; padding:10px; margin-bottom:15px;">
+                            <div class="col-md-3">
+                                <label for="advanceFilterMonth">Month</label>
+                                <select id="advanceFilterMonth" class="form-control">
+                                    <option value="">All Month</option>
+                                    @for ($m = 1; $m <= 12; $m++)
+                                        <option value="{{ str_pad($m, 2, '0', STR_PAD_LEFT) }}"
+                                                {{ (int) now()->month === $m ? 'selected' : '' }}>
+                                            {{ \DateTime::createFromFormat('!m', $m)->format('F') }}
+                                        </option>
+                                    @endfor
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label for="advanceFilterYear">Year</label>
+                                <select id="advanceFilterYear" class="form-control">
+                                    <option value="">All Year</option>
+                                    @for ($y = now()->year - 5; $y <= now()->year + 5; $y++)
+                                        <option value="{{ $y }}"
+                                                {{ (int) now()->year === $y ? 'selected' : '' }}>
+                                            {{ $y }}
+                                        </option>
+                                    @endfor
+                                </select>
+                            </div>
+                        
                         </div>
-                        <div class="modal-body">
-                            @include('payrolls.advance_form_fields', ['advance' => $advance])
+
+                        {{-- ===== Spinner ===== --}}
+                        <div id="advancesSpinner" class="text-center" style="display:none; padding:30px 0;">
+                            <i class="fa fa-spinner fa-spin fa-2x text-primary"></i>
+                            <p class="text-muted" style="margin-top:8px;">Loading salary advances…</p>
                         </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-success">Update</button>
-                            <button type="button" class="btn btn-default"
-                                    data-dismiss="modal">Cancel</button>
+
+                        {{-- ===== Content (table + edit modals) — replaced by AJAX ===== --}}
+                        <div id="advancesContent">
+                            @include('payrolls._advance_content', ['salary_advances' => $salary_advances ?? []])
                         </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    @endforeach
-</div>
+
+                        {{-- ===== Edit modals will be injected here by AJAX responses ===== --}}
+                        <div id="advancesModals"></div>
+                    </div>
 
                     <!-- Attendance Tab -->
                     <div role="tabpanel" class="tab-pane fade" id="attendance">
@@ -1049,48 +996,75 @@ $(document).on('click', '.view-tuico-btn', function () {
     }
 
 
-    /* ---------- Salary Advances filter ---------- */
+  /* ---------- Salary Advances server-side filter with spinner ---------- */
 $(function () {
-    var $rows   = $('#advancesTable tbody tr.advance-row');
-    var $month  = $('#advanceFilterMonth');
-    var $year   = $('#advanceFilterYear');
-    var $count  = $('#advanceFilterCount');
+    var $month   = $('#advanceFilterMonth');
+    var $year    = $('#advanceFilterYear');
+    var $spinner = $('#advancesSpinner');
+    var $content = $('#advancesContent');
+    var $count   = $('#advanceFilterCount');
+    var $pdfBtn  = $('#advancePdfBtn');
+    var pending  = null;
 
-    function applyAdvanceFilter() {
-        var m = $month.val();
-        var y = $year.val();
-        var visible = 0;
+    // Keep the PDF button's href in sync with the selected month/year
+    function syncPdfLink() {
+        var base = '{{ route("salary-advances.pdf") }}';
+        var qs   = [];
 
-        $rows.each(function () {
-            var rowMonth = $(this).data('month') ? String($(this).data('month')).padStart(2, '0') : '';
-            var rowYear  = String($(this).data('year') || '');
+        if ($month.val()) { qs.push('month=' + encodeURIComponent($month.val())); }
+        if ($year.val())  { qs.push('year='  + encodeURIComponent($year.val()));  }
 
-            var okMonth = !m || rowMonth === m;
-            var okYear  = !y || rowYear === y;
-            var ok      = okMonth && okYear;
-
-            $(this).toggle(ok);
-            if (ok) visible++;
-        });
-
-        if (!m && !y) {
-            $count.text('');
-        } else {
-            $count.text(visible + ' of ' + $rows.length + ' shown');
-        }
+        $pdfBtn.attr('href', base + (qs.length ? '?' + qs.join('&') : ''));
     }
 
-    $month.on('change', applyAdvanceFilter);
-    $year.on('change',  applyAdvanceFilter);
+    function loadAdvances() {
+        if (pending) { pending.abort(); }
 
-    $('#clearAdvanceFilter').on('click', function () {
-        $month.val('');
-        $year.val('');
-        applyAdvanceFilter();
-    });
+        // Make sure the PDF reflects the filter *before* the AJAX even fires
+        syncPdfLink();
 
-    // Initialise (no filter applied)
-    applyAdvanceFilter();
+        $spinner.show();
+        $content.css('opacity', '0.4');
+        $count.text('');
+
+        pending = $.ajax({
+            url: '{{ route("salary-advances.filter") }}',
+            method: 'GET',
+            data: {
+                month: $month.val(),
+                year:  $year.val()
+            },
+            dataType: 'json',
+            success: function (res) {
+                if (res.success) {
+                    $content.html(res.html);
+                    $count.text(
+                        res.count + ' record' + (res.count === 1 ? '' : 's') + ' shown'
+                    );
+                } else {
+                    $content.html(
+                        '<div class="alert alert-danger">Failed to load salary advances.</div>'
+                    );
+                }
+            },
+            error: function (xhr, status) {
+                if (status === 'abort') return;
+                $content.html(
+                    '<div class="alert alert-danger">Failed to load salary advances.</div>'
+                );
+            },
+            complete: function () {
+                $spinner.hide();
+                $content.css('opacity', '1');
+            }
+        });
+    }
+
+    $month.on('change', loadAdvances);
+    $year.on('change',  loadAdvances);
+
+    // Load data (and sync PDF link) on page load
+    loadAdvances();
 });
 </script>
 

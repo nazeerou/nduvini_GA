@@ -1586,6 +1586,31 @@ public function generateWcfVoucher($month)
 }
 
 
+public function filterSalaryAdvances(Request $request)
+{
+    $month = $request->input('month');   // '' or '01'..'12'
+    $year  = $request->input('year');    // '' or 'YYYY'
+
+    $query = SalaryAdvance::with('employee');
+    $employees = Employee::orderBy('firstname')->get();
+
+    if ($year && $month) {
+        $query->where('month', $year . '-' . $month);
+    } elseif ($year) {
+        $query->where('month', 'LIKE', $year . '-%');
+    } elseif ($month) {
+        $query->where('month', 'LIKE', '%-' . $month);
+    }
+
+    $salary_advances = $query->orderBy('month', 'desc')->get();
+
+    return response()->json([
+        'success' => true,
+        'html'    => view('payrolls._advance_content', compact('salary_advances', 'employees'))->render(),
+        'count'   => $salary_advances->count(),
+    ]);
+}
+
 public function rollbackPayroll($id)
 {
     try {
