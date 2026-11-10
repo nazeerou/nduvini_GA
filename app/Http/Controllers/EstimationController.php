@@ -550,6 +550,11 @@ public function updateProfomaDetails(Request $request)
         'profoma_invoice' => $request->proforma_invoice,
         'created_date'     => $request->created_date,
         'temesa_fee'       => $request->temesa_fee ?? 0,
+        'vehicle_reg' => $request->vehicle_reg,
+        'make'        => $request->make,
+        'model'       => $request->model,
+        'chassis'     => $request->chassis,
+        'milleage'    => $request->milleage,
     ];
 
     // ----- 4. Per-vehicle fields (only update the specific row identified by hidden ID) -----
