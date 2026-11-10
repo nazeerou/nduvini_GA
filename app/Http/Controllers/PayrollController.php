@@ -46,6 +46,9 @@ class PayrollController extends Controller
 
     $branches = Branch::where('id', $branchId)->get();
 
+    $salary_groups = SalaryGroup::where('branch_id', $branchId)->get();
+
+
     $payrolls = Payroll::with('employee')
         ->where('payrolls.branch_id', $branchId)
         ->orderBy('payrolls.month', 'desc')
@@ -220,7 +223,8 @@ $salary_advances = SalaryAdvance::with('employee')
         'months',
         'employees',
         'loans',
-        'salary_advances'
+        'salary_advances',
+        'salary_groups'
     ));
 }
 

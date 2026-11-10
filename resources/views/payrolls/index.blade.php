@@ -4,7 +4,7 @@
 <div class="row">
     <div class="col-lg-12">
         <div class="step-indicator" style="float: right">
-            <a class="step completed" href="{{ url('home') }}">Home</a> 
+            <a class="step completed" href="{{ url('home') }}">Home</a>
             <a class="step" href="#">Payroll</a>
         </div>
     </div>
@@ -37,7 +37,10 @@
                         <a href="#loan-details" aria-controls="loan-details" role="tab" data-toggle="tab">Employee Loans</a>
                     </li>
                     <li role="presentation">
-                        <a href="#salary-groups" aria-controls="salary-groups" role="tab" data-toggle="tab">Contributions Settings</a>
+                        <a href="#contributions" aria-controls="contributions" role="tab" data-toggle="tab">Contributions &amp; Taxes</a>
+                    </li>
+                    <li role="presentation">
+                        <a href="#salary-groups" aria-controls="salary-groups" role="tab" data-toggle="tab">Salary Groups</a>
                     </li>
                 </ul>
 
@@ -75,7 +78,6 @@
                                     </div>
                                 </div>
                             </div>
-                            
                             <div class="col-md-3">
                                 <div class="card text-center shadow-sm">
                                     <div class="card-body">
@@ -87,7 +89,7 @@
                             <div class="col-md-3">
                                 <div class="card text-center shadow-sm">
                                     <div class="card-body">
-                                        <h5 class="card-title">Contributions & Taxes</h5>
+                                        <h5 class="card-title">Contributions &amp; Taxes</h5>
                                         <p class="card-text display-4">{{ $salaryGroupsCount }}</p>
                                     </div>
                                 </div>
@@ -105,31 +107,26 @@
 
                     <!-- Salary Tab -->
                     <div role="tabpanel" class="tab-pane fade" id="salary">
-                        <!-- Trigger Button -->
                         <button class="btn btn-primary mb-3" data-toggle="modal" data-target="#generatePayrollModal" style="float: right;">
                             Generate Payroll
                         </button>
                         <br/>
-                        <!-- Payroll Modal -->
                         <div class="modal fade" id="generatePayrollModal" tabindex="-1" role="dialog" aria-labelledby="generatePayrollModalLabel" aria-hidden="true">
                             <div class="modal-dialog modal-lg" style="width: 1000px;">
                                 <div class="modal-content">
                                     <form method="POST" action="{{ route('payrolls.store') }}">
                                         @csrf
-
                                         <div class="modal-header">
                                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                 <span aria-hidden="true">&times;</span>
                                             </button>
                                             <h4 class="modal-title" id="generatePayrollModalLabel">Generate Payroll</h4>
                                         </div>
-
                                         <div class="modal-body">
                                             <div class="form-group">
                                                 <label for="payroll-month">Payroll Month</label>
                                                 <input type="month" name="month" id="payroll-month" class="form-control" required style="width: 200px;">
                                             </div>
-
                                             <h4>Select Employees and Contributions</h4>
                                             <table class="table table-bordered table-striped">
                                                 <thead>
@@ -157,17 +154,14 @@
     </td>
     <td width="400px;">
         <div class="contributions-container" data-employee-id="{{ $employee->id }}">
-            <!-- Contributions checkboxes will be dynamically inserted here -->
             <em>Select employee to load contributions</em>
         </div>
     </td>
 </tr>
 @endforeach
-
                                                 </tbody>
                                             </table>
                                         </div>
-
                                         <div class="modal-footer">
                                             <button type="submit" class="btn btn-success">Generate Payroll</button>
                                             <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -205,42 +199,22 @@
                                                     data-month="{{ $m['month'] }}">
                                                     <i class="fa fa-eye"></i> View
                                                 </button>
-
                                                 <button class="btn btn-danger btn-sm rollback-btn"
                                                     data-id="{{ $m['id'] }}">
                                                     <i class="fa fa-trash"></i> Rollback
                                                 </button>
-
                                                 <button class="btn btn-success btn-sm view-bank-btn"
                                                     data-reference="{{ $m['reference'] }}">
                                                     <i class="fa fa-bank"></i> Bank Voucher
                                                 </button>
-
-                                                <!-- NSSF Voucher -->
-                                            <button class="btn btn-info btn-sm view-nssf-btn"
+                                                <button class="btn btn-info btn-sm view-nssf-btn"
                                                     data-month="{{ $m['month'] }}">
-                                                <i class="fa fa-file-excel-o"></i> NSSF Voucher
-                                            </button>
-
-                                            <!-- TUICO Voucher -->
-                                            <button class="btn btn-primary btn-sm view-tuico-btn"
+                                                    <i class="fa fa-file-excel-o"></i> NSSF Voucher
+                                                </button>
+                                                <button class="btn btn-primary btn-sm view-tuico-btn"
                                                     data-month="{{ $m['month'] }}">
-                                                <i class="fa fa-file-excel-o"></i> TUICO Voucher
-                                            </button>
-                                                <!-- Voucher Buttons -->
-                                                <!-- <a href="{{ url('payrolls/nssf-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
-                                                    <i class="fa fa-file-pdf-o"></i> NSSF Voucher
-                                                </a>
-                                                <a href="{{ url('payrolls/paye-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
-                                                    <i class="fa fa-file-pdf-o"></i> TUICO Voucher
-                                                </a> -->
-                                                <!-- <a href="{{ url('payrolls/wcf-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
-                                                    <i class="fa fa-file-pdf-o"></i> WCF Voucher
-                                                </a>
-                                                <a href="{{ url('payrolls/nhif-voucher/' . $m['month']) }}" class="btn btn-default btn-sm" target="_blank">
-                                                    <i class="fa fa-file-pdf-o"></i> NHIF Voucher
-                                                </a> -->
-                                                
+                                                    <i class="fa fa-file-excel-o"></i> TUICO Voucher
+                                                </button>
                                             @else
                                                 <span class="text-muted">Not Generated</span>
                                             @endif
@@ -250,7 +224,6 @@
                             </tbody>
                         </table>
 
-                        <!-- Salary Detail Modal -->
                         <div class="modal fade" id="salaryDetailModal" tabindex="-1" role="dialog" aria-labelledby="salaryDetailModalLabel">
                             <div class="modal-dialog modal-lg" role="document" style="width: 1200px;">
                                 <div class="modal-content">
@@ -268,11 +241,10 @@
                         </div>
                     </div>
 
-                    <!-- Salary Groups Tab -->
-                    <div role="tabpanel" class="tab-pane fade" id="salary-groups">
+                    <!-- Contributions & Taxes Tab (independent) -->
+                    <div role="tabpanel" class="tab-pane fade" id="contributions">
                         <button class="btn btn-primary" data-toggle="modal" style="float: right;" data-target="#addContributionModal">Add Contribution or Tax</button>
-                       
-                        <h4>Contributions & Taxes</h4>
+                        <h4>Contributions &amp; Taxes</h4>
                         <div class="clearfix"></div>
 
                         <table class="table table-bordered table-striped">
@@ -299,27 +271,23 @@
                                     </td>
                                 </tr>
 
-                                <!-- Edit Modal -->
                                 <div class="modal fade" id="editContributionModal{{ $item->id }}" tabindex="-1" role="dialog" aria-labelledby="editContributionLabel{{ $item->id }}">
                                     <div class="modal-dialog" role="document">
                                         <div class="modal-content">
                                             <form method="POST" action="{{ route('contributions.update', $item->id) }}">
                                                 @csrf
                                                 @method('PUT')
-
                                                 <div class="modal-header">
                                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                         <span aria-hidden="true">&times;</span>
                                                     </button>
                                                     <h4 class="modal-title" id="editContributionLabel{{ $item->id }}">Edit Contribution or Tax</h4>
                                                 </div>
-
                                                 <div class="modal-body">
                                                     <div class="form-group">
                                                         <label for="name{{ $item->id }}">Name</label>
                                                         <input type="text" name="name" id="name{{ $item->id }}" class="form-control" value="{{ $item->name }}" required>
                                                     </div>
-
                                                     <div class="form-group">
                                                         <label for="type{{ $item->id }}">Type</label>
                                                         <select name="type" id="type{{ $item->id }}" class="form-control" required>
@@ -328,13 +296,11 @@
                                                             <option value="tax" {{ $item->type == 'tax' ? 'selected' : '' }}>Tax</option>
                                                         </select>
                                                     </div>
-
                                                     <div class="form-group">
                                                         <label for="rate{{ $item->id }}">Rate (%)</label>
                                                         <input type="number" name="rate" id="rate{{ $item->id }}" class="form-control" value="{{ $item->rate }}" step="0.01" required>
                                                     </div>
                                                 </div>
-
                                                 <div class="modal-footer">
                                                     <button type="submit" class="btn btn-success">Update</button>
                                                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -348,7 +314,151 @@
                         </table>
                     </div>
 
-                    <!-- Salary slip Tab -->
+                    <!-- ================================================= -->
+                    <!-- SALARY GROUPS TAB — schema: group_name + basic_salary only -->
+                    <!-- ================================================= -->
+                    <div role="tabpanel" class="tab-pane fade" id="salary-groups">
+                        <button class="btn btn-primary" data-toggle="modal" data-target="#addSalaryGroupModal" style="float: right;">
+                            + Add Salary Group
+                        </button>
+                        <h4>Salary Groups</h4>
+                        <div class="clearfix"></div>
+
+                        @if(session('success'))
+                            <div class="alert alert-success alert-dismissible">
+                                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                                {{ session('success') }}
+                            </div>
+                        @endif
+                        @if(session('error'))
+                            <div class="alert alert-danger alert-dismissible">
+                                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                                {{ session('error') }}
+                            </div>
+                        @endif
+
+                        <table class="table table-bordered table-striped mt-3">
+                            <thead>
+                                <tr>
+                                    <th width="40">#</th>
+                                    <th>Group Name</th>
+                                    <th>Basic Salary (TZS)</th>
+                                    <th>Allowance (TZS)</th>
+                                    <th>Deductions (TZS)</th>
+                                    <th width="200">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($salary_groups as $index => $group)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td><strong>{{ $group->group_name }}</strong></td>
+                                        <td>{{ number_format($group->basic_salary, 2) }}</td>
+                                        <td>{{ number_format($group->allowance ?? 0, 2) }}</td>
+                                        <td>{{ number_format($group->deductions ?? 0, 2) }}</td>
+                                        <td>
+                                            <button class="btn btn-xs btn-warning" data-toggle="modal"
+                                                    data-target="#editSalaryGroupModal{{ $group->id }}">
+                                                <i class="fa fa-pencil"></i> Edit
+                                            </button>
+                                            <form action="{{ route('salary-groups.destroy', $group->id) }}"
+                                                  method="POST" style="display:inline;">
+                                                @csrf @method('DELETE')
+                                                <button class="btn btn-xs btn-danger"
+                                                        onclick="return confirm('Delete this salary group?')">
+                                                    <i class="fa fa-trash"></i> Delete
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+
+                                    <!-- ============ EDIT MODAL (only group_name + basic_salary) ============ -->
+                                    <div class="modal fade" id="editSalaryGroupModal{{ $group->id }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <form method="POST" action="{{ route('salary-groups.update', $group->id) }}">
+                                                    @csrf @method('PUT')
+                                                    <div class="modal-header">
+                                                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                                        <h4>Edit Salary Group</h4>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="form-group">
+                                                            <label>Group Name <span class="text-danger">*</span></label>
+                                                            <input type="text" name="group_name" class="form-control"
+                                                                   value="{{ $group->group_name }}" required maxlength="100">
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label>Basic Salary (TZS) <span class="text-danger">*</span></label>
+                                                            <input type="number" name="basic_salary" class="form-control"
+                                                                   step="0.01" min="0"
+                                                                   value="{{ $group->basic_salary }}" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="submit" class="btn btn-success">Update</button>
+                                                        <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">No salary groups yet.</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+
+                        <!-- ============ ADD MODAL (only group_name + basic_salary) ============ -->
+                        <div class="modal fade" id="addSalaryGroupModal" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="POST" action="{{ route('salary-groups.store') }}">
+                                        @csrf
+                                        <div class="modal-header">
+                                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                            <h4>Add Salary Group</h4>
+                                        </div>
+                                        <div class="modal-body">
+                                            @if($errors->any())
+                                                <div class="alert alert-danger">
+                                                    <ul class="mb-0">
+                                                        @foreach($errors->all() as $err)
+                                                            <li>{{ $err }}</li>
+                                                        @endforeach
+                                                    </ul>
+                                                </div>
+                                            @endif
+
+                                            <div class="form-group">
+                                                <label>Group Name <span class="text-danger">*</span></label>
+                                                <input type="text" name="group_name" class="form-control"
+                                                       value="{{ old('group_name') }}" required maxlength="100"
+                                                       placeholder="e.g. Senior Technicians">
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label>Basic Salary (TZS) <span class="text-danger">*</span></label>
+                                                <input type="number" name="basic_salary" class="form-control"
+                                                       step="0.01" min="0"
+                                                       value="{{ old('basic_salary') }}" required
+                                                       placeholder="e.g. 500000">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-success">Save</button>
+                                            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END SALARY GROUPS TAB -->
+
+                    <!-- Salary Slip Tab -->
                     <div role="tabpanel" class="tab-pane fade" id="salarySlip">
                         <div class="mb-3">
                             <div class="row">
@@ -365,16 +475,13 @@
                                     <label>Month</label>
                                     <input type="month" id="month" class="form-control" required>
                                 </div>
-
                                 <div class="col-md-3 m-t-30">
                                     <button id="generate-slip" class="btn btn-success">Generate Salary Slip</button>
                                 </div>
                             </div>
-
                             <div id="loading-spinner" class="text-center" style="margin-top: 20px; display: none;">
                                 <i class="fa fa-spinner fa-spin fa-2x"></i>
                             </div>
-
                             <div id="salary-slip-result" style="margin-top: 20px;"></div>
                         </div>
                     </div>
@@ -412,17 +519,14 @@
                                     <td>{{ number_format($loan->balance, 2) }}</td>
                                     <td>{{ \Carbon\Carbon::parse($loan->start_date)->format('M Y') }}</td>
                                     <td>
-                                        <!-- DETAILS BUTTON -->
                                         <button class="btn btn-xs btn-primary"
                                                 onclick="loadLoanDetails({{ $loan->id }})"
                                                 data-toggle="modal"
                                                 data-target="#detailsLoanModal">
                                             Details
                                         </button>
-
                                         <button class="btn btn-xs btn-info" data-toggle="modal"
                                                 data-target="#editLoanModal{{ $loan->id }}">Edit</button>
-
                                         <form method="POST" action="{{ route('loans.destroy', $loan->id) }}"
                                               style="display:inline;">
                                             @csrf @method('DELETE')
@@ -432,7 +536,6 @@
                                     </td>
                                 </tr>
 
-                                <!-- Edit Loan Modal -->
                                 <div class="modal fade" id="editLoanModal{{ $loan->id }}">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
@@ -460,11 +563,6 @@
 
                     <!-- Salary Advance Tab -->
                     <div role="tabpanel" class="tab-pane fade" id="salary-advances">
-
-                        {{-- ===== Toolbar ===== --}}
-                        <!-- <a href="{{ url('salary-advances/pdf') }}" class="btn btn-pink" style="float:right;">
-                            <i class="fa fa-file-pdf-o"></i>&nbsp; Salary Advance PDF
-                        </a> -->
                         <a href="{{ route('salary-advances.pdf', [
                                 'month' => str_pad(now()->month, 2, '0', STR_PAD_LEFT),
                                 'year'  => now()->year,
@@ -472,14 +570,14 @@
                         id="advancePdfBtn" target="_blank"
                         class="btn btn-pink" style="float:right;">
                             <i class="fa fa-file-pdf-o"></i>&nbsp; Salary Advance PDF
-                        </a>                        <button class="btn btn-primary" data-toggle="modal"
+                        </a>
+                        <button class="btn btn-primary" data-toggle="modal"
                                 data-target="#addAdvanceModal" style="float:right;">
                             + Add Salary Advance
                         </button>&nbsp;&nbsp;
                         <h4>Employee Salary Advances</h4>
                         <div class="clearfix"></div>
 
-                        {{-- ===== Filter bar (defaults: current month + current year) ===== --}}
                         <div class="row m-t-2 m-b-2" style="background:#ddd; padding:10px; margin-bottom:15px;">
                             <div class="col-md-3">
                                 <label for="advanceFilterMonth">Month</label>
@@ -505,21 +603,17 @@
                                     @endfor
                                 </select>
                             </div>
-                        
                         </div>
 
-                        {{-- ===== Spinner ===== --}}
                         <div id="advancesSpinner" class="text-center" style="display:none; padding:30px 0;">
                             <i class="fa fa-spinner fa-spin fa-2x text-primary"></i>
                             <p class="text-muted" style="margin-top:8px;">Loading salary advances…</p>
                         </div>
 
-                        {{-- ===== Content (table + edit modals) — replaced by AJAX ===== --}}
                         <div id="advancesContent">
                             @include('payrolls._advance_content', ['salary_advances' => $salary_advances ?? []])
                         </div>
 
-                        {{-- ===== Edit modals will be injected here by AJAX responses ===== --}}
                         <div id="advancesModals"></div>
                     </div>
 
@@ -548,28 +642,23 @@
                     </div>
                 </div>
 
-                <!-- Modals -->
-                <!-- Create Salary Group Modal -->
                 <!-- Add Contribution Modal -->
                 <div class="modal fade" id="addContributionModal" tabindex="-1" role="dialog" aria-labelledby="addContributionLabel">
                     <div class="modal-dialog" role="document">
                         <div class="modal-content">
                             <form method="POST" action="{{ route('contributions.store') }}">
                                 @csrf
-
                                 <div class="modal-header">
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                         <span aria-hidden="true">&times;</span>
                                     </button>
                                     <h4 class="modal-title" id="addContributionLabel">Add Contribution or Tax</h4>
                                 </div>
-
                                 <div class="modal-body">
                                     <div class="form-group">
                                         <label for="name">Name</label>
                                         <input type="text" name="name" id="name" class="form-control" placeholder="Eg. NSSF" required>
                                     </div>
-
                                     <div class="form-group">
                                         <label for="type">Type</label>
                                         <select name="type" id="type" class="form-control" required>
@@ -579,13 +668,11 @@
                                             <option value="tax">Tax</option>
                                         </select>
                                     </div>
-
                                     <div class="form-group">
                                         <label for="rate">Rate or (%)</label>
                                         <input type="number" name="rate" id="rate" class="form-control" step="0.01" required>
                                     </div>
                                 </div>
-
                                 <div class="modal-footer">
                                     <button type="submit" class="btn btn-primary">Add</button>
                                     <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
@@ -597,7 +684,6 @@
             </div>
         </div>
     </div>
-
 
 <!-- Bank Details Modal -->
 <div class="modal fade" id="bankModal" tabindex="-1" role="dialog" aria-labelledby="bankModalLabel">
@@ -678,17 +764,14 @@
         </div>
     </div>
 </div>
-<!-- </div> -->
-<script>
 
+<script>
     $(document).ready(function() {
-    // When select all checkbox is toggled
     $('#select-all').change(function() {
         let checked = $(this).is(':checked');
         $('.employee-checkbox').prop('checked', checked).trigger('change');
     });
 
-    // When individual employee checkbox toggled
     $('.employee-checkbox').change(function() {
         let employeeId = $(this).data('employee-id');
         let contributionsContainer = $('.contributions-container[data-employee-id="' + employeeId + '"]');
@@ -697,19 +780,17 @@
         if ($(this).is(':checked')) {
             allowanceField.prop('disabled', false);
 
-            // Fetch contributions via AJAX
             $.ajax({
-                url: '/employee/' + employeeId + '/contributions', // Adjust URL to your route
+                url: '/employee/' + employeeId + '/contributions',
                 method: 'GET',
                 success: function(response) {
-                    // Response expected: array of contributions [{id, name}]
                     let html = '';
                     $.each(response, function(i, contribution) {
                         html += `
                             <label class="checkbox-inline" style="margin-right:10px;">
-                                <input type="checkbox" 
-                                       name="employees[${employeeId}][contributions][]" 
-                                       value="${contribution.id}" 
+                                <input type="checkbox"
+                                       name="employees[${employeeId}][contributions][]"
+                                       value="${contribution.id}"
                                        checked>
                                 ${contribution.name}
                             </label>
@@ -727,7 +808,6 @@
         }
     });
 });
-
 </script>
 
 <script>
@@ -747,9 +827,7 @@
         spinner.style.display = 'block';
 
         fetch(`/payrolls/salary-slip-fetch/view?employee_id=${employeeId}&month=${month}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(response => response.json())
         .then(data => {
@@ -761,7 +839,7 @@
                 const toFloat = val => parseFloat((val || '0').toString().replace(/,/g, ''));
 
                 const grossSalary = toFloat(slip.basic_salary) + toFloat(slip.allowance);
-                const totalDeductions = 
+                const totalDeductions =
                     toFloat(slip.salary_advance) +
                     toFloat(slip.nssf) +
                     toFloat(slip.wcf) +
@@ -880,25 +958,18 @@
     });
 </script>
 
-<!-- Add JS handlers for view-salary-btn, rollback-btn, and view-bank-btn -->
 <script>
-    
     $(document).on('click', '.rollback-btn', function() {
     let id = $(this).data('id');
     console.log(id);
-    
+
     if (confirm('Are you sure you want to rollback/delete this payroll?')) {
         $.ajax({
             url: '/payrolls/delete/' + id,
             type: 'DELETE',
-            data: {
-                _token: '{{ csrf_token() }}'
-            },
-            success: function(response) {
-                location.reload();
-            },
+            data: { _token: '{{ csrf_token() }}' },
+            success: function(response) { location.reload(); },
             error: function(xhr) {
-                // Try to show the exact error message from the backend
                 let errorMessage = 'Failed to rollback payroll.';
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMessage = xhr.responseJSON.message;
@@ -910,20 +981,19 @@
     }
 });
 
+$(document).on('click', '.view-bank-btn', function () {
+    let reference = $(this).data('reference');
+    $('#bankModal').modal('show');
+    $('#bankModal .modal-title').text('Bank Voucher');
+    $('#bankModal .modal-body').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-2x"></i> Loading...</div>');
 
-    $(document).on('click', '.view-bank-btn', function () {
-        let reference = $(this).data('reference');
-        $('#bankModal').modal('show');
-        $('#bankModal .modal-title').text('Bank Voucher');
-        $('#bankModal .modal-body').html('<div class="text-center"><i class="fa fa-spinner fa-spin fa-2x"></i> Loading...</div>');
-
-        $.get(`/payrolls/${reference}/bank-details`, function (data) {
-            $('#bankModal .modal-body').html(data);
-        }).fail(function () {
-            $('#bankModal .modal-body').html('<div class="alert alert-danger">Failed to load bank details.</div>');
-        });
+    $.get(`/payrolls/${reference}/bank-details`, function (data) {
+        $('#bankModal .modal-body').html(data);
+    }).fail(function () {
+        $('#bankModal .modal-body').html('<div class="alert alert-danger">Failed to load bank details.</div>');
     });
-// NSSF Voucher Modal
+});
+
 $(document).on('click', '.view-nssf-btn', function () {
     let month = $(this).data('month');
     $('#bankModal').modal('show');
@@ -938,13 +1008,10 @@ $(document).on('click', '.view-nssf-btn', function () {
         if (xhr.responseJSON && xhr.responseJSON.error) {
             message = xhr.responseJSON.error;
         }
-
         $('#bankModal .modal-body').html(`<div class="alert alert-danger">${message}</div>`);
     });
 });
 
-
-// TUICO Voucher Modal
 $(document).on('click', '.view-tuico-btn', function () {
     let month = $(this).data('month');
     $('#bankModal').modal('show');
@@ -957,12 +1024,10 @@ $(document).on('click', '.view-tuico-btn', function () {
         $('#bankModal .modal-body').html('<div class="alert alert-danger">Failed to load TUICO Payment.</div>');
     });
 });
-
 </script>
 
 <script>
     function loadLoanDetails(loanId) {
-        // Show spinner while loading
         document.getElementById('loanDetailsBody').innerHTML = `
             <div class="text-center">
                 <i class="fa fa-spinner fa-spin fa-2x text-muted"></i>
@@ -970,12 +1035,9 @@ $(document).on('click', '.view-tuico-btn', function () {
             </div>
         `;
 
-        // AJAX request to get loan details
         fetch('/loans/' + loanId + '/statement')
             .then(response => response.text())
-            .then(html => {
-                document.getElementById('loanDetailsBody').innerHTML = html;
-            })
+            .then(html => { document.getElementById('loanDetailsBody').innerHTML = html; })
             .catch(error => {
                 console.error(error);
                 document.getElementById('loanDetailsBody').innerHTML = `
@@ -984,7 +1046,6 @@ $(document).on('click', '.view-tuico-btn', function () {
             });
     }
 
-    // Print function
     function printLoanDetails(modalContentId) {
         var printContents = document.getElementById(modalContentId).innerHTML;
         var originalContents = document.body.innerHTML;
@@ -992,11 +1053,9 @@ $(document).on('click', '.view-tuico-btn', function () {
         document.body.innerHTML = printContents;
         window.print();
         document.body.innerHTML = originalContents;
-        location.reload(); // Optional: Refresh page
+        location.reload();
     }
 
-
-  /* ---------- Salary Advances server-side filter with spinner ---------- */
 $(function () {
     var $month   = $('#advanceFilterMonth');
     var $year    = $('#advanceFilterYear');
@@ -1006,23 +1065,17 @@ $(function () {
     var $pdfBtn  = $('#advancePdfBtn');
     var pending  = null;
 
-    // Keep the PDF button's href in sync with the selected month/year
     function syncPdfLink() {
         var base = '{{ route("salary-advances.pdf") }}';
         var qs   = [];
-
         if ($month.val()) { qs.push('month=' + encodeURIComponent($month.val())); }
         if ($year.val())  { qs.push('year='  + encodeURIComponent($year.val()));  }
-
         $pdfBtn.attr('href', base + (qs.length ? '?' + qs.join('&') : ''));
     }
 
     function loadAdvances() {
         if (pending) { pending.abort(); }
-
-        // Make sure the PDF reflects the filter *before* the AJAX even fires
         syncPdfLink();
-
         $spinner.show();
         $content.css('opacity', '0.4');
         $count.text('');
@@ -1030,28 +1083,19 @@ $(function () {
         pending = $.ajax({
             url: '{{ route("salary-advances.filter") }}',
             method: 'GET',
-            data: {
-                month: $month.val(),
-                year:  $year.val()
-            },
+            data: { month: $month.val(), year: $year.val() },
             dataType: 'json',
             success: function (res) {
                 if (res.success) {
                     $content.html(res.html);
-                    $count.text(
-                        res.count + ' record' + (res.count === 1 ? '' : 's') + ' shown'
-                    );
+                    $count.text(res.count + ' record' + (res.count === 1 ? '' : 's') + ' shown');
                 } else {
-                    $content.html(
-                        '<div class="alert alert-danger">Failed to load salary advances.</div>'
-                    );
+                    $content.html('<div class="alert alert-danger">Failed to load salary advances.</div>');
                 }
             },
             error: function (xhr, status) {
                 if (status === 'abort') return;
-                $content.html(
-                    '<div class="alert alert-danger">Failed to load salary advances.</div>'
-                );
+                $content.html('<div class="alert alert-danger">Failed to load salary advances.</div>');
             },
             complete: function () {
                 $spinner.hide();
@@ -1062,10 +1106,16 @@ $(function () {
 
     $month.on('change', loadAdvances);
     $year.on('change',  loadAdvances);
-
-    // Load data (and sync PDF link) on page load
     loadAdvances();
 });
+</script>
+
+<script>
+    $(document).ready(function () {
+        setTimeout(function () {
+            $('.alert-success, .alert-danger').fadeOut('slow');
+        }, 4000);
+    });
 </script>
 
 @endsection
