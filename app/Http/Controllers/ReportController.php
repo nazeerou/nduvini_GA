@@ -113,49 +113,61 @@ public function getClientStatementPDF(Request $request) {
     // 1. Invoice list with aggregated paid amount
     // --------------------------------------------
     $salesQuery = DB::table('invoices')
-        ->select([
-            'invoices.invoice_number',
-            'invoices.vehicle_reg',
-            'invoices.bill_amount',
-            'clients.client_name',
-            'clients.place',
-            'invoices.created_date',
-            DB::raw('COALESCE(SUM(client_payments.paid_amount), 0) as paid_amount')
-        ])
-        // Join payments with branch condition to avoid cross‑branch mixing
-        ->leftJoin('client_payments', function ($join) use ($branchId) {
-            $join->on('invoices.invoice_number', '=', 'client_payments.bill_no')
-                 ->where('client_payments.branch_id', '=', $branchId);
-        })
-        ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
-        ->where('invoices.branch_id', $branchId)
-        ->where('invoices.client_id', $clientId)
-        ->groupBy(
-            'invoices.invoice_number',
-            'invoices.vehicle_reg',
-            'invoices.bill_amount',
-            'clients.client_name',
-            'clients.place',
-            'invoices.created_date'
-        );
+    ->select([
+        'invoices.invoice_number',
+        'invoices.vehicle_reg',
+        'invoices.bill_amount',
+        'clients.client_name',
+        'clients.place',
+        DB::raw('MAX(est.model) as model'),                  // ← model from estimations
+        'invoices.created_date',
+        DB::raw('COALESCE(SUM(client_payments.paid_amount), 0) as paid_amount')
+    ])
+    // Join payments with branch condition to avoid cross‑branch mixing
+    ->leftJoin('client_payments', function ($join) use ($branchId) {
+        $join->on('invoices.invoice_number', '=', 'client_payments.bill_no')
+             ->where('client_payments.branch_id', '=', $branchId);
+    })
+    ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+    // Deduped estimations: exactly one row per reference → no invoice multiplication
+    ->leftJoinSub(
+        DB::table('estimations')
+            ->select('reference', DB::raw('MAX(model) as model'))
+            ->where('branch_id', $branchId)                  // branch-scoped like the rest
+            ->groupBy('reference'),
+        'est',
+        'est.reference',
+        '=',
+        'invoices.estimate_ref'
+    )
+    ->where('invoices.branch_id', $branchId)
+    ->where('invoices.client_id', $clientId)
+    ->groupBy(
+        'invoices.invoice_number',
+        'invoices.vehicle_reg',
+        'invoices.bill_amount',
+        'clients.client_name',
+        'clients.place',
+        'invoices.created_date'
+    );
 
-    // Date filters
-    if (!empty($startDate)) {
-        $salesQuery->whereDate('invoices.created_date', '>=', $startDate);
-    }
-    if (!empty($endDate)) {
-        $salesQuery->whereDate('invoices.created_date', '<=', $endDate);
-    }
+// Date filters
+if (!empty($startDate)) {
+    $salesQuery->whereDate('invoices.created_date', '>=', $startDate);
+}
+if (!empty($endDate)) {
+    $salesQuery->whereDate('invoices.created_date', '<=', $endDate);
+}
 
-    // Payment status filter using HAVING on the aggregated paid_amount
-    if ($paymentStatus == '1') {          // Paid
-        $salesQuery->having('paid_amount', '>', 0);
-    } elseif ($paymentStatus == '2') {    // Unpaid
-        $salesQuery->having('paid_amount', '=', 0);
-    }
-    // $paymentStatus == '0' -> show all (no HAVING)
+// Payment status filter using HAVING on the aggregated paid_amount
+if ($paymentStatus == '1') {          // Paid
+    $salesQuery->having('paid_amount', '>', 0);
+} elseif ($paymentStatus == '2') {    // Unpaid
+    $salesQuery->having('paid_amount', '=', 0);
+}
+// $paymentStatus == '0' -> show all (no HAVING)
 
-    $sales = $salesQuery->orderBy('invoices.created_date', 'desc')->get();
+$sales = $salesQuery->orderBy('invoices.created_date', 'desc')->get();
 
     // --------------------------------------------
     // 2. Total payments (credit) for the client

@@ -259,7 +259,7 @@ main1 {
                                 SI {{ $s->invoice_number }}
                                 @endif
                                 </td>
-                                <td> {{ $s->vehicle_reg }} </td>
+                                <td> {{ $s->vehicle_reg }} | {{ $s->model }} </td>
                               
                                 <td> {{ number_format($s->bill_amount, 2) }} </td>
                                 <td> {{ number_format($s->paid_amount, 2) }} </td>
@@ -312,7 +312,7 @@ main1 {
                                 SI {{ $s->invoice_number }}
                                 @endif
                                 </td>
-                                <td> {{ $s->vehicle_reg }} </td>
+                                <td> {{ $s->vehicle_reg }} | {{ $s->model }} </td>
                                                             <td> {{ number_format($s->bill_amount, 2) }} </td>
                                 <td>
                                    {{ number_format(($s->bill_amount - $s->paid_amount), 2) }}
@@ -368,7 +368,7 @@ main1 {
                                 SI {{ $s->invoice_number }}
                                 @endif
                                 </td>
-                                <td> {{ $s->vehicle_reg }} </td>
+                                <td> {{ $s->vehicle_reg }} | {{ $s->model }} </td>
                              
                                 <td> {{ number_format($s->bill_amount, 2) }} </td>
                                 <td>
@@ -426,7 +426,7 @@ main1 {
                                 SI {{ $s->invoice_number }}
                                 @endif
                                 </td>
-                                <td> {{ $s->vehicle_reg }} </td>
+                                <td> {{ $s->vehicle_reg }} | {{ $s->model }}</td>
                                 <td> {{ number_format($s->bill_amount, 2) }} </td>
                                 <td> {{ number_format($s->paid_amount, 2) }} </td>
                                 <td> {{ number_format(($s->bill_amount - $s->paid_amount), 2) }}</td>

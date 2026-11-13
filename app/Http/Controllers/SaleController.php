@@ -555,25 +555,27 @@ class SaleController extends Controller
 
 public function getClientPayments() {
 
-$clients =  DB::table('clients')->select('*')
-            ->where('clients.branch_id', Auth::user()->branch_id)
-            ->get();
+    $clients = DB::table('clients')->select('*')
+                ->where('clients.branch_id', Auth::user()->branch_id)
+                ->get();
 
-// $sales = DB::table('invoices')
-//         ->select([DB::raw("SUM(client_payments.paid_amount) as paid_amount"), 'invoices.vehicle_reg', 'invoices.invoice_number', 'invoices.bill_amount', 'clients.client_name', 'clients.place', 'invoices.created_date'])
-//         ->leftjoin('client_payments', 'invoices.invoice_number', '=', 'client_payments.bill_no')
-//         ->leftjoin('clients', 'clients.id', '=', 'invoices.client_id')
-//         ->groupBy('invoices.bill_amount', 'invoices.vehicle_reg', 'invoices.invoice_number', 'client_payments.bill_amount', 'clients.client_name',  'clients.place', 'invoices.created_date')
-//         ->where('invoices.branch_id', Auth::user()->branch_id)
-//         ->orderBy('invoices.created_date', 'desc')
-//         ->get();
-
-$sales = DB::table('invoices')
+    $sales = DB::table('invoices')
     ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+    // Deduped estimations: exactly one row per reference → no invoice multiplication
+    ->leftJoinSub(
+        DB::table('estimations')
+            ->select('reference', DB::raw('MAX(model) as model'))
+            ->where('branch_id', Auth::user()->branch_id)   // branch-scoped like the rest
+            ->groupBy('reference'),
+        'est',
+        'est.reference',
+        '=',
+        'invoices.estimate_ref'
+    )
     ->leftJoinSub(
         DB::table('client_payments')
             ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
-            ->where('client_payments.branch_id', Auth::user()->branch_id) // ← fix: only payments from the same branch
+            ->where('client_payments.branch_id', Auth::user()->branch_id)
             ->groupBy('bill_no'),
         'payments',
         'invoices.invoice_number',
@@ -586,6 +588,7 @@ $sales = DB::table('invoices')
         'invoices.bill_amount',
         'clients.client_name',
         'clients.place',
+        'est.model',                                        // ← from deduped subquery
         'invoices.created_date',
         DB::raw('COALESCE(payments.total_paid, 0) as paid_amount')
     ])
@@ -593,11 +596,62 @@ $sales = DB::table('invoices')
     ->orderBy('invoices.created_date', 'desc')
     ->get();
 
-        $accounts = Account::where('is_active', '!=', '')->get();
+    /* ============================================================
+     * BRANCH-BASED SUMMARY + FILTER COUNTS
+     * (derived from $sales, which is already branch-filtered)
+     * ============================================================ */
+    $invoiceCount = $sales->count();
 
-        return view('pages.client-payments', compact('sales', 'accounts', 'clients'));
+    $totalInvoiced = (float) $sales->sum(fn($s) => (float) $s->bill_amount);
+    $totalPaid     = (float) $sales->sum(fn($s) => (float) $s->paid_amount);
+    $totalUnpaid   = (float) $sales->sum(fn($s) => max(0, (float) $s->bill_amount - (float) $s->paid_amount));
 
-    }
+    $fullyPaid = $sales->filter(function ($s) {
+        return (float) $s->paid_amount >= (float) $s->bill_amount;
+    })->count();
+
+    $withBalance = $sales->filter(function ($s) {
+        return ((float) $s->bill_amount - (float) $s->paid_amount) > 0;
+    })->count();
+
+    $partialCount = $sales->filter(function ($s) {
+        $paid = (float) $s->paid_amount;
+        $bill = (float) $s->bill_amount;
+        return $paid > 0 && ($bill - $paid) > 0;
+    })->count();
+
+    $unpaidCount = $sales->filter(function ($s) {
+        $paid = (float) $s->paid_amount;
+        $bill = (float) $s->bill_amount;
+        return $paid <= 0 && ($bill - $paid) > 0;
+    })->count();
+
+    $paidPct = $totalInvoiced > 0
+        ? min(100, round(($totalPaid / $totalInvoiced) * 100, 1))
+        : 0;
+
+    $invLabel = $invoiceCount === 1 ? 'invoice' : 'invoices';
+    $balLabel = $withBalance  === 1 ? 'invoice' : 'invoices';
+
+    $accounts = Account::where('is_active', '!=', '')->get();
+
+    return view('pages.client-payments', compact(
+        'sales',
+        'accounts',
+        'clients',
+        'totalInvoiced',
+        'totalPaid',
+        'totalUnpaid',
+        'invoiceCount',
+        'fullyPaid',
+        'withBalance',
+        'partialCount',
+        'unpaidCount',
+        'paidPct',
+        'invLabel',
+        'balLabel'
+    ));
+}
 
     public function saveClientDebit(Request $request) {
 
@@ -639,18 +693,249 @@ $sales = DB::table('invoices')
     }
 
 
-    public function getSingleClientPaymentDetails($id) {
+    public function downloadClientPaymentsPdf(Request $request)
+{
+    $status = $request->query('status', 'all');
 
-        $client_details = DB::table('invoices')
-                         ->select('invoices.invoice_number', 'invoices.bill_amount', 'invoices.client_id')
-                         ->where('invoices.invoice_number', '=', $id)
-                         ->where('invoices.branch_id', Auth::user()->branch_id)
-                         ->distinct()
-                         ->get();
+    $sales = DB::table('invoices')
+        // Dedup estimations: one row per reference
+        ->leftJoinSub(
+            DB::table('estimations')
+                ->select('reference', DB::raw('MAX(model) as model'))
+                ->where('branch_id', Auth::user()->branch_id)   // keep branch-safe
+                ->groupBy('reference'),
+            'est',
+            'est.reference',
+            '=',
+            'invoices.estimate_ref'
+        )
+        ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+        ->leftJoinSub(
+            DB::table('client_payments')
+                ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
+                ->where('client_payments.branch_id', Auth::user()->branch_id)
+                ->groupBy('bill_no'),
+            'payments',
+            'invoices.invoice_number', '=', 'payments.bill_no'
+        )
+        ->select([
+            'invoices.vehicle_reg',
+            'invoices.invoice_number',
+            'invoices.bill_amount',
+            'clients.client_name',
+            'clients.place',
+            'est.model',                                    // ← from deduped subquery
+            'invoices.created_date',
+            DB::raw('COALESCE(payments.total_paid, 0) as paid_amount'),
+        ])
+        ->where('invoices.branch_id', Auth::user()->branch_id)
+        ->orderBy('invoices.created_date', 'desc')
+        ->get();
 
-        return $client_details;
+    // Filter by status
+    if ($status !== 'all') {
+        $sales = $sales->filter(function ($s) use ($status) {
+            $bill = (float) $s->bill_amount;
+            $paid = (float) $s->paid_amount;
+            $diff = $bill - $paid;
+            
+            switch ($status) {
+                case 'paid':
+                    return $paid >= $bill;
+                case 'partial':
+                    return $paid > 0 && $diff > 0;
+                case 'unpaid':
+                    return $paid <= 0 && $diff > 0;
+                default:
+                    return true;
+            }
+        })->values();
+    }
+    
+    $totals = [
+        'bill' => $sales->sum(fn($s) => (float) $s->bill_amount),
+        'paid' => $sales->sum(fn($s) => (float) $s->paid_amount),
+        'balance' => $sales->sum(fn($s) => max(0, (float) $s->bill_amount - (float) $s->paid_amount)),
+    ];
+    
+    $labels = [
+        'all' => 'All Invoices',
+        'paid' => 'Paid Invoices',
+        'partial' => 'Partially Paid Invoices',
+        'unpaid' => 'Unpaid Invoices',
+    ];
+    
+    $title = $labels[$status] ?? 'Client Payments';
+    
+    $branchName = DB::table('branches')->where('id', Auth::user()->branch_id)->first();
+    
+    $generatedAt = now()->format('d M Y, H:i');
+    
+    $pdf = PDF::loadView('pages.client-payments-pdf', compact(
+        'sales', 'totals', 'title', 'status', 'branchName', 'generatedAt'
+    ));
+    
+    $pdf->setPaper('a4', 'landscape');
+    
+    $filename = 'client-payments-' . $status . '-' . now()->format('Ymd-His') . '.pdf';
+    
+    return $pdf->download($filename);
+}
 
-   }
+
+public function exportClientPaymentsPdf(Request $request)
+{
+    $status = $request->query('status', 'all');
+
+    if (!in_array($status, ['all', 'paid', 'partial', 'unpaid'])) {
+        $status = 'all';
+    }
+
+    /* ----------------------------------------------------------
+     * Same branch-scoped query used on the payments page
+     * ---------------------------------------------------------- */
+    $sales = DB::table('invoices')
+        ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+        ->leftJoinSub(
+            DB::table('client_payments')
+                ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
+                ->where('client_payments.branch_id', Auth::user()->branch_id)
+                ->groupBy('bill_no'),
+            'payments',
+            'invoices.invoice_number', '=',
+            'payments.bill_no'
+        )
+        ->select([
+            'invoices.vehicle_reg',
+            'invoices.invoice_number',
+            'invoices.bill_amount',
+            'clients.client_name',
+            'invoices.created_date',
+            DB::raw('COALESCE(payments.total_paid, 0) as paid_amount'),
+        ])
+        ->where('invoices.branch_id', Auth::user()->branch_id)
+        ->orderBy('invoices.created_date', 'desc')
+        ->get();
+
+    /* ----------------------------------------------------------
+     * Filter rows by requested status (same rules as the UI)
+     * ---------------------------------------------------------- */
+    if ($status !== 'all') {
+        $sales = $sales->filter(function ($s) use ($status) {
+            $bill = (float) $s->bill_amount;
+            $paid = (float) $s->paid_amount;
+            $diff = $bill - $paid;
+
+            switch ($status) {
+                case 'paid':    return $paid >= $bill;
+                case 'partial': return $paid > 0 && $diff > 0;
+                case 'unpaid':  return $paid <= 0 && $diff > 0;
+                default:        return true;
+            }
+        })->values();
+    }
+
+    /* ----------------------------------------------------------
+     * Totals for the summary strip in the PDF
+     * ---------------------------------------------------------- */
+    $totals = [
+        'bill'    => (float) $sales->sum(fn($s) => (float) $s->bill_amount),
+        'paid'    => (float) $sales->sum(fn($s) => (float) $s->paid_amount),
+        'balance' => (float) $sales->sum(fn($s) => max(0, (float) $s->bill_amount - (float) $s->paid_amount)),
+    ];
+
+    $titles = [
+        'all'     => 'All Invoices',
+        'paid'    => 'Paid Invoices',
+        'partial' => 'Partially Paid Invoices',
+        'unpaid'  => 'Unpaid Invoices',
+    ];
+    $title = $titles[$status];
+
+    /* ----------------------------------------------------------
+     * Branch name (safe fallback if relation/table is missing)
+     * ---------------------------------------------------------- */
+    $branchName = config('app.name', 'Company');
+    try {
+        $branch = DB::table('branches')->where('id', Auth::user()->branch_id)->first();
+        if ($branch && !empty($branch->name)) {
+            $branchName = $branch->name;
+        }
+    } catch (\Exception $e) {
+        // keep default
+    }
+
+    $generatedAt = now()->format('d M Y, H:i');
+    $generatedBy = Auth::user()->name ?? 'System';
+
+    $pdf = Pdf::loadView('pages.client-payments-pdf', compact(
+        'sales',
+        'totals',
+        'title',
+        'status',
+        'branchName',
+        'generatedAt',
+        'generatedBy'
+    ));
+
+    $pdf->setPaper('a4', 'landscape');
+    $pdf->setOption('defaultFont', 'DejaVu Sans');
+    $pdf->setOption('isRemoteEnabled', false);
+    $pdf->setOption('isHtml5ParserEnabled', true);
+
+    $filename = 'client-payments-' . $status . '-' . now()->format('Ymd-His') . '.pdf';
+
+    return $pdf->download($filename);
+}
+
+//     public function getSingleClientPaymentDetails($id)
+// {
+//     $client_details = DB::table('invoices')
+//         ->leftJoin('estimations', 'estimations.reference', '=', 'invoices.estimate_ref')
+//         ->leftJoin('clients', 'clients.id', '=', 'estimations.client_name')
+//         ->select(
+//             'invoices.invoice_number',
+//             'invoices.bill_amount',
+//             'invoices.client_id',
+//             'clients.client_name'
+//         )
+//         ->where('invoices.invoice_number', '=', $id)
+//         ->where('invoices.branch_id', Auth::user()->branch_id)
+//         ->distinct()
+//         ->get();
+
+//     return $client_details;
+// }
+
+
+
+public function getSingleClientPaymentDetails($id)
+{
+    $client_details = DB::table('invoices')
+        ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+        ->leftJoinSub(
+            DB::table('client_payments')
+                ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
+                ->where('client_payments.branch_id', Auth::user()->branch_id)
+                ->groupBy('bill_no'),
+            'payments',
+            'invoices.invoice_number', '=', 'payments.bill_no'
+        )
+        ->select(
+            'invoices.invoice_number',
+            'invoices.bill_amount',
+            'invoices.client_id',
+            'clients.client_name',
+            DB::raw('COALESCE(payments.total_paid, 0) as paid_amount'),
+            DB::raw('(invoices.bill_amount - COALESCE(payments.total_paid, 0)) as balance_due')
+        )
+        ->where('invoices.invoice_number', '=', $id)
+        ->where('invoices.branch_id', Auth::user()->branch_id)
+        ->distinct()
+        ->get();
+
+    return $client_details;
+}
 
 
    public function updateSaleValue(Request $request) {
@@ -695,46 +980,107 @@ $sales = DB::table('invoices')
 }
 
 
-   public function addClientPayments(Request $request) {
-
+  public function addClientPayments(Request $request)
+{
     $request->validate([
-        'paid_amount' => 'required',
+        'paid_amount'    => 'required|numeric|min:0.01',
+        'created_date'   => 'required',
+        'invoice_number' => 'required',
+        'client_id'      => 'required',
+    ], [
+        'paid_amount.numeric' => 'Please enter a valid number.',
+        'paid_amount.min'     => 'Amount must be greater than zero.',
     ]);
 
-        $account_balance = Account::where('name', 'SALES ACCOUNT')->where('branch_id', Auth::user()->branch_id)->first();
-        $client_name = Client::where('id', $request->client_id)->first();
-        $balance =  $account_balance['total_balance'] + $request->paid_amount;
+    $isAjax = $request->ajax() || $request->wantsJson();
 
-        $name = $client_name['client_name'];
+    $paid_amount = (float) $request->paid_amount;
 
-        $accounting = DB::table('accounts')
-                    ->where('id', $request->account_id)
-                    ->where('branch_id', Auth::user()->branch_id)
-                    ->update(["total_balance" => $balance]);
+    /* --- Fetch the invoice + already-paid (branch-scoped) --- */
+    $invoice = DB::table('invoices')
+        ->leftJoinSub(
+            DB::table('client_payments')
+                ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
+                ->where('client_payments.branch_id', Auth::user()->branch_id)
+                ->groupBy('bill_no'),
+            'payments',
+            'invoices.invoice_number', '=', 'payments.bill_no'
+        )
+        ->select(
+            'invoices.invoice_number',
+            'invoices.bill_amount',
+            'invoices.client_id',
+            DB::raw('COALESCE(payments.total_paid, 0) as paid_amount')
+        )
+        ->where('invoices.invoice_number', $request->invoice_number)
+        ->where('invoices.branch_id', Auth::user()->branch_id)
+        ->first();
 
-        $account_statement = AccountStatement::create([
-            'branch_id' => Auth::user()->branch_id,
-            'account_id' => $request->account_id,
-            'reference' => date('Yhis'), 
-            'name' => $name,
-            'debit' => '',
-            'credit' => $request->paid_amount,
-            'initial_balance' => $account_balance['total_balance'],
-            'balance' => $balance,
-            'created_at' => $request->created_date
-        ]);
-        $add = ClientPayment::create([
-            'branch_id' => Auth::user()->branch_id, 
-            'client_id' => $request->client_id,
-            'bill_amount' => $request['bill_amount'],
-            'bill_no'=> $request['invoice_number'],
-            'paid_amount'=> $request['paid_amount'],
-            'created_date' => $request['created_date']
-            ]);
+    $fail = function ($message) use ($isAjax) {
+        return $isAjax
+            ? response()->json(['errors' => ['paid_amount' => [$message]]], 422)
+            : redirect()->back()->withErrors(['paid_amount' => $message])->withInput();
+    };
 
-            return redirect()->back()->with('message', 'Payment saved Successful!');
+    if (!$invoice) {
+        return $fail('Invoice not found for this branch.');
+    }
 
-        }
+    $bill_amount  = (float) $invoice->bill_amount;
+    $already_paid = (float) $invoice->paid_amount;
+    $remaining    = $bill_amount - $already_paid;
+
+    if ($remaining <= 0) {
+        return $fail('This invoice has already been fully paid.');
+    }
+
+    if ($paid_amount > $remaining) {
+        return $fail('Amount exceeds the outstanding balance of ' . number_format($remaining, 2) . '.');
+    }
+
+    /* --- Original accounting logic (unchanged flow) --- */
+    $account_balance = Account::where('name', 'SALES ACCOUNT')
+        ->where('branch_id', Auth::user()->branch_id)
+        ->first();
+    $client_name = Client::where('id', $request->client_id)->first();
+    $balance     = $account_balance['total_balance'] + $paid_amount;
+    $name        = $client_name['client_name'];
+
+    DB::table('accounts')
+        ->where('id', $request->account_id)
+        ->where('branch_id', Auth::user()->branch_id)
+        ->update(['total_balance' => $balance]);
+
+    AccountStatement::create([
+        'branch_id'       => Auth::user()->branch_id,
+        'account_id'      => $request->account_id,
+        'reference'       => date('Yhis'),
+        'name'            => $name,
+        'debit'           => '',
+        'credit'          => $paid_amount,
+        'initial_balance' => $account_balance['total_balance'],
+        'balance'         => $balance,
+        'created_at'      => $request->created_date,
+    ]);
+
+    ClientPayment::create([
+        'branch_id'    => Auth::user()->branch_id,
+        'client_id'    => $request->client_id,
+        'bill_amount'  => $bill_amount,
+        'bill_no'      => $invoice->invoice_number,
+        'paid_amount'  => $paid_amount,
+        'created_date' => $request->created_date,
+    ]);
+
+    if ($isAjax) {
+        return response()->json([
+            'message' => 'Payment saved successfully!',
+            'balance' => number_format(max(0, $remaining - $paid_amount), 2),
+        ], 200);
+    }
+
+    return redirect()->back()->with('message', 'Payment saved Successful!');
+  }
 
 
   public function getPriceDetails($id) {
@@ -784,6 +1130,7 @@ return response()->json($stocks);
         return view('pages.client-payment-details', compact('client_payments', 'bill', 'total_paid', 'client_name'));
     }
 
+    
     // REport 
 
     public function getSingleSalesDetailsPDF($id) {

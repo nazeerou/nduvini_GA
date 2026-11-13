@@ -526,34 +526,186 @@ public function getSingleSupplierPaymentsDetails($invoice) {
     }
 
     
-    public function savePurchasePayment(Request $request)
-    {
-        
-        $request->validate([
-            'paid_amount' => 'required',
-         //   'invoice_number' => 'required'
-        ]);
-    
-        $find_purchases = DB::table('purchases')
-                         ->where('invoice_number', $request->invoice_number)->select('paid_amount')
-                         ->first();
-    
-        $update = DB::table('purchases')
-                 ->where('invoice_number', $request->invoice_number)
-                 ->update(['paid_amount' => $find_purchases->paid_amount + $request->paid_amount]);
-    if($update != '') {
-            $purchases = Payment::create([
-                'supplier_id' => $request->supplier_id,
-                'branch_id' => Auth::user()->branch_id,
-                'invoice_number' => $request->invoice_number,
-                'amount' => $request->total,
-                'paid_amount' => $request->paid_amount,
-                'created_date' => $request->created_date
-            ]);
-        }
-         return redirect()->back()->with('message', 'Supplier Payment added Successful!');
+public function checkInvoiceNumberExists(Request $request)
+{
+    $request->validate(['invoice_number' => 'required|string|max:255']);
+
+    $exists = DB::table('purchases')
+        ->where('invoice_number', $request->invoice_number)
+        ->where('branch_id', Auth::user()->branch_id)
+        ->exists();
+
+    return response()->json([
+        'exists'         => $exists,
+        'invoice_number' => $request->invoice_number,
+    ]);
+}
+
+public function generatePurchaseInvoiceNumber()
+{
+    $branchId = Auth::user()->branch_id;
+    $prefix   = 'PUR-' . date('Ymd') . '-';
+
+    // Find the highest sequence already used today (lexicographic works because we pad to 5 digits)
+    $lastNumber = DB::table('purchases')
+        ->where('branch_id', $branchId)
+        ->where('invoice_number', 'like', $prefix . '%')
+        ->orderBy('invoice_number', 'desc')
+        ->value('invoice_number');
+
+    $nextSeq = 1;
+    if ($lastNumber) {
+        $nextSeq = (int) substr($lastNumber, strlen($prefix)) + 1;
     }
 
+    // Loop-until-unique guards against race conditions
+    do {
+        $candidate = $prefix . str_pad($nextSeq, 5, '0', STR_PAD_LEFT);
+        $taken     = DB::table('purchases')->where('invoice_number', $candidate)->exists();
+        $nextSeq++;
+    } while ($taken);
+
+    return response()->json(['invoice_number' => $candidate]);
+}
+
+public function sendPurchases(Request $request)
+{
+    $request->validate([
+        'invoice_number'  => 'required|string|max:255',
+        'supplier_id'     => 'required|integer',
+        'created_date'    => 'required|date',
+        'product_id'      => 'required|array|min:1',
+        'product_id.*'    => 'required',
+        'make'            => 'required|array',
+        'model'           => 'required|array',
+        'part_number'     => 'required|array',
+        'purchase_price'  => 'required|array',
+        'quantity'        => 'required|array',
+        'vat_type'        => 'nullable|in:0,1',
+        'vat_amount'      => 'nullable|numeric|min:0',
+    ]);
+
+    $branchId = Auth::user()->branch_id;
+
+    // ---- Duplicate invoice guard ----
+    $exists = DB::table('purchases')
+        ->where('invoice_number', $request->invoice_number)
+        ->where('branch_id', $branchId)
+        ->exists();
+
+    if ($exists) {
+        return redirect()->back()->withInput()->with('error',
+            "Invoice number '{$request->invoice_number}' already exists in this branch. " .
+            "Please use a different number, or click Generate to auto-generate one.");
+    }
+
+    // ---- File upload (optional) ----
+    $filePath = null;
+    if ($request->hasFile('invoice_file')) {
+        $filePath = $request->file('invoice_file')->store('purchase-invoices', 'public');
+    }
+
+    // ---- Unique reference shared by all item rows of this invoice ----
+    $reference = 'PUR-' . strtoupper(Str::random(12));
+    while (DB::table('purchases')->where('reference', $reference)->exists()) {
+        $reference = 'PUR-' . strtoupper(Str::random(12));
+    }
+
+    DB::beginTransaction();
+    try {
+        foreach ($request->product_id as $i => $productId) {
+            if (empty($productId)) continue;
+
+            DB::table('purchases')->insert([
+                'reference'      => $reference,
+                'supplier_id'    => $request->supplier_id,
+                'branch_id'      => $branchId,
+                'product_id'     => $productId,
+                'make'           => $request->make[$i]           ?? null,
+                'model'          => $request->model[$i]          ?? null,
+                'part_number'    => $request->part_number[$i]    ?? null,
+                'purchase_price' => $request->purchase_price[$i] ?? 0,
+                'quantity'       => $request->quantity[$i]       ?? 0,
+                'invoice_number' => $request->invoice_number,
+                'vat_type'       => $request->vat_type           ?? 0,
+                'vat_amount'     => $request->vat_amount         ?? 0,
+                'invoice_file'   => $filePath,
+                'created_date'   => $request->created_date,
+                'paid_amount'    => 0,
+                'created_by'     => Auth::id(),
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+        }
+
+        DB::commit();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->withInput()
+            ->with('error', 'Failed to save purchase: ' . $e->getMessage());
+    }
+
+    return redirect()->back()
+        ->with('message', 'Purchase recorded successfully! Reference: ' . $reference);
+}
+
+
+public function savePurchasePayment(Request $request)
+{
+    $request->validate([
+        'paid_amount'    => 'required|numeric|min:0.01',
+        'invoice_number' => 'required|string|max:255',
+    ]);
+
+    $branchId = Auth::user()->branch_id;
+
+    // ---- Ensure the purchase exists in this branch ----
+    $purchase = DB::table('purchases')
+        ->where('invoice_number', $request->invoice_number)
+        ->where('branch_id', $branchId)
+        ->select('paid_amount')
+        ->first();
+
+    if (!$purchase) {
+        return redirect()->back()->with('error',
+            "No purchase found with invoice number '{$request->invoice_number}' in this branch.");
+    }
+
+    DB::beginTransaction();
+    try {
+        // Update all item rows that share this invoice number
+        $newPaidAmount = (float) ($purchase->paid_amount ?? 0) + (float) $request->paid_amount;
+
+        DB::table('purchases')
+            ->where('invoice_number', $request->invoice_number)
+            ->where('branch_id', $branchId)
+            ->update(['paid_amount' => $newPaidAmount]);
+
+        // Unique reference for the payment
+        $paymentReference = 'PAY-' . strtoupper(Str::random(12));
+        while (DB::table('payments')->where('reference', $paymentReference)->exists()) {
+            $paymentReference = 'PAY-' . strtoupper(Str::random(12));
+        }
+
+        Payment::create([
+            'reference'      => $paymentReference,
+            'supplier_id'    => $request->supplier_id,
+            'branch_id'      => $branchId,
+            'invoice_number' => $request->invoice_number,
+            'amount'         => $request->total ?? $request->amount ?? 0,
+            'paid_amount'    => $request->paid_amount,
+            'created_date'   => $request->created_date ?? now()->toDateString(),
+        ]);
+
+        DB::commit();
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return redirect()->back()->with('error', 'Payment failed: ' . $e->getMessage());
+    }
+
+    return redirect()->back()->with('message',
+        'Supplier payment added successfully! Reference: ' . $paymentReference);
+}
 
     public function getAnnualPurchases() {
 

@@ -39,9 +39,9 @@
                     <li role="presentation">
                         <a href="#contributions" aria-controls="contributions" role="tab" data-toggle="tab">Contributions &amp; Taxes</a>
                     </li>
-                    <li role="presentation">
+                    <!-- <li role="presentation">
                         <a href="#salary-groups" aria-controls="salary-groups" role="tab" data-toggle="tab">Salary Groups</a>
-                    </li>
+                    </li> -->
                 </ul>
 
                 <!-- Tab panes -->
@@ -578,6 +578,71 @@
                         <h4>Employee Salary Advances</h4>
                         <div class="clearfix"></div>
 
+                        <td>
+    @php
+        $advReq = \App\Models\ApprovalRequest::where('module', 'salary_advance')
+                    ->latest()->first();
+    @endphp
+
+    <div class="approval-actions">
+        @if (!$advReq)
+            {{-- Not yet submitted --}}
+            <form action="" method="POST" style="display:inline;">
+                @csrf
+                <button class="btn btn-warning" onclick="return confirm('Submit this advance to HR for approval?')">
+                    <i class="fa fa-paper-plane"></i> Submit for Approval
+                </button>
+            </form>
+            <span class="status-badge status-pending" style="background:#e0e7ff;color:#3730a3;border-color:#c7d2fe;">
+                <i class="fa fa-pencil"></i> Draft
+            </span>
+
+        @elseif ($advReq->status === 'pending')
+            <span class="status-badge status-pending">
+                <i class="fa fa-clock-o"></i> Pending HR Review
+            </span>
+            <small class="approval-hint">Submitted by <strong>{{ $advReq->requester->fname ?? '—' }}</strong> {{ $advReq->requested_at->diffForHumans() }}</small>
+
+        @elseif ($advReq->status === 'approved')
+            <span class="status-badge status-approved">
+                <i class="fa fa-check-circle"></i> Approved
+            </span>
+            <small class="approval-hint">
+                By <strong>{{ $advReq->reviewer->fname ?? 'HR' }}</strong> {{ $advReq->reviewed_at?->diffForHumans() }}
+                @if($advReq->review_comment) — {{ $advReq->review_comment }} @endif
+            </small>
+            <form action="{{ route('salary-advances.pay', $advance->id) }}" method="POST" style="display:inline;margin-top:4px;">
+                @csrf
+                <button class="btn btn-success" onclick="return confirm('Confirm payment for this advance?')">
+                    <i class="fa fa-money"></i> Proceed to Pay
+                </button>
+            </form>
+
+        @elseif ($advReq->status === 'rejected')
+            <span class="status-badge status-rejected">
+                <i class="fa fa-times-circle"></i> Rejected
+            </span>
+            <small class="approval-hint" style="color:#991b1b;">
+                <strong>{{ $advReq->reviewer->fname ?? 'HR' }}:</strong> {{ $advReq->rejection_reason }}
+            </small>
+            <form action="{{ route('salary-advances.submit-approval', $advance->id) }}" method="POST" style="display:inline;margin-top:4px;">
+                @csrf
+                <button class="btn btn-warning">
+                    <i class="fa fa-refresh"></i> Revise & Resubmit
+                </button>
+            </form>
+
+        @elseif ($advReq->status === 'paid')
+            <span class="status-badge status-paid">
+                <i class="fa fa-check-double"></i> Paid
+            </span>
+            <small class="approval-hint">
+                Paid {{ $advReq->paid_at?->format('d M Y') }}
+                @if($advReq->payment_ref) — Ref: {{ $advReq->payment_ref }} @endif
+            </small>
+        @endif
+    </div>
+</td>
                         <div class="row m-t-2 m-b-2" style="background:#ddd; padding:10px; margin-bottom:15px;">
                             <div class="col-md-3">
                                 <label for="advanceFilterMonth">Month</label>

@@ -4,28 +4,49 @@
 <style>
     /* ===================== Client Payments – Professional UI ===================== */
     :root{
-        --cp-primary:#1f3a5f;
+        /* Core palette */
+        --cp-primary:#1e3a5f;
         --cp-primary-dark:#152a45;
-        --cp-ink:#111827;
-        --cp-ink-soft:#374151;
-        --cp-muted:#6b7280;
-        --cp-line:#e5e7eb;
-        --cp-line-soft:#f3f4f6;
-        --cp-soft:#f9fafb;
+        --cp-primary-light:#2d5282;
+        --cp-ink:#0f172a;
+        --cp-ink-soft:#334155;
+        --cp-muted:#64748b;
+        --cp-line:#e2e8f0;
+        --cp-line-soft:#f1f5f9;
+        --cp-soft:#f8fafc;
         --cp-white:#ffffff;
-        --cp-paid:#166534;
-        --cp-paid-bg:#dcfce7;
-        --cp-unpaid:#92400e;
-        --cp-unpaid-bg:#fef3c7;
+
+        /* Semantic colors */
+        --cp-paid:#059669;
+        --cp-paid-dark:#047857;
+        --cp-paid-bg:#ecfdf5;
+        --cp-paid-border:#a7f3d0;
+
+        --cp-unpaid:#dc2626;
+        --cp-unpaid-dark:#b91c1c;
+        --cp-unpaid-bg:#fef2f2;
+        --cp-unpaid-border:#fecaca;
+
+        --cp-partial:#d97706;
+        --cp-partial-dark:#b45309;
+        --cp-partial-bg:#fffbeb;
+        --cp-partial-border:#fde68a;
+
         --cp-overpaid:#065f46;
         --cp-overpaid-bg:#d1fae5;
+
+        /* Shadows */
+        --cp-shadow-sm:0 1px 2px rgba(15,23,42,.04);
+        --cp-shadow:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+        --cp-shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
     }
 
     .cp-wrap *{box-sizing:border-box;}
     .cp-wrap .panel-custom{
-        background:var(--cp-white);border:1px solid var(--cp-line);
-        border-radius:12px;overflow:hidden;
-        box-shadow:0 1px 3px rgba(17,24,39,.05), 0 1px 2px rgba(17,24,39,.03);
+        background:var(--cp-white);
+        border:1px solid var(--cp-line);
+        border-radius:14px;overflow:hidden;
+        box-shadow:var(--cp-shadow);
         border-top:none;
     }
 
@@ -40,14 +61,15 @@
     .cp-steps a.completed{background:var(--cp-white);color:var(--cp-ink-soft);}
     .cp-steps a.active{
         background:var(--cp-primary);color:var(--cp-white);border-color:var(--cp-primary);
-        box-shadow:0 2px 4px rgba(31,58,95,.12);
+        box-shadow:0 2px 6px rgba(30,58,95,.22);
     }
-    .cp-steps .cp-sep{color:#d1d5db;font-size:11px;}
+    .cp-steps .cp-sep{color:#cbd5e1;font-size:11px;}
 
     /* ---------- Card header ---------- */
     .cp-head{
         display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
-        padding:24px 28px;border-bottom:1px solid var(--cp-line);background:var(--cp-white);
+        padding:24px 28px;border-bottom:1px solid var(--cp-line);
+        background:linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
     }
     .cp-head-text{min-width:0;}
     .cp-head-text h3{
@@ -60,18 +82,24 @@
     .cp-btn-primary{
         display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border:none;
         border-radius:8px;font-size:13px;font-weight:600;letter-spacing:.01em;cursor:pointer;
-        color:var(--cp-white);background:var(--cp-primary);
-        box-shadow:0 1px 2px rgba(31,58,95,.15);transition:all .18s ease;
+        color:var(--cp-white);
+        background:linear-gradient(180deg, var(--cp-primary-light) 0%, var(--cp-primary) 100%);
+        box-shadow:0 1px 2px rgba(30,58,95,.20), inset 0 1px 0 rgba(255,255,255,.10);
+        transition:all .18s ease;
     }
-    .cp-btn-primary:hover{background:var(--cp-primary-dark);transform:translateY(-1px);color:#fff;}
+    .cp-btn-primary:hover{
+        background:linear-gradient(180deg, var(--cp-primary) 0%, var(--cp-primary-dark) 100%);
+        transform:translateY(-1px);color:#fff;
+        box-shadow:0 3px 8px rgba(30,58,95,.25), inset 0 1px 0 rgba(255,255,255,.10);
+    }
     .cp-btn-primary i{font-size:12px;}
 
     /* ---------- Summary KPI cards ---------- */
     .cp-summary{
         display:grid;
         grid-template-columns:repeat(4,1fr);
-        gap:14px;
-        padding:22px 28px 10px;
+        gap:16px;
+        padding:24px 28px 8px;
     }
     @media (max-width:1199px){ .cp-summary{grid-template-columns:repeat(2,1fr);} }
     @media (max-width:575px){ .cp-summary{grid-template-columns:1fr;} }
@@ -80,89 +108,266 @@
         position:relative;
         background:var(--cp-white);
         border:1px solid var(--cp-line);
-        border-radius:10px;
-        padding:16px 18px 16px 22px;
+        border-radius:12px;
+        padding:18px 20px;
         display:flex;
         justify-content:space-between;
         align-items:flex-start;
-        gap:12px;
+        gap:14px;
         overflow:hidden;
-        transition:border-color .18s ease, box-shadow .18s ease;
+        box-shadow:var(--cp-shadow-sm);
+        transition:all .22s ease;
     }
-    .cp-kpi:hover{border-color:#d1d5db;box-shadow:0 1px 3px rgba(17,24,39,.06);}
     .cp-kpi::before{
-        content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
-        background:var(--cp-primary);
+        content:"";position:absolute;left:0;top:0;right:0;height:3px;
+        background:linear-gradient(90deg, var(--cp-primary-light), var(--cp-primary));
     }
-    .cp-kpi.kpi-paid::before{background:var(--cp-paid);}
-    .cp-kpi.kpi-unpaid::before{background:#b45309;}
-    .cp-kpi.kpi-count::before{background:var(--cp-muted);}
+    .cp-kpi.kpi-paid::before{
+        background:linear-gradient(90deg, #34d399, var(--cp-paid));
+    }
+    .cp-kpi.kpi-unpaid::before{
+        background:linear-gradient(90deg, #fbbf24, var(--cp-partial));
+    }
+    .cp-kpi.kpi-count::before{
+        background:linear-gradient(90deg, #94a3b8, #475569);
+    }
+
+    .cp-kpi:hover{
+        border-color:#cbd5e1;
+        box-shadow:var(--cp-shadow-md);
+        transform:translateY(-2px);
+    }
 
     .cp-kpi-body{min-width:0;flex:1;}
     .cp-kpi-label{
-        font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
-        color:var(--cp-muted);margin:0 0 6px;
+        font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+        color:var(--cp-muted);margin:0 0 8px;
     }
     .cp-kpi-value{
         font-family:'SFMono-Regular',Consolas,monospace;
-        font-size:19px;font-weight:700;color:var(--cp-ink);line-height:1.1;
+        font-size:20px;font-weight:700;color:var(--cp-ink);line-height:1.1;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        letter-spacing:-.02em;
     }
     .cp-kpi-sub{
-        font-size:11.5px;color:var(--cp-muted);margin-top:6px;line-height:1.3;
+        font-size:11.5px;color:var(--cp-muted);margin-top:8px;line-height:1.35;
     }
     .cp-kpi-icon{
-        width:36px;height:36px;flex-shrink:0;
+        width:42px;height:42px;flex-shrink:0;
         display:flex;align-items:center;justify-content:center;
-        border-radius:8px;background:var(--cp-soft);color:var(--cp-primary);
-        font-size:15px;
+        border-radius:10px;
+        background:linear-gradient(135deg, var(--cp-line-soft), var(--cp-line));
+        color:var(--cp-primary);
+        font-size:16px;
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
     }
-    .cp-kpi.kpi-paid .cp-kpi-icon{background:var(--cp-paid-bg);color:var(--cp-paid);}
-    .cp-kpi.kpi-unpaid .cp-kpi-icon{background:var(--cp-unpaid-bg);color:#b45309;}
-    .cp-kpi.kpi-count .cp-kpi-icon{background:var(--cp-line-soft);color:var(--cp-ink-soft);}
+    .cp-kpi.kpi-paid .cp-kpi-icon{
+        background:linear-gradient(135deg, #d1fae5, var(--cp-paid-border));
+        color:var(--cp-paid-dark);
+    }
+    .cp-kpi.kpi-unpaid .cp-kpi-icon{
+        background:linear-gradient(135deg, #fef3c7, var(--cp-partial-border));
+        color:var(--cp-partial-dark);
+    }
+    .cp-kpi.kpi-count .cp-kpi-icon{
+        background:linear-gradient(135deg, #f1f5f9, #e2e8f0);
+        color:var(--cp-ink-soft);
+    }
 
-    .cp-kpi.kpi-paid .cp-kpi-value{color:var(--cp-paid);}
-    .cp-kpi.kpi-unpaid .cp-kpi-value{color:#b45309;}
+    .cp-kpi.kpi-paid .cp-kpi-value{color:var(--cp-paid-dark);}
+    .cp-kpi.kpi-unpaid .cp-kpi-value{color:var(--cp-partial-dark);}
 
     .cp-kpi-progress{
-        position:relative;height:4px;background:var(--cp-line);
+        position:relative;height:5px;background:var(--cp-line);
         border-radius:999px;margin-top:10px;overflow:hidden;
     }
     .cp-kpi-progress > span{
-        display:block;height:100%;background:var(--cp-paid);border-radius:999px;
+        display:block;height:100%;
+        background:linear-gradient(90deg, #34d399, var(--cp-paid));
+        border-radius:999px;
         transition:width .4s ease;
     }
 
+    /* ---------- Filter bar ---------- */
+    .cp-filters{
+        display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+        padding:20px 28px 16px;
+    }
+    .cp-filters-label{
+        font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+        color:var(--cp-muted);margin-right:8px;
+    }
+    .cp-filter{
+        display:inline-flex;align-items:center;gap:8px;
+        padding:8px 14px;font-size:12.5px;font-weight:600;
+        color:var(--cp-ink-soft);background:var(--cp-white);
+        border:1px solid var(--cp-line);border-radius:8px;
+        cursor:pointer;transition:all .18s ease;
+        box-shadow:var(--cp-shadow-sm);
+    }
+    .cp-filter:hover{
+        background:var(--cp-soft);
+        border-color:#cbd5e1;
+        color:var(--cp-ink);
+        transform:translateY(-1px);
+        box-shadow:var(--cp-shadow);
+    }
+    .cp-filter:focus{outline:none;box-shadow:0 0 0 3px rgba(30,58,95,.10);}
+    .cp-filter.active,
+    .cp-filter.active:hover{
+        transform:none;
+    }
+
+    /* Per-filter active colors */
+    .cp-filter[data-filter="all"].active{
+        background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary));
+        color:#fff;border-color:var(--cp-primary);
+        box-shadow:0 2px 6px rgba(30,58,95,.25);
+    }
+    .cp-filter[data-filter="paid"].active{
+        background:linear-gradient(180deg, #10b981, var(--cp-paid));
+        color:#fff;border-color:var(--cp-paid);
+        box-shadow:0 2px 6px rgba(5,150,105,.28);
+    }
+    .cp-filter[data-filter="partial"].active{
+        background:linear-gradient(180deg, #f59e0b, var(--cp-partial));
+        color:#fff;border-color:var(--cp-partial);
+        box-shadow:0 2px 6px rgba(217,119,6,.28);
+    }
+    .cp-filter[data-filter="unpaid"].active{
+        background:linear-gradient(180deg, #ef4444, var(--cp-unpaid));
+        color:#fff;border-color:var(--cp-unpaid);
+        box-shadow:0 2px 6px rgba(220,38,38,.28);
+    }
+
+    .cp-filter .cp-count{
+        display:inline-flex;align-items:center;justify-content:center;
+        min-width:22px;height:20px;padding:0 7px;
+        font-size:11px;font-weight:700;border-radius:999px;
+        background:var(--cp-line-soft);color:var(--cp-ink-soft);
+        font-variant-numeric:tabular-nums;
+        transition:all .18s ease;
+    }
+    .cp-filter:hover .cp-count{
+        background:var(--cp-line);
+    }
+    .cp-filter.active .cp-count{
+        background:rgba(255,255,255,.28);color:#fff;
+    }
+
+    .cp-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+    .cp-dot-paid{background:var(--cp-paid);box-shadow:0 0 0 2px var(--cp-paid-bg);}
+    .cp-dot-partial{background:var(--cp-partial);box-shadow:0 0 0 2px var(--cp-partial-bg);}
+    .cp-dot-unpaid{background:var(--cp-unpaid);box-shadow:0 0 0 2px var(--cp-unpaid-bg);}
+
     /* ---------- Table ---------- */
-    .cp-body{padding:0 0 8px;}
-    .cp-table-wrap{width:100%;overflow-x:auto;padding:14px 28px 0;}
+    .cp-body{padding:0 0 12px;}
+    .cp-table-outer{position:relative;}
+    .cp-table-wrap{width:100%;overflow-x:auto;padding:8px 28px 0;}
     .cp-wrap #datatable{
         width:100%!important;border-collapse:collapse;margin:0;font-size:13px;
         border:1px solid var(--cp-line);border-radius:0;
+        background:var(--cp-white);
     }
     .cp-wrap #datatable thead th{
-        background:var(--cp-primary);color:#fff;
-        font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;
-        padding:14px 14px;text-align:left;border:none;white-space:nowrap;
+        background:linear-gradient(180deg, var(--cp-primary-light) 0%, var(--cp-primary) 100%);
+        color:#fff;
+        font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+        padding:15px 14px;text-align:left;border:none;white-space:nowrap;
         vertical-align:middle;
+        position:relative;
+    }
+    .cp-wrap #datatable thead th + th::before{
+        content:"";position:absolute;left:0;top:28%;bottom:28%;
+        width:1px;background:rgba(255,255,255,.14);
     }
     .cp-wrap #datatable thead th:last-child{text-align:center;}
+
     .cp-wrap #datatable tbody td{
-        padding:13px 14px;border-bottom:1px solid var(--cp-line);
+        padding:13px 14px;
+        border-bottom:1px solid var(--cp-line-soft);
         vertical-align:middle;color:var(--cp-ink-soft);
+        background:var(--cp-white);
+        transition:background .15s ease;
+    }
+    .cp-wrap #datatable tbody tr:nth-child(even) td{
+        background:#fbfcfd;
+    }
+    .cp-wrap #datatable tbody tr:hover td{
+        background:#f1f5f9;
     }
     .cp-wrap #datatable tbody tr:last-child td{border-bottom:none;}
-    .cp-wrap #datatable tbody tr:hover td{background:var(--cp-soft);}
+
+    /* Row status accent (left border) */
+    .cp-wrap #datatable tbody tr[data-status="paid"] td:first-child{
+        box-shadow:inset 3px 0 0 var(--cp-paid);
+    }
+    .cp-wrap #datatable tbody tr[data-status="partial"] td:first-child{
+        box-shadow:inset 3px 0 0 var(--cp-partial);
+    }
+    .cp-wrap #datatable tbody tr[data-status="unpaid"] td:first-child{
+        box-shadow:inset 3px 0 0 var(--cp-unpaid);
+    }
+
     .cp-wrap #datatable tbody td.num{
         font-family:'SFMono-Regular', Consolas, monospace;
         font-size:12.5px;white-space:nowrap;text-align:right;
+        font-variant-numeric:tabular-nums;
     }
     .cp-wrap #datatable tbody td.center{text-align:center;}
 
+    /* ---------- Loading overlay ---------- */
+    .cp-table-loading{
+        position:absolute;inset:0;
+        display:none;align-items:center;justify-content:center;
+        background:rgba(255,255,255,.78);
+        backdrop-filter:blur(2px);
+        z-index:5;min-height:200px;
+        border-radius:0;
+    }
+    .cp-table-loading.show{display:flex;}
+    .cp-spinner{
+        width:38px;height:38px;
+        border:3px solid var(--cp-line);
+        border-top-color:var(--cp-primary);
+        border-radius:50%;
+        animation:cp-spin .8s linear infinite;
+    }
+    @keyframes cp-spin{to{transform:rotate(360deg);}}
+
+    /* ---------- Download modal ---------- */
+    #download_modal .modal-content{
+        border:none;border-radius:14px;overflow:hidden;
+        box-shadow:0 24px 60px rgba(15,23,42,.20);
+        background:var(--cp-white);
+    }
+    #download_modal .modal-body{padding:34px 24px;}
+    #download_modal .cp-spinner{
+        width:44px;height:44px;
+        border:3px solid var(--cp-line);
+        border-top-color:var(--cp-primary);
+        border-radius:50%;
+        animation:cp-spin .8s linear infinite;
+        margin:0 auto 18px;
+    }
+
+    /* ---------- Inline validation ---------- */
+    .cp-error-text{
+        display:block;margin-top:6px;font-size:11.5px;font-weight:600;color:var(--cp-unpaid);
+    }
+    .cp-modal .form-control.cp-invalid{
+        border-color:var(--cp-unpaid);
+        box-shadow:0 0 0 3px rgba(220,38,38,.10);
+    }
+
     /* Amount emphasis */
-    .cp-amount{font-weight:600;color:var(--cp-ink);}
-    .cp-unpaid{color:var(--cp-unpaid);font-weight:600;}
-    .cp-zero{color:var(--cp-muted);font-weight:500;}
+    .cp-amount{
+        font-weight:600;color:var(--cp-ink);
+        font-family:'SFMono-Regular', Consolas, monospace;
+        font-variant-numeric:tabular-nums;
+    }
+    .cp-unpaid{color:var(--cp-unpaid-dark);font-weight:700;}
+    .cp-zero{color:#94a3b8;font-weight:500;}
     .cp-balance{color:var(--cp-primary);font-weight:700;}
     .cp-overpaid-txt{color:var(--cp-overpaid);font-weight:700;}
 
@@ -171,36 +376,52 @@
         display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;
         font-size:11.5px;font-weight:600;line-height:1.4;
     }
-    .cp-pill-paid{background:var(--cp-paid-bg);color:var(--cp-paid);}
-    .cp-pill-unpaid{background:var(--cp-unpaid-bg);color:var(--cp-unpaid);}
+    .cp-pill-paid{background:var(--cp-paid-bg);color:var(--cp-paid-dark);}
+    .cp-pill-unpaid{background:var(--cp-unpaid-bg);color:var(--cp-unpaid-dark);}
     .cp-pill i{font-size:10px;}
 
     /* ---------- Action buttons ---------- */
     .cp-actions{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;}
     .cp-act{
         display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:6px;
-        font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid transparent;
+        font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;
+        border:1px solid transparent;
         transition:all .15s ease;white-space:nowrap;
+        box-shadow:var(--cp-shadow-sm);
     }
     .cp-act i{font-size:11px;}
-    .cp-act:hover{text-decoration:none;transform:translateY(-1px);}
+    .cp-act:hover{text-decoration:none;transform:translateY(-1px);box-shadow:var(--cp-shadow);}
 
-    .cp-act-pay{background:var(--cp-primary);color:#fff;border-color:var(--cp-primary);}
-    .cp-act-pay:hover{background:var(--cp-primary-dark);color:#fff;}
+    .cp-act-pay{
+        background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary));
+        color:#fff;border-color:var(--cp-primary);
+    }
+    .cp-act-pay:hover{
+        background:linear-gradient(180deg, var(--cp-primary), var(--cp-primary-dark));
+        color:#fff;
+    }
 
-    .cp-act-view{background:var(--cp-white);color:var(--cp-ink-soft);border-color:var(--cp-line);}
-    .cp-act-view:hover{background:var(--cp-soft);color:var(--cp-ink);border-color:#d1d5db;}
+    .cp-act-view{
+        background:var(--cp-white);color:var(--cp-ink-soft);border-color:var(--cp-line);
+    }
+    .cp-act-view:hover{
+        background:var(--cp-soft);color:var(--cp-ink);border-color:#cbd5e1;
+    }
 
-    .cp-act-paid{background:var(--cp-paid-bg);color:var(--cp-paid);border-color:transparent;cursor:default;}
-    .cp-act-paid:hover{transform:none;}
+    .cp-act-paid{
+        background:var(--cp-paid-bg);color:var(--cp-paid-dark);
+        border-color:var(--cp-paid-border);cursor:default;
+    }
+    .cp-act-paid:hover{transform:none;box-shadow:var(--cp-shadow-sm);}
 
     /* ---------- Modals ---------- */
     .cp-wrap .modal-content, .cp-modal .modal-content{
         border:none;border-radius:14px;overflow:hidden;
-        box-shadow:0 24px 60px rgba(17,24,39,.20);
+        box-shadow:0 24px 60px rgba(15,23,42,.20);
     }
     .cp-wrap .modal-header, .cp-modal .modal-header{
-        background:var(--cp-white);border-bottom:1px solid var(--cp-line);
+        background:linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+        border-bottom:1px solid var(--cp-line);
         padding:20px 24px;
     }
     .cp-wrap .modal-header h4, .cp-modal .modal-header h4{
@@ -223,7 +444,7 @@
         display:block;margin-bottom:7px;font-size:12px;font-weight:600;
         color:var(--cp-ink-soft);letter-spacing:.02em;
     }
-    .cp-wrap .control-label .req, .cp-modal .control-label .req{color:#dc2626;font-weight:700;}
+    .cp-wrap .control-label .req, .cp-modal .control-label .req{color:var(--cp-unpaid);font-weight:700;}
 
     .cp-wrap .form-control, .cp-modal .form-control{
         width:100%;height:42px;padding:0 12px;font-size:14px;color:var(--cp-ink);
@@ -233,16 +454,17 @@
     .cp-wrap select.form-control, .cp-modal select.form-control{
         height:42px;padding:0 34px 0 12px;
     }
-    .cp-wrap .form-control:hover, .cp-modal .form-control:hover{border-color:#d1d5db;}
+    .cp-wrap .form-control:hover, .cp-modal .form-control:hover{border-color:#cbd5e1;}
     .cp-wrap .form-control:focus, .cp-modal .form-control:focus{
-        border-color:var(--cp-primary);box-shadow:0 0 0 3px rgba(31,58,95,.10);
+        border-color:var(--cp-primary);box-shadow:0 0 0 3px rgba(30,58,95,.10);
     }
     .cp-wrap .form-control[readonly], .cp-modal .form-control[readonly]{
-        background:var(--cp-soft);color:var(--cp-muted);cursor:not-allowed;
+        background:var(--cp-line-soft);color:var(--cp-muted);cursor:not-allowed;
     }
 
     .cp-wrap .input-group-addon, .cp-modal .input-group-addon{
-        background:var(--cp-primary)!important;color:#fff!important;border:none;
+        background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary))!important;
+        color:#fff!important;border:none;
         border-radius:0 8px 8px 0;
     }
 
@@ -252,15 +474,17 @@
         border-radius:8px;padding:9px 18px;font-weight:600;font-size:13px;
     }
     .cp-wrap .btn-default:hover, .cp-modal .btn-default:hover{
-        background:var(--cp-line-soft);color:var(--cp-ink);border-color:#d1d5db;
+        background:var(--cp-line-soft);color:var(--cp-ink);border-color:#cbd5e1;
     }
     .cp-wrap .btn-primary, .cp-modal .btn-primary{
-        background:var(--cp-primary);border-color:var(--cp-primary);color:#fff;
+        background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary));
+        border-color:var(--cp-primary);color:#fff;
         border-radius:8px;padding:9px 20px;font-weight:600;font-size:13px;
-        box-shadow:0 1px 2px rgba(31,58,95,.15);
+        box-shadow:0 1px 2px rgba(30,58,95,.20), inset 0 1px 0 rgba(255,255,255,.10);
     }
     .cp-wrap .btn-primary:hover, .cp-modal .btn-primary:hover{
-        background:var(--cp-primary-dark);border-color:var(--cp-primary-dark);
+        background:linear-gradient(180deg, var(--cp-primary), var(--cp-primary-dark));
+        border-color:var(--cp-primary-dark);
     }
     .cp-wrap .btn-rounded, .cp-modal .btn-rounded{border-radius:8px;}
 
@@ -271,12 +495,54 @@
         border-bottom:1px solid var(--cp-line);
     }
 
+    /* ---------- Actions group (right of filter bar) ---------- */
+    .cp-head-actions{
+        display:flex;gap:10px;align-items:center;
+        margin-left:auto;
+    }
+
+    .cp-btn-secondary{
+        display:inline-flex;align-items:center;gap:8px;padding:9px 16px;
+        border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+        color:var(--cp-ink-soft);background:var(--cp-white);
+        border:1px solid var(--cp-line);box-shadow:var(--cp-shadow-sm);
+        transition:all .18s ease;
+    }
+    .cp-btn-secondary:hover{
+        background:var(--cp-soft);border-color:#cbd5e1;color:var(--cp-ink);
+        transform:translateY(-1px);box-shadow:var(--cp-shadow);
+    }
+
+    .cp-dropdown{position:relative;display:inline-block;}
+    .cp-dropdown-menu{
+        position:absolute;right:0;top:calc(100% + 6px);
+        min-width:220px;background:#fff;border:1px solid var(--cp-line);
+        border-radius:10px;box-shadow:var(--cp-shadow-md);
+        padding:6px;display:none;z-index:1050;list-style:none;margin:0;
+    }
+    .cp-dropdown-menu.open{display:block;}
+    .cp-dropdown-menu li a{
+        display:flex;align-items:center;gap:10px;
+        padding:9px 12px;font-size:13px;font-weight:500;
+        color:var(--cp-ink-soft);text-decoration:none;border-radius:6px;
+        transition:all .15s ease;
+    }
+    .cp-dropdown-menu li a:hover{
+        background:var(--cp-soft);color:var(--cp-ink);text-decoration:none;
+    }
+    .cp-dropdown-menu li a i{width:14px;text-align:center;font-size:12px;}
+    .cp-dropdown-menu .cp-divider{height:1px;background:var(--cp-line);margin:4px 0;}
+
+    .cp-dot-menu{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+
     @media (max-width:767px){
         .cp-head{flex-direction:column;align-items:stretch;padding:20px;}
         .cp-head-text h3{font-size:17px;}
         .cp-actions{flex-wrap:wrap;}
         .cp-summary{padding:18px 20px 4px;}
-        .cp-table-wrap{padding:14px 20px 0;}
+        .cp-filters{padding:16px 20px 12px;}
+        .cp-table-wrap{padding:8px 20px 0;}
+        .cp-head-actions{margin-left:0;width:100%;justify-content:flex-end;}
     }
 </style>
 
@@ -298,39 +564,7 @@
         <div class="col-lg-12">
             <div class="panel panel-custom panel-border">
 
-                <div class="cp-head">
-                    <div class="cp-head-text">
-                        <h3><i class="fa fa-credit-card"></i> Client Payments</h3>
-                        <p>Manage client invoices, payments and outstanding balances.</p>
-                    </div>
-                    <div>
-                        <button type="button"
-                                class="cp-btn-primary"
-                                data-toggle="modal"
-                                data-target=".bs-example-modal-lg">
-                            <i class="fa fa-plus"></i> Add Debit
-                        </button>
-                    </div>
-                </div>
-
                 <div class="cp-body">
-
-                    @php
-                        $totalInvoiced = (float) $sales->sum(fn($p) => (float) $p->bill_amount);
-                        $totalPaid     = (float) $sales->sum(fn($p) => (float) $p->paid_amount);
-                        $totalUnpaid   = (float) $sales->sum(fn($p) => max(0, (float) $p->bill_amount - (float) $p->paid_amount));
-
-                        $withBalance   = $sales->filter(fn($p) => (float) $p->bill_amount - (float) $p->paid_amount > 0)->count();
-                        $fullyPaid     = $sales->filter(fn($p) => (float) $p->bill_amount - (float) $p->paid_amount <= 0)->count();
-                        $invoiceCount  = $sales->count();
-
-                        $paidPct = $totalInvoiced > 0
-                            ? min(100, round(($totalPaid / $totalInvoiced) * 100, 1))
-                            : 0;
-
-                        $invLabel = $invoiceCount === 1 ? 'invoice' : 'invoices';
-                        $balLabel = $withBalance === 1 ? 'invoice' : 'invoices';
-                    @endphp
 
                     {{-- ===== Summary KPI cards ===== --}}
                     <div class="cp-summary">
@@ -376,90 +610,181 @@
 
                     </div>
 
-                    {{-- ===== Table ===== --}}
-                    <div class="cp-table-wrap">
-                        <table id="datatable" class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th style="width:48px;">#</th>
-                                    <th>Client Name</th>
-                                    <th>Vehicle No</th>
-                                    <th>Invoice No</th>
-                                    <th class="text-right">Invoice Amount</th>
-                                    <th>Created Date</th>
-                                    <th class="text-right">Paid Amount</th>
-                                    <th class="text-right">Unpaid Amount</th>
-                                    <th class="text-right">Balance</th>
-                                    <th style="width:180px;" class="text-center">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($sales as $key => $product)
-                                    <?php $check = $product->bill_amount - $product->paid_amount; ?>
-                                    <tr>
-                                        <td class="center">{{ $key + 1 }}</td>
-                                        <td><strong style="color:var(--cp-ink);">{{ strtoupper($product->client_name) }}</strong></td>
-                                        <td>{{ strtoupper($product->vehicle_reg) }}</td>
-                                        <td>
-                                            <span style="font-family:'SFMono-Regular',Consolas,monospace;font-size:12.5px;">
-                                                {{ $product->invoice_number }}
-                                            </span>
-                                        </td>
-                                        <td class="num">
-                                            <span class="cp-amount">{{ number_format($product->bill_amount, 2) }}</span>
-                                        </td>
-                                        <td>{{ strtoupper($product->created_date) }}</td>
-                                        <td class="num">
-                                            <span class="cp-amount">{{ number_format($product->paid_amount, 2) }}</span>
-                                        </td>
-                                        <td class="num">
-                                            @if($product->bill_amount > $product->paid_amount)
-                                                <span class="cp-unpaid">{{ number_format($product->bill_amount - $product->paid_amount, 2) }}</span>
-                                            @else
-                                                <span class="cp-zero">0.00</span>
-                                            @endif
-                                        </td>
-                                        <td class="num">
-                                            @if($product->bill_amount - $product->paid_amount > 0)
-                                                <span class="cp-balance">{{ number_format($product->bill_amount - $product->paid_amount, 2) }}</span>
-                                            @elseif($product->bill_amount - $product->paid_amount < 0)
-                                                <span class="cp-overpaid-txt">{{ number_format($product->bill_amount - $product->paid_amount, 2) }}</span>
-                                            @else
-                                                <span class="cp-zero">0.00</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <div class="cp-actions">
-                                                @if ($check == 0)
-                                                    <button type="button"
-                                                            value="{{ $product->invoice_number }}"
-                                                            class="cp-act cp-act-paid">
-                                                        <i class="fa fa-check"></i> Paid
-                                                    </button>
-                                                @else
-                                                    <button type="button"
-                                                            value="{{ $product->invoice_number }}"
-                                                            class="cp-act cp-act-pay addPayment">
-                                                        <i class="fa fa-plus"></i> Pay
-                                                    </button>
-                                                @endif
+                    {{-- ===== Filter bar + Action buttons (right) ===== --}}
+                    <div class="cp-filters">
+                        <span class="cp-filters-label">Filter:</span>
 
-                                                @if(!$product->invoice_number)
-                                                    <a class="cp-act cp-act-view viewModal">
-                                                        <i class="fa fa-eye"></i> View
-                                                    </a>
-                                                @else
-                                                    <a href="{{ url('clients/payments/view-payments/'.$product->invoice_number) }}"
-                                                       class="cp-act cp-act-view">
-                                                        <i class="fa fa-eye"></i> View
-                                                    </a>
-                                                @endif
-                                            </div>
-                                        </td>
+                        <button type="button" class="cp-filter active" data-filter="all">
+                            All <span class="cp-count">{{ $invoiceCount }}</span>
+                        </button>
+
+                        <button type="button" class="cp-filter" data-filter="paid">
+                            <span class="cp-dot cp-dot-paid"></span>
+                            Paid <span class="cp-count">{{ $fullyPaid }}</span>
+                        </button>
+
+                        <button type="button" class="cp-filter" data-filter="partial">
+                            <span class="cp-dot cp-dot-partial"></span>
+                            Partial <span class="cp-count">{{ $partialCount }}</span>
+                        </button>
+
+                        <button type="button" class="cp-filter" data-filter="unpaid">
+                            <span class="cp-dot cp-dot-unpaid"></span>
+                            Unpaid <span class="cp-count">{{ $unpaidCount }}</span>
+                        </button>
+
+                        {{-- Actions moved to the right --}}
+                        <div class="cp-head-actions">
+
+                            {{-- Export PDF dropdown --}}
+                            <div class="cp-dropdown">
+                                <button type="button" class="cp-btn-secondary cp-dropdown-toggle">
+                                    <i class="fa fa-file-pdf-o"></i> Export PDF
+                                    <i class="fa fa-angle-down" style="font-size:10px;margin-left:4px;"></i>
+                                </button>
+                                <ul class="cp-dropdown-menu">
+                                    <li>
+                                        <a href="{{ route('client-payments.pdf', ['status' => 'all']) }}"
+                                           data-export="all">
+                                            <i class="fa fa-file-pdf-o" style="color:var(--cp-primary);"></i>
+                                            All Invoices
+                                        </a>
+                                    </li>
+                                    <li class="cp-divider"></li>
+                                    <li>
+                                        <a href="{{ route('client-payments.pdf', ['status' => 'paid']) }}"
+                                           data-export="paid">
+                                            <i class="fa fa-file-pdf-o" style="color:var(--cp-paid);"></i>
+                                            Paid Only
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('client-payments.pdf', ['status' => 'partial']) }}"
+                                           data-export="partial">
+                                            <i class="fa fa-file-pdf-o" style="color:var(--cp-partial);"></i>
+                                            Partial Only
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="{{ route('client-payments.pdf', ['status' => 'unpaid']) }}"
+                                           data-export="unpaid">
+                                            <i class="fa fa-file-pdf-o" style="color:var(--cp-unpaid);"></i>
+                                            Unpaid Only
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            {{-- Add Debit button --}}
+                            <button type="button"
+                                    class="cp-btn-primary"
+                                    data-toggle="modal"
+                                    data-target=".bs-example-modal-lg">
+                                <i class="fa fa-plus"></i> Add Debit
+                            </button>
+
+                        </div>
+                    </div>
+
+                    {{-- ===== Table ===== --}}
+                    <div class="cp-table-outer">
+                        <div class="cp-table-loading" id="cpTableLoading">
+                            <div class="cp-spinner"></div>
+                        </div>
+
+                        <div class="cp-table-wrap">
+                            <table id="datatable" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th style="width:48px;">#</th>
+                                        <th>Client Name</th>
+                                        <th>Vehicle No</th>
+                                        <th>Invoice No</th>
+                                        <th class="text-right">Invoice Amount</th>
+                                        <th>Created Date</th>
+                                        <th class="text-right">Paid Amount</th>
+                                        <th class="text-right">Unpaid Amount</th>
+                                        <th class="text-right">Balance</th>
+                                        <th style="width:180px;" class="text-center">Action</th>
                                     </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    @foreach($sales as $key => $product)
+                                        @php
+                                            $check = (float) $product->bill_amount - (float) $product->paid_amount;
+                                            if ((float) $product->paid_amount >= (float) $product->bill_amount) {
+                                                $rowStatus = 'paid';
+                                            } elseif ((float) $product->paid_amount > 0) {
+                                                $rowStatus = 'partial';
+                                            } else {
+                                                $rowStatus = 'unpaid';
+                                            }
+                                        @endphp
+                                        <tr data-status="{{ $rowStatus }}">
+                                            <td class="center">{{ $key + 1 }}</td>
+                                            <td><strong style="color:var(--cp-ink);">{{ strtoupper($product->client_name) }}</strong></td>
+                                            <td>{{ strtoupper($product->vehicle_reg) }} | {{ strtoupper($product->model) }} </td>
+                                            <td>
+                                                <span style="font-family:'SFMono-Regular',Consolas,monospace;font-size:12.5px;color:#475569;">
+                                                    {{ $product->invoice_number }}
+                                                </span>
+                                            </td>
+                                            <td class="num">
+                                                <span class="cp-amount">{{ number_format($product->bill_amount, 2) }}</span>
+                                            </td>
+                                            <td>{{ strtoupper($product->created_date) }}</td>
+                                            <td class="num">
+                                                <span class="cp-amount" style="color:var(--cp-paid-dark);">{{ number_format($product->paid_amount, 2) }}</span>
+                                            </td>
+                                            <td class="num">
+                                                @if($product->bill_amount > $product->paid_amount)
+                                                    <span class="cp-unpaid">{{ number_format($product->bill_amount - $product->paid_amount, 2) }}</span>
+                                                @else
+                                                    <span class="cp-zero">0.00</span>
+                                                @endif
+                                            </td>
+                                            <td class="num">
+                                                @if($product->bill_amount - $product->paid_amount > 0)
+                                                    <span class="cp-balance">{{ number_format($product->bill_amount - $product->paid_amount, 2) }}</span>
+                                                @elseif($product->bill_amount - $product->paid_amount < 0)
+                                                    <span class="cp-overpaid-txt">{{ number_format($product->bill_amount - $product->paid_amount, 2) }}</span>
+                                                @else
+                                                    <span class="cp-zero">0.00</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <div class="cp-actions">
+                                                    @if ($check == 0)
+                                                        <button type="button"
+                                                                value="{{ $product->invoice_number }}"
+                                                                class="cp-act cp-act-paid">
+                                                            <i class="fa fa-check"></i> Paid
+                                                        </button>
+                                                    @else
+                                                        <button type="button"
+                                                                value="{{ $product->invoice_number }}"
+                                                                class="cp-act cp-act-pay addPayment">
+                                                            <i class="fa fa-plus"></i> Pay
+                                                        </button>
+                                                    @endif
+
+                                                    @if(!$product->invoice_number)
+                                                        <a class="cp-act cp-act-view viewModal">
+                                                            <i class="fa fa-eye"></i> View
+                                                        </a>
+                                                    @else
+                                                        <a href="{{ url('clients/payments/view-payments/'.$product->invoice_number) }}"
+                                                           class="cp-act cp-act-view">
+                                                            <i class="fa fa-eye"></i> View
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                 </div>
@@ -484,17 +809,32 @@
                     <div class="cp-section-title">Invoice details</div>
 
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
                             <div class="form-group">
-                                <label class="control-label">Invoice Number</label>
+                                <label class="control-label">Client Name</label>
+                                <input type="text" name="client_name" readonly id="client_name" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="control-label">Invoice No #</label>
                                 <input type="hidden" name="client_id" readonly id="client_id">
                                 <input type="text" name="invoice_number" readonly id="invoice_no" class="form-control">
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="form-group">
                                 <label class="control-label">Invoiced Amount</label>
                                 <input type="text" name="bill_amount" readonly id="bill_amount" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="control-label">Balance Due</label>
+                                <input type="text" name="balance_due" readonly id="balance_due" class="form-control">
                             </div>
                         </div>
                     </div>
@@ -505,7 +845,15 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="control-label">Amount <span class="req">*</span></label>
-                                <input type="text" name="paid_amount" id="paid_amount" class="form-control" placeholder="Amount to pay">
+                                <input type="text"
+                                       name="paid_amount"
+                                       id="paid_amount"
+                                       class="form-control"
+                                       placeholder="Amount to pay"
+                                       autocomplete="off"
+                                       inputmode="decimal"
+                                       data-max="">
+                                <span class="cp-error-text" id="paid_amount_error" style="display:none;"></span>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -525,7 +873,7 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Pay</button>
+                    <button type="submit" class="btn btn-primary" id="btnPay">Pay</button>
                 </div>
             </div>
         </form>
@@ -618,6 +966,24 @@
     </div>
 </div>
 
+{{-- ===================== Download Progress Modal ===================== --}}
+<div class="modal fade cp-modal" id="download_modal" tabindex="-1" role="dialog" aria-hidden="true"
+     data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog" style="max-width:360px;margin:120px auto 0;">
+        <div class="modal-content">
+            <div class="modal-body" style="text-align:center;">
+                <div class="cp-spinner"></div>
+                <h4 style="margin:0 0 8px;font-size:15px;font-weight:700;color:var(--cp-ink);">
+                    Downloading…
+                </h4>
+                <p style="margin:0;font-size:12.5px;color:var(--cp-muted);line-height:1.5;">
+                    Please wait while your PDF is being prepared.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
   $(document).ready(function () {
     $.ajaxSetup({
@@ -631,23 +997,288 @@
         todayHighlight: true
     });
 
-    $('.addPayment').click(function() {
-         var invoice_no = $(this).val();
-         $.ajax({
-             url: `../clients/payments-details/${invoice_no}`,
-             type: "GET",
-             success: function (response) {
-                 $('#payment_modal').modal('show');
-                 $("#invoice_no").val(response[0].invoice_number);
-                 $("#bill_amount").val(response[0].bill_amount);
-                 $("#client_id").val(response[0].client_id);
-               }
-           });
-       });
+    /* ============================================================
+     * FILTER + LOADER + PAGINATION-AWARE RENUMBERING
+     * ============================================================ */
+    var currentFilter = 'all';
+    var filterTimer   = null;
 
-       $('.viewModal').click(function() {
-               alert('Bill number not Created');
-       });
+    function hasDataTable() {
+        return !!(window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('#datatable'));
+    }
+
+    if ($.fn.dataTable && $.fn.dataTable.ext && $.fn.dataTable.ext.search) {
+        $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+            if (!settings || !settings.nTable || settings.nTable.id !== 'datatable') {
+                return true;
+            }
+            if (currentFilter === 'all') {
+                return true;
+            }
+            var row = settings.aoData[dataIndex];
+            if (!row || !row.nTr) {
+                return true;
+            }
+            return $(row.nTr).data('status') === currentFilter;
+        });
+    }
+
+    function showTableSpinner() { $('#cpTableLoading').addClass('show'); }
+    function hideTableSpinner() { $('#cpTableLoading').removeClass('show'); }
+
+    function renumberVisibleRows() {
+        if (hasDataTable()) {
+            var dt      = $('#datatable').DataTable();
+            var start   = dt.page.info().start;
+            var counter = start + 1;
+
+            dt.rows({ page: 'current' }).nodes().each(function (row) {
+                $(row).find('td').first().text(counter++);
+            });
+        } else {
+            var i = 1;
+            $('#datatable tbody tr').each(function () {
+                if ($(this).is(':visible')) {
+                    $(this).find('td').first().text(i++);
+                }
+            });
+        }
+    }
+
+    if (hasDataTable()) {
+        $('#datatable').on('draw.dt', function () {
+            renumberVisibleRows();
+        });
+        renumberVisibleRows();
+    }
+
+    function applyTableFilter() {
+        if (hasDataTable()) {
+            $('#datatable').DataTable().draw();
+        } else {
+            $('#datatable tbody tr').each(function () {
+                var status = $(this).data('status');
+                var show   = (currentFilter === 'all') || (status === currentFilter);
+                $(this).toggle(show);
+            });
+            renumberVisibleRows();
+        }
+    }
+
+    $(document).on('click', '.cp-filter', function () {
+        var $btn   = $(this);
+        var filter = $btn.data('filter');
+
+        if (filter === currentFilter) { return; }
+
+        $('.cp-filter').removeClass('active');
+        $btn.addClass('active');
+
+        if (filterTimer) { clearTimeout(filterTimer); }
+        showTableSpinner();
+
+        filterTimer = setTimeout(function () {
+            currentFilter = filter;
+            applyTableFilter();
+            hideTableSpinner();
+            filterTimer = null;
+        }, 250);
+    });
+
+    /* ============================================================
+     * EXPORT DROPDOWN open/close
+     * ============================================================ */
+    $(document).on('click', '.cp-dropdown-toggle', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $menu = $(this).siblings('.cp-dropdown-menu');
+        $('.cp-dropdown-menu').not($menu).removeClass('open');
+        $menu.toggleClass('open');
+    });
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('.cp-dropdown').length) {
+            $('.cp-dropdown-menu').removeClass('open');
+        }
+    });
+
+    /* ============================================================
+     * EXPORT PDF — fetch blob, hide modal ONLY on full download
+     * ============================================================ */
+    function extractFilename(disposition, fallback) {
+        if (!disposition) { return fallback; }
+        var match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)/i);
+        if (match && match[1]) {
+            try { return decodeURIComponent(match[1]); }
+            catch (e) { return match[1]; }
+        }
+        return fallback;
+    }
+
+    $(document).on('click', '.cp-dropdown-menu a[data-export]', function (e) {
+        e.preventDefault();
+
+        var url = $(this).attr('href');
+        if (!url) { return; }
+
+        // Close dropdown
+        $('.cp-dropdown-menu').removeClass('open');
+
+        // Show spinner modal (stays visible until download finishes)
+        $('#download_modal').modal('show');
+
+        fetch(url, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/pdf'
+            }
+        })
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('Server returned ' + response.status);
+            }
+            var filename = extractFilename(
+                response.headers.get('Content-Disposition'),
+                'client-payments.pdf'
+            );
+            // response.blob() resolves only when the FULL body has arrived
+            return response.blob().then(function (blob) {
+                return { blob: blob, filename: filename };
+            });
+        })
+        .then(function (data) {
+            // Download has fully completed — now trigger the save dialog
+            var blobUrl = window.URL.createObjectURL(data.blob);
+            var $a = $('<a></a>')
+                .attr('href', blobUrl)
+                .attr('download', data.filename)
+                .css('display', 'none')
+                .appendTo(document.body);
+
+            $a[0].click();
+
+            // Clean up
+            setTimeout(function () {
+                $a.remove();
+                window.URL.revokeObjectURL(blobUrl);
+            }, 1500);
+
+            // Hide modal AFTER the download is fully received
+            $('#download_modal').modal('hide');
+        })
+        .catch(function (err) {
+            console.error('PDF download failed:', err);
+            $('#download_modal').modal('hide');
+            alert('Failed to download the PDF. Please try again.');
+        });
+    });
+
+    /* ============================================================
+     * PAYMENT MODAL — load invoice, balance and prepare validation
+     * ============================================================ */
+    $('.addPayment').click(function() {
+        var invoice_no = $(this).val();
+        $.ajax({
+            url: `../clients/payments-details/${invoice_no}`,
+            type: "GET",
+            success: function (response) {
+                var row        = response[0];
+                var billAmount = parseFloat(row.bill_amount) || 0;
+                var paidAmount = parseFloat(row.paid_amount) || 0;
+                var balanceDue = Math.max(0, billAmount - paidAmount);
+
+                $('#payment_modal').modal('show');
+                $("#client_name").val(row.client_name);
+                $("#invoice_no").val(row.invoice_number);
+                $("#bill_amount").val(billAmount.toFixed(2));
+                $("#balance_due").val(balanceDue.toFixed(2));
+                $("#client_id").val(row.client_id);
+
+                $("#paid_amount")
+                    .val('')
+                    .removeClass('cp-invalid')
+                    .attr('data-max', balanceDue.toFixed(2));
+
+                $("#paid_amount_error").hide().text('');
+                $("#btnPay").prop('disabled', false).text('Pay');
+            }
+        });
+    });
+
+    $(document).on('input', '#paid_amount', function () {
+        $(this).removeClass('cp-invalid');
+        $('#paid_amount_error').hide().text('');
+    });
+
+    /* ============================================================
+     * PAYMENT FORM — client-side validation + AJAX submit
+     * ============================================================ */
+    $(document).on('submit', '#formUpdate', function(e) {
+        e.preventDefault();
+
+        var $input = $('#paid_amount');
+        var $error = $('#paid_amount_error');
+        var $btn   = $('#btnPay');
+        var raw    = ($input.val() || '').trim();
+        var max    = parseFloat($input.attr('data-max')) || Infinity;
+
+        $input.removeClass('cp-invalid');
+        $error.hide().text('');
+
+        if (raw === '') {
+            $input.addClass('cp-invalid');
+            $error.text('Please enter a payment amount.').show();
+            return false;
+        }
+
+        if (!/^\d+(\.\d{1,2})?$/.test(raw)) {
+            $input.addClass('cp-invalid');
+            $error.text('Please enter a valid number (e.g. 1500 or 1500.50).').show();
+            return false;
+        }
+
+        var amount = parseFloat(raw);
+        if (amount <= 0) {
+            $input.addClass('cp-invalid');
+            $error.text('Amount must be greater than zero.').show();
+            return false;
+        }
+
+        if (amount > max) {
+            $input.addClass('cp-invalid');
+            $error.text('Amount cannot exceed the balance due of ' + max.toFixed(2) + '.').show();
+            return false;
+        }
+
+        $btn.prop('disabled', true).text('Processing...');
+
+        $.ajax({
+            url:  $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            success: function() {
+                $('#payment_modal').modal('hide');
+                window.location.reload();
+            },
+            error: function(xhr) {
+                $btn.prop('disabled', false).text('Pay');
+                var errors = xhr.responseJSON && xhr.responseJSON.errors;
+                if (errors && errors.paid_amount) {
+                    $input.addClass('cp-invalid');
+                    $error.text(errors.paid_amount[0]).show();
+                } else {
+                    $error.text('An error occurred. Please try again.').show();
+                }
+            }
+        });
+
+        return false;
+    });
+
+    $('.viewModal').click(function() {
+        alert('Bill number not Created');
+    });
   });
 </script>
 

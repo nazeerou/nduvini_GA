@@ -45,6 +45,52 @@ class StockController extends Controller
 
   }
 
+
+public function getProductDetails($id)
+{
+    try {
+
+        $businessId = Auth::user()->business_id;
+
+        $product = DB::table('products')
+            ->join('items', 'products.product_id', '=', 'items.id')
+            ->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
+            ->where('products.pid', $id)
+            ->select(
+                'products.pid',
+                'items.item_name',
+                'products.part_number',
+                'brands.title',
+                'products.model',
+                'products.purchasing_price',
+                'products.selling_price',
+                'products.quantity',
+                'products.purchase_unit',
+                'products.alert_qty',
+                'products.description'
+            )
+            ->first();
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found.'
+            ], 404);
+        }
+
+        return response()->json([$product], 200);
+
+    } catch (\Exception $e) {
+
+        \Log::error('Get Product Details Error: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Unable to retrieve product details.'
+        ], 500);
+    }
+}
+
     public function getCurrentStockPDF() {
 
       $branches = DB::table('branches')->where('id', Auth::user()->branch_id)->get();

@@ -33,7 +33,10 @@ use App\Http\Controllers\{
     LoanController,
     SalaryAdvanceController,
     AccountTransactionController,
-    DebtController
+    DebtController,
+    AuditLogController,
+    ApprovalController
+
 };
 
 /*
@@ -159,6 +162,19 @@ Route::middleware('auth')->group(function() {
         Route::post('/items/display-selected', 'displaySelectedStore');
     });
 
+
+    Route::middleware(['auth'])->prefix('approvals')->name('approvals.')->group(function () {
+    Route::get('/',            [ApprovalController::class, 'inbox'])->name('inbox');
+    Route::get('/{id}',        [ApprovalController::class, 'show'])->name('show');
+    Route::post('/{id}/approve', [ApprovalController::class, 'approve'])->name('approve');
+    Route::post('/{id}/reject',  [ApprovalController::class, 'reject'])->name('reject');
+    Route::get('/pending/count', [ApprovalController::class, 'pendingCount'])->name('count');
+});
+
+// On SalaryAdvanceController & PayrollController:
+Route::post('/salary-advances/{id}/submit-approval', [SalaryAdvanceController::class, 'submitForApproval'])->name('salary-advances.submit-approval');
+Route::post('/payrolls/{id}/submit-approval',        [PayrollController::class, 'submitForApproval'])->name('payrolls.submit-approval');
+
     // Stock Routes
     Route::controller(StockController::class)->group(function() {
         Route::get('/current-stocks', 'currentStock')->name('stock');
@@ -204,7 +220,7 @@ Route::middleware('auth')->group(function() {
         Route::get('invoices/all-invoices', 'getAllInvoices');
         Route::get('invoices/edit/{id}', 'editInvoice');
         Route::post('invoices/update', 'updateInvoice');
-        Route::get('invoices/create-invoice/{id}', 'getInvoice');
+        Route::get('invoices/create-invoice/data/job-card/{id}', 'getInvoice');
         Route::get('invoices/delete-invoice/delete/{id}', 'deleteInvoice');
         Route::get('invoices/tax-invoices/pdf/{id}', 'getInvoicePDF');
         Route::get('invoices/send-email', 'sendMail');
@@ -221,6 +237,16 @@ Route::middleware('auth')->group(function() {
         Route::get('estimations/delete-estimations/{id}', 'deleteEstimationDetails');
     });
 
+Route::get('/purchases/check-invoice',    [PurchaseController::class, 'checkInvoiceNumberExists'])->name('purchases.check-invoice');
+Route::get('/purchases/generate-invoice', [PurchaseController::class, 'generatePurchaseInvoiceNumber'])->name('purchases.generate-invoice');
+
+Route::middleware(['auth'])->prefix('audit-logs')->name('audit-logs.')->group(function () {
+    Route::get('/',            [AuditLogController::class, 'index'])->name('index');
+    Route::get('/critical',    [AuditLogController::class, 'critical'])->name('critical');
+    Route::get('/{id}',        [AuditLogController::class, 'show'])->name('show');
+    Route::get('/timeline/{reference}', [AuditLogController::class, 'timeline'])->name('timeline');
+    Route::post('/purge',      [AuditLogController::class, 'purge'])->name('purge');
+});
     // Sale & POS Routes
     Route::controller(SaleController::class)->group(function() {
         Route::get('/pos/edit/{id}', 'editPOS')->name('pos');
@@ -268,6 +294,8 @@ Route::middleware('auth')->group(function() {
         
         Route::get('reports/sales-reports/profit', 'profitReportPdf')->name('profit-sales-report');
         Route::get('reports/sales/profit', 'getProfitLoss')->name('profit-sales');
+
+        Route::get('clients/payments/export-pdf', 'downloadClientPaymentsPdf')->name('client-payments.pdf');
     });
 
     // Purchase Routes
@@ -335,6 +363,9 @@ Route::middleware('auth')->group(function() {
         Route::get('/clients/delete/{id}', 'deleteClient')->name('client');
     });
 
+    Route::get('job-cards/export-pdf', [EstimationController::class, 'exportJobCardPdf'])->name('job-cards.export-pdf');
+    Route::get('job-cards/data/values/{reference}', [EstimationController::class, 'getJobCardData'])->name('job-cards.data');
+    Route::get('estimations-summary/export-pdf', [EstimationController::class, 'exportEstimationsPdf'])->name('estimations.export-pdf');
     // Report Routes
     Route::controller(ReportController::class)->group(function() {
         Route::get('reports/labour-charge-reports', 'getLabourChargeReport');

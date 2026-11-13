@@ -11,7 +11,11 @@ class Purchase extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        "product_id", "make", "supplier_id", "branch_id", "paid_amount", "lpo_number", "lpo_file", "model", "purchase_price", "part_number", "vat_type", "vat_amount", "quantity", "invoice_number", "total_purchase", "invoice_file", "payment", "status", "created_date"
+        "product_id", "make", "supplier_id", "branch_id", 
+        "paid_amount", "lpo_number", "lpo_file", "model",
+         "purchase_price", "part_number", "vat_type", "vat_amount",
+          "quantity", "invoice_number", "total_purchase", "invoice_file", 
+          "payment", "status", "created_date", "reference"
     ];
 
     public function brand()

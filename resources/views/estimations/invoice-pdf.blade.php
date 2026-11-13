@@ -3,533 +3,774 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ __('Tax Invoice') }}</title>
-   <style>
-     
-     h4 {
-          /* text-align: center; */
-      }
-      tr th {
-           background: #eee;
-           padding-top: 10px;
-           font-size: 13px;
-      }
-      h5 {
-          text-align: right;
-          font-size: 1em;
-      }
-      table {
-          font-size: 13px;
-      }
-      #sales_report {
-        font-family: Arial, Helvetica, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
+
+    <style>
+        /* =========================================================
+           PAGE MARGINS
+           ---------------------------------------------------------
+           The fixed <header> lives INSIDE the top page margin.
+           Gap below the header = (page margin-top) - (header offset + header height).
+
+           Current: 285 - (5 + 230) = 50px of clear space below header.
+           If you swap in a taller/shorter header image, adjust the
+           three numbers marked [HDR] together so the gap stays the same.
+        ========================================================= */
+        @page {
+            margin: 275px 40px 125px 40px; /* [HDR] was 225px top */
         }
 
-        #total_estimate {
-        font-family: Arial, Helvetica, sans-serif;
-        border-collapse: collapse;
-        width: 50%;
-        }
-        #total_estimate td, #sales_report th {
-        border: 1px solid #ddd;
-        padding: 6px 0 6px 13px;
+        * {
+            box-sizing: border-box;
         }
 
-        #sales_report td, #sales_report th {
-        border: 1px solid #ddd;
-        padding: 4px 0 0px 15px;
-        font-size: 0.9em;
-
+        body {
+            font-family: 'InvoiceSans', 'DejaVu Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.45;
+            color: #222;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
         }
 
-        /* #sales_report tr:nth-child(even){background-color: #f2f2f2;} */
-
-        #sales_report tr:hover {background-color: #ddd;}
-
-        #sales_report th {
-        padding-top: 8px;
-        padding-bottom: 8px;
-        text-align: left;
-        }
-        .footer {
-          position: fixed;
-          bottom: 0;
-          width: 100%;
-        }
-        .footer .left{
-           /* font-size: 1em; */
-        }
-        .footer .footer_ {
-          float: right;
-        }
-        #line {
-            border: 1px solid #ddd;
-        }
-        #rpt h4 {
-            text-align: right;
-        }
-          div .logo {
-          /* /* display: block; */
-          margin-left: 0;
-          margin-top: 0;
-          /* width: 50%;  */
-          text-align: left;
-          /* padding: 0 0 20px 0; */
-       }
-     .business_name {
-          text-align: left;
-          padding-left: 14px;
-          font-size: 22px;
-          font-weight: 300;
-     }
-ul {
-  list-style-type: none;
-  margin: 0;
-  padding: 10;
-}
-
-/* main {
-        background-image: url("assets/images/logo_nduvini.jpeg");
-        background-position: center;
-        background-repeat: no-repeat;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto;
-        opacity: 0.1;
-        background-size: 500px 500px;
-
-    }
-} */
-
-:root {
---watermark-opacity: 0.22;
-}
-.watermark {
-position: absolute;
-top: 50%;
-left: 50%;
-transform: translate(-50%, -50%);
-width: 100%;
-height: 100%;
-background-image: url('assets/images/logo_nduvini.jpeg');
-background-position: center;
-background-repeat: no-repeat;
-background-size: 400px;
-opacity: var(--watermark-opacity);
-z-index: -1;
-pointer-events: none;
-}
-
-    @page {
-        margin: 140px 25px 100px 25px;
-        /* padding: 200px 0; */
-        /* padding-bottom: 20px; */
-       }
-       
-       .page-break {
-        page-break-before: always;
-        margin-top: 155px;
-        }
+        /* ================= HEADER ================= */
 
         header {
             position: fixed;
-            top: -136px;
+            top: -270px;   
+            left: 0;
+            right: 0;
             width: 100%;
-            height: 55px;
-            font-size: 20px !important;
-            /* background-color: #000; */
-            /* color: white; */
-            /* text-align: center; */
-            /* line-height: 35px; */
         }
-        footer {
-            position: fixed; 
-            bottom: -106px; 
-            left: 0px; 
-            right: 0px;
-            height: 115px; 
-            font-size: 20px !important;
-            background-color: red;
-            color: white;
+
+        .invoice-logo {
             width: 100%;
-            /* text-align: center; */
-            /* line-height: 35px; */
+            height: 110px;
+            display: block;
         }
-        footer .page-number {
-            /* text-align: center; */
+
+        .branch {
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            padding: 4px 0;
         }
-        .page-number:before {
-            content: "Page  " counter(page);
+
+        .header-line {
+            border-top: 1px solid #aaa;
+            margin: 3px 0 5px;
         }
-        #footer_details {
-            /* display: inline; */
+
+        .invoice-info {
+            width: 100%;
+            border-collapse: collapse;
         }
-        #footer_details .account_details {
-            float: left;
-            width: 280px;
-            font-size: 8px;
+
+        .invoice-info td {
+            border: none;
+            vertical-align: top;
+            padding: 2px 5px;
+            font-size: 10px;
+            line-height: 1.45;
         }
-        #footer_details .total_summations {
-            float: right;
-            width: 500px;
+
+        .invoice-info p {
+            margin: 2px 0;
+            line-height: 13px;
+        }
+
+        .invoice-info strong {
+            font-weight: bold;
+            letter-spacing: 0.2px;
+        }
+
+        .invoice-title {
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+        }
+
+        .invoice-number {
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.8px;
             text-align: right;
         }
-        table p {
-            line-height: 10px;
+
+        /* Tabular figures keep amounts vertically aligned in columns */
+        .invoice-number,
+        .price_cell,
+        #total_estimate td,
+        .grand-total td {
+            font-variant-numeric: tabular-nums;
+            -moz-font-feature-settings: "tnum";
+            font-feature-settings: "tnum";
         }
-  .branch {
-       font-size: 0.8em;
-       padding: 3px 0 2px 26px;
-      }          
-   </style>
-   </style>
 
+        .page-counter:before {
+            content: counter(page);
+        }
+
+        /* ================= FOOTER ================= */
+
+        footer {
+            position: fixed;
+            bottom: -80px;
+            left: 0;
+            right: 0;
+            height: 95px;
+            width: 100%;
+            background-color: #fc4322;
+            color: #ffffff;
+        }
+
+        .footer-table {
+            width: 100%;
+            padding: 10px 8px 5px 8px;
+            border-collapse: collapse;
+            background-color: #f8312a;
+        }
+
+        .footer-table td {
+            border: none;
+            width: 33.33%;
+            vertical-align: top;
+            padding: 2px 7px;
+
+            font-size: 8px;
+            line-height: 13px;
+            color: #ffffff;
+        }
+
+        .footer-table strong {
+            color: #ffffff;
+            font-size: 9px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .footer-table ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .footer-table li {
+            color: #ffffff;
+        }
+
+        .page-number {
+            text-align: right;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 0.4px;
+            color: #ffffff;
+            padding-top: 3px;
+            border-top: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
+        /* ================= GENERAL TABLES ================= */
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #sales_report {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 10px;
+        }
+
+        #sales_report thead {
+            display: table-header-group;
+        }
+
+        #sales_report tfoot {
+            display: table-footer-group;
+        }
+
+        #sales_report th {
+            background: #eee;
+            border: 1px solid #ccc;
+            padding: 4px 6px;
+            text-align: left;
+
+            font-size: 9.5px;
+            font-weight: bold;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        #sales_report td {
+            border: 1px solid #ddd;
+            padding: 4px;
+
+            font-size: 10px;
+            line-height: 1.4;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+
+        /* Item names read better with a touch of weight + tracking */
+        #sales_report tbody td:first-child {
+            font-weight: bold;
+        }
+
+        #sales_report tbody tr {
+            page-break-inside: avoid;
+        }
+
+        #sales_report {
+            page-break-inside: auto;
+        }
+
+        .vehicle-table td,
+        .vehicle-table th {
+            padding: 4px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            margin: 8px 0 5px;
+        }
+
+        /* ================= TOTALS ================= */
+
+        .summary-wrapper {
+            width: 100%;
+            page-break-inside: avoid;
+        }
+
+        .summary-wrapper table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .account-details {
+            width: 48%;
+            float: left;
+            font-size: 9px;
+            line-height: 16px;
+        }
+
+        .account-details strong {
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        .total-summations {
+            width: 48%;
+            float: right;
+        }
+
+        #total_estimate {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #total_estimate td {
+            border: 1px solid #ddd;
+            padding: 4px;
+            font-size: 10px;
+            line-height: 1.4;
+        }
+
+        #total_estimate td:last-child {
+            text-align: right;
+            width: 120px;
+            font-weight: bold;
+        }
+
+        .grand-total td {
+            background: #eee;
+            font-weight: bold;
+            font-size: 12px !important;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        .clear {
+            clear: both;
+        }
+
+        /* ================= WATERMARK ================= */
+
+        .watermark {
+            position: fixed;
+            top: 15%;
+            left: 10%;
+            width: 80%;
+            height: 350px;
+            background-image: url('{{ public_path("assets/images/logo_nduvini.jpeg") }}');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            opacity: 0.07;
+            z-index: -1;
+        }
+
+        /* ================= PRINT/PAGINATION ================= */
+
+        .page-break {
+            page-break-before: always;
+            padding-top: 45px !important;
+        }
+
+        .no-break {
+            page-break-inside: avoid;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+
+        tr {
+            page-break-inside: avoid;
+        }
+
+        table {
+            page-break-inside: auto;
+        }
+
+        .price_cell {
+            padding-right: 10px !important;
+            text-align: right !important;
+        }
+    </style>
 </head>
+
 <body>
+
+@php
+    $invoice = $sales[0];
+
+    $client = isset($client_name[0]) ? $client_name[0] : null;
+
+    $invoiceNumber = str_pad($invoice->invoice_number, 6, '0', STR_PAD_LEFT);
+
+    $accountNumber = $invoice->account_prefix .
+        str_pad($invoice->account_no, 3, '0', STR_PAD_LEFT);
+
+    $partsTotal = (float) $total_sales;
+    $labourTotal = (float) $total_labours;
+    $temesaTotal = (float) ($temesa_fee ?? 0);
+@endphp
+
+
+<!-- =====================================================
+     REPEATED INVOICE HEADER
+===================================================== -->
+
 <header>
- <img src="{{ public_path().'/assets/images/nduvini_header.png' }}" alt="User profile" style="height: 130px; width: 760px;" class="center img-thumbnail img-responsive profile-pic">    
 
-<div class="branch"> 
-@if(Auth::user()->branch_id == 1)
-    HEAD OFFICE :  Dar es Salaam 
-@elseif (Auth::user()->branch_id == 2)
-   BRANCH : TABORA 
-@elseif (Auth::user()->branch_id ==3)
-   BRANCH : DODOMA 
-@else
-@endif
-</div>
-<div id="line"></div>
+    <img
+        src="{{ public_path('assets/images/nduvini_header.png') }}"
+        class="invoice-logo"
+        alt="Company Header"
+    >
 
-<table style="border: 0px" width="740px">
-<tr>
-    <td width="490px">
-       @if($client_name[0]->client_name != NULL)
-       <p> {{ $client_name[0]->client_name }} </p>
-       <p> {{ $client_name[0]->address }} </p>
-       <p> {{ $client_name[0]->place }} </p>
-       <p></p>
-       <p> TIN :  {{ $client_name[0]->tin }}  VRN :  {{ $client_name[0]->vrn }}  </p>
-       @else
-       {{ $sales[0]->customer_name }}
-           <p></p><p></p><p></p>
+    <div class="branch">
+        @if(Auth::user()->branch_id == 1)
+            HEAD OFFICE : DAR ES SALAAM
+        @elseif(Auth::user()->branch_id == 2)
+            BRANCH : TABORA
+        @elseif(Auth::user()->branch_id == 3)
+            BRANCH : DODOMA
         @endif
-       <p></p><p></p><p></p>
-    </td>
-    <td>
-    <p><strong>TAX INVOICE</strong> </p>
-    <p>Invoice Date : </p> 
-    <p>Account No : </p> 
-    <p>Order Ref : </p>    
-    <p>Payment Status : </p>  
-    <!-- <p>Payment Method : </p>      -->
-    </td>
-    <td style="text-align: right">
-    <p> <strong> 
-    @if ($sales[0]->invoice_number < 10)
-        {{ '00000'.$sales[0]->invoice_number }}
-        @elseif ($sales[0]->invoice_number < 100)
-        {{ '0000'.$sales[0]->invoice_number }}
-        @elseif ($sales[0]->invoice_number < 1000)
-        {{ '000'.$sales[0]->invoice_number }}
-        @elseif ($sales[0]->invoice_number < 10000)
-        {{ '00'.$sales[0]->invoice_number }}
-        @elseif ($sales[0]->invoice_number < 100000)
-        {{ '0'.$sales[0]->invoice_number }}
-        @else 
-        {{ $sales[0]->invoice_number }}
-        @endif
-    </strong> </p> 
-    <p> {{ $sales[0]->created_date }} </p>    
-    <p> 
-    @if ($sales[0]->account_no < 10)
-        {{ $sales[0]->account_prefix }}{{ '00'.$sales[0]->account_no }}
-        @elseif ($sales[0]->account_no < 100)
-        {{ $sales[0]->account_prefix }}{{ '0'.$sales[0]->account_no }}
-        @else 
-        {{ $sales[0]->account_prefix }}{{ $sales[0]->account_no }}
-        @endif
-    </p>    
-    <p> {{ $sales[0]->reference }}</p>    
-    <p> UNPAID </p>
-    <p></p>
-  </td>
-</tr>
-</table>
-</header>
- <br/><br/><br/></br/><br/><br/><br/>
- <span id="rpt"><h4> </h4></span>
-     <div id="line"></div>
-     <br/>
-<footer>
-<!-- <div class="footer" style="background: #ff0000; color: #fff"> -->
-<!-- <div id="line"></div> -->
-<table style="border: 0px; padding: 0; margin: 0;">
-   <tr>
-   <td>
-    <ul> 
-        <li> HEAD OFFICE :  Temeke District - Chang'ombe </li>
-        <li> P.o Box 45610 DSM </li> 
-        <li> Tel: +255 739275223 |
-         Fax +255 22 2860276 </li>
-        <li> Phone: +255 754 275223 <li>
-        <li> Email: nduvin@hotmail.com <li> 
-       </ul>
-  </td>
-    <td>
-       <ul> 
-        <li> Branch Office : Singida Road- Kizota </li>
-        <li> P.o Box 530 DODOMA </li>
-        <li> Tel: +255 738692607 </li>
-        <li> Phone: +255 753 915234 <li>
-        <li> Email: dodoma@nduviniautoworks.co.tz <li> 
-       </ul>
-    </td>
-    <td>
-        <ul> 
-        <li> Branch Office :  Tabora </li>
-        <li> P.o Box 45610 Tabora </li>
-        <li> Tel: +255 738310148 </li>
-        <li> Phone: +255 754 275223 <li>
-        <li> Email: tabora@nduviniautoworks.co.tz <li> 
-       </ul>  
-      </td>
-   </tr>
-</table>
-<!-- </div> -->
-</div>
-</footer>
-          <main>
-          <div class="watermark"></div>
-             <table id="sales_report" class="table table-striped table-bordered vehicle_info">
-                      <thead>
-                             <tr>
-                                <th>Vehicle Reg </th>
-                                <th>Make</th>
-                                <th>Model</th>
-                                <th>Chassis No.</th>
-                                <th>Milleage </th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td> {{ $sales[0]->vehicle_reg }} </td>
-                                <td> {{ $sales[0]->emake }} </td>
-                                <td> {{ $sales[0]->emodel }} </td>
-                                <td> {{ $sales[0]->chassis }} </td>
-                                <td> {{ $sales[0]->milleage }} </td>
-                            </tr>
-                        </tbody>
-                   </table>
-            <br/>
-        <div class="container table-responsive">
-               <table id="sales_report" class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Parts</th>
-                                <th>Qty </th>
-                                <th>Unit </th>
-                                <th>D </th>
-                                <th>Sub Total </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @foreach($sales as $key => $product)
-                            <tr>
-                                <td width="400px"> {{ strtoupper($product->item_name) }} </td>
-                                <td> {{ $product->qty }} 
-                                  @if($product->qty > 1)
-                                   {{ strtoupper($product->purchase_unit) }}S
-                                  @else
-                                   {{ strtoupper($product->purchase_unit) }}
-                                   @endif
-                                </td>
-                                <td> {{number_format( $product->selling_price, 2) }} </td>
-                                <td> {{ $product->discount ? : ''  }} {{ $product->discount ? '%' : ''  }}    </td>
-                                <td> {{number_format($product->total_sales, 2) }} </td>   
-                            </tr>
-                     @if (($key + 1) % 17 == 0 && $key + 1 < count($sales))
-                </tbody>
-                </table>
-
-                <div class="page-break"></div>
-
-                <table id="sales_report" class="table table-striped table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Parts</th>
-                            <th>Qty </th>
-                            <th>Unit </th>
-                            <th>D </th>
-                            <th>Sub Total </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @endif
-                @endforeach
-                    </tbody>
-                    </table>
-                    <br/>
-                    <table id="sales_report" class="table table-striped table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Labour </th>
-                                <th>Qty </th>
-                                <th>Unit </th>
-                                <th>D </th>
-                                <th>Sub Total </th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        @foreach($labours as $key => $l)
-                            <tr>
-                                <td width="400px"> {{ strtoupper($l->labour_name) }} </td>
-                                <td>  </td>
-                                <td> {{number_format(($l->total_amount), 2) }}  </td>
-                                <td></td>
-                                <td> {{number_format(($l->total_amount), 2) }} </td>   
-                            </tr>
-                          @endforeach  
-                    </tbody>
-                </table>
-                
-                        
-                  @if (count($sales) % 13 == '0' OR count($sales) % 14 == '0' OR count($sales) % 15 == 0 OR count($sales) % 15 == '0' OR count($sales) % 16 == '0' OR count($sales) % 17 == 0 OR count($sales) % 18 == '0' OR count($sales) % 19 == '0' OR count($sales) % 20 == 0 OR
-                    count($sales) % 21 == '0' OR count($sales) % 22 == '0' OR count($sales) % 23 == 0 OR count($sales) % 24 == '0' OR count($sales) % 25 == '0' OR count($sales) % 26 == 0 OR count($sales) % 27 == '0' OR count($sales) % 28 == '0' OR count($sales) % 29 == 0 OR count($sales) % 30 == '0' OR count($sales) % 31 == '0' ) <!-- Apply page break after every 10 rows -->
-                    <div class="page-break-after"></div>
-                    <br/>
-                   
-                <div id="footer_details">
-                    <div class="account_details" style="color: #000;">
-                    @if($sales[0]->account_number > 0)
-                    <table>
-                    <tr><td> BANK DETAILS : <br/> {{ $sales[0]->bank_name ? : '' }}</td></tr>
-                    <tr><td> ACCOUNT NAME : {{ $sales[0]->account_name ? : '' }}</td></tr>
-                    <tr><td> ACCOUNT NO:   {{ $sales[0]->account_number ? : '' }} </td></tr>
-                    <tr><td> BRANCH :  {{ $sales[0]->branch_name ? : '' }}</td></tr>
-                    <tr><td> SWIFT CODE : {{ $sales[0]->swift_code ? : '' }}</td></tr>
-                  </table>
-                  @else 
-                  @endif
-                    </div>
-                    <div class="total_summations">
-                    <table id="total_estimate"  class="table table-striped table-bordered" align="right">
-                           <thead>
-                              @if($total_discounts != null)
-                               <tr>
-                                 <td> <strong> Net Discount : </strong> </td>
-                                    <td> {{ number_format($total_discounts, 2) }} </td>
-                                </tr>
-                                @else  {{ '' }} @endif 
-                                 <tr>
-                                 <td> Parts : </td>
-                                    <td> {{ number_format($total_sales, 2) }} </td>
-                                </tr>
-                                <tr>
-                                 <td> Labour : </td>
-                                    <td> {{ number_format($total_labours, 2) }} </td>
-                                </tr>
-                                <tr>
-                                 <td>
-                                     <strong> Sub Total : </strong>
-                                    </td>
-                                    <td width="100px"> {{ number_format(($total_sales + $total_labours), 2) }} </td>
-                                </tr>
-                              @if (!empty($temesa_fee) && $temesa_fee > 0)
-                                    <tr>
-                                        <td>TEMESA Fee (8%):</td>
-                                        <td>{{ number_format($temesa_fee, 2) }}</td>
-                                    </tr>
-                                @endif
-                                <tr>
-                                 <td>
-                                      VAT Amount (18%)  :
-                                    </td><td>  
-                                          {{ number_format($vat_charges, 2) }}
-                                      </td>
-                                </tr>
-                                <tr style="background: #eee">
-                                 <td>
-                                     <strong> Total   </strong>
-                                      &nbsp; : 
-                                    </td><td>  
-                                          {{ number_format(($grand_total_amount), 2) }}
-                                      </td>  
-                            </tr>
-                     </thead>
-                 </table>
-                    @else 
-                    
-                  <br/><br/>
-                        
-                <div id="footer_details">
-                    <div class="account_details" style="color: #000;">
-                    @if($sales[0]->account_number > 0)
-                    <table>
-                    <tr<td> BANK DETAILS : <br/> {{ $sales[0]->bank_name ? : '' }}</td></tr>
-                    <tr<td> ACCOUNT NAME : {{ $sales[0]->account_name ? : '' }}</td></tr>
-                    <tr<td> ACCOUNT NO:   {{ $sales[0]->account_number ? : '' }} </td></tr>
-                    <tr<td> BRANCH :  {{ $sales[0]->branch_name ? : '' }}</td></tr>
-                    <tr<td> SWIFT CODE : {{ $sales[0]->swift_code ? : '' }}</td></tr>
-                  </table>
-                  @else 
-                  
-                  @endif
-                    </div>
-                    <div class="total_summations">
-                    <table id="total_estimate"  class="table table-striped table-bordered" align="right">
-                           <thead>
-                              @if($total_discounts != null)
-                               <tr>
-                                 <td> <strong> Net Discount : </strong> </td>
-                                    <td> {{ number_format($total_discounts, 2) }} </td>
-                                </tr>
-                                @else  {{ '' }} @endif 
-                                 <tr>
-                                 <td> Parts : </td>
-                                    <td> {{ number_format($total_sales, 2) }} </td>
-                                </tr>
-                                <tr>
-                                 <td> Labour : </td>
-                                    <td> {{ number_format($total_labours, 2) }} </td>
-                                </tr>
-                                <tr>
-                                 <td>
-                                     <strong> Sub Total : </strong>
-                                    </td>
-                                    <td width="100px"> {{ number_format(($total_sales + $total_labours), 2) }} </td>
-                                </tr>
-                               @if (!empty($temesa_fee) && $temesa_fee > 0)
-                                    <tr>
-                                        <td>TEMESA Fee (8%):</td>
-                                        <td>{{ number_format($temesa_fee, 2) }}</td>
-                                    </tr>
-                                @endif
-                                <tr>
-                                 <td>
-                                      VAT Amount (18%)  :
-                                    </td><td>  
-                                          {{ number_format($vat_charges, 2) }}
-                                      </td>
-                                </tr>
-                                <tr style="background: #eee">
-                                 <td>
-                                     <strong> Total   </strong>
-                                      &nbsp; : 
-                                    </td><td>  
-                                          {{ number_format(($grand_total_amount), 2) }}
-                                      </td>  
-                            </tr>
-                     </thead>
-                 </table>
-                    @endif
-                    </div>
-                </div>
-             </div> 
-         <div>
     </div>
-</main>
+
+    <div class="header-line"></div>
+
+    <table class="invoice-info">
+        <tr>
+
+            <!-- CUSTOMER DETAILS -->
+
+            <td width="68%">
+
+                @if($client && !empty($client->client_name))
+
+                    <p><strong>{{ $client->client_name }}</strong></p>
+                    <p>{{ $client->address }}</p>
+                    <p>{{ $client->place }}</p>
+
+                    <p>
+                        TIN: {{ $client->tin }}
+                        &nbsp; VRN: {{ $client->vrn }}
+                    </p>
+
+                @else
+
+                    <p><strong>{{ $invoice->customer_name }}</strong></p>
+
+                @endif
+
+            </td>
+
+            <!-- INVOICE DETAILS -->
+
+            <td width="20%">
+
+                <p class="invoice-title">TAX INVOICE</p>
+                <p>Invoice Date:</p>
+                <p>Account No:</p>
+                <p>Order Ref:</p>
+
+                @if($invoice->lpo_no != null)
+                    <p>LPO No:</p>
+                @endif
+
+                <p>Payment Status:</p>
+
+            </td>
+
+            <!-- INVOICE VALUES -->
+
+            <td width="20%" style="text-align:right;">
+
+                <p class="invoice-number">
+                    {{ $invoiceNumber }}
+                </p>
+
+                <p>{{ $invoice->created_date }}</p>
+
+                <p>{{ $accountNumber }}</p>
+
+                <p>{{ $invoice->reference }}</p>
+
+                @if($invoice->lpo_no != null)
+                    <p>{{ $invoice->lpo_no }}</p>
+                @endif
+
+                <p>UNPAID</p>
+
+            </td>
+
+        </tr>
+    </table>
+
+</header>
+
+
+<!-- =====================================================
+     REPEATED FOOTER
+===================================================== -->
+
+<footer>
+
+    <table class="footer-table">
+        <tr>
+
+            <td>
+                <strong>HEAD OFFICE - DAR ES SALAAM</strong>
+                <ul>
+                    <li>Temeke District - Chang'ombe</li>
+                    <li>P.O Box 45610 DSM</li>
+                    <li>Tel: +255 739275223</li>
+                    <li>Fax: +255 22 2860276</li>
+                    <li>Phone: +255 754 275223</li>
+                    <li>Email: nduvin@hotmail.com</li>
+                </ul>
+            </td>
+
+            <td>
+                <strong>DODOMA BRANCH</strong>
+                <ul>
+                    <li>Singida Road - Kizota</li>
+                    <li>P.O Box 530 DODOMA</li>
+                    <li>Tel: +255 738692607</li>
+                    <li>Phone: +255 753 915234</li>
+                    <li>Email: dodoma@nduviniautoworks.co.tz</li>
+                </ul>
+            </td>
+
+            <td>
+                <strong>TABORA BRANCH</strong>
+                <ul>
+                    <li>Tabora</li>
+                    <li>P.O Box 45610 Tabora</li>
+                    <li>Tel: +255 738310148</li>
+                    <li>Phone: +255 754 275223</li>
+                    <li>Email: tabora@nduviniautoworks.co.tz</li>
+                </ul>
+            </td>
+
+        </tr>
+    </table>
+
+</footer>
+
+
+<!-- =====================================================
+     DOCUMENT BODY
+===================================================== -->
+
+<div class="watermark"></div>
+
+
+<!-- VEHICLE INFORMATION -->
+
+<div class="section-title"></div>
+
+<table id="sales_report" class="vehicle-table">
+
+    <thead>
+        <tr>
+            <th width="20%">Vehicle Reg</th>
+            <th width="20%">Make</th>
+            <th width="20%">Model</th>
+            <th width="25%">Chassis No.</th>
+            <th width="15%">Mileage</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <tr>
+            <td>{{ $invoice->vehicle_reg }}</td>
+            <td>{{ $invoice->emake }}</td>
+            <td>{{ $invoice->emodel }}</td>
+            <td>{{ $invoice->chassis }}</td>
+            <td>{{ $invoice->milleage }}</td>
+        </tr>
+    </tbody>
+
+</table>
+
+
+<!-- =====================================================
+     PARTS TABLE - AUTOMATIC PAGE BREAKS
+===================================================== -->
+
+<div class="section-title"></div>
+
+<table id="sales_report">
+
+    <thead>
+        <tr>
+            <th width="5%">SN</th>
+            <th width="43%">Parts</th>
+            <th width="12%">Qty</th>
+            <th width="15%">Unit</th>
+            <th width="10%">D</th>
+            <th width="20%">Sub Total</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        @foreach($sales as $key=> $product)
+
+            <tr>
+               <td> {{ $key+1 }} </td>
+                <td>
+                    {{ strtoupper($product->item_name) }}
+                </td>
+
+                <td>
+                    {{ $product->qty }}
+
+                    @if($product->qty > 1)
+                        {{ strtoupper($product->purchase_unit) }}S
+                    @else
+                        {{ strtoupper($product->purchase_unit) }}
+                    @endif
+                </td>
+
+                <td class="price_cell">
+                    {{ number_format($product->selling_price, 2) }}
+                </td>
+
+                <td class="price_cell">
+                    {{ $product->discount ? $product->discount.'%' : '' }}
+                </td>
+
+                <td class="price_cell">
+                    {{ number_format($product->total_sales, 2) }}
+                </td>
+
+            </tr>
+
+        @endforeach
+
+    </tbody>
+
+</table>
+
+
+<!-- =====================================================
+     LABOUR TABLE - AUTOMATIC PAGE BREAKS
+===================================================== -->
+
+@if(count($labours) > 0)
+
+    <div class="section-title"></div>
+
+    <table id="sales_report">
+
+        <thead>
+            <tr>
+                <th width="43%">Labour</th>
+                <th width="12%">Qty</th>
+                <th width="15%">Unit</th>
+                <th width="10%">D</th>
+                <th width="20%">Sub Total</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            @foreach($labours as $l)
+
+                <tr>
+
+                    <td>
+                        {{ strtoupper($l->labour_name) }}
+                    </td>
+
+                    <td></td>
+
+                    <td>
+                        {{ number_format($l->total_amount, 2) }}
+                    </td>
+
+                    <td></td>
+
+                    <td>
+                        {{ number_format($l->total_amount, 2) }}
+                    </td>
+
+                </tr>
+
+            @endforeach
+
+        </tbody>
+
+    </table>
+
+@endif
+
+
+<!-- =====================================================
+     FINAL SUMMARY - DISPLAY ONLY ONCE
+===================================================== -->
+<br/>
+<div class="summary-wrapper no-break">
+    <div class="account-details">
+<br/><br/>
+        @if($invoice->account_number > 0)
+
+            <strong>BANK DETAILS</strong>
+
+            <table>
+                <tr>
+                    <td>
+                        BANK:
+                        {{ $invoice->bank_name }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        ACCOUNT NAME:
+                        {{ $invoice->account_name }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        ACCOUNT NO:
+                        {{ $invoice->account_number }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        BRANCH:
+                        {{ $invoice->branch_name }}
+                    </td>
+                </tr>
+
+                <tr>
+                    <td>
+                        SWIFT CODE:
+                        {{ $invoice->swift_code }}
+                    </td>
+                </tr>
+            </table>
+
+        @endif
+
+    </div>
+
+<br/>
+    <div class="total-summations">
+
+        <table id="total_estimate">
+
+            @if($total_discounts != null && $total_discounts > 0)
+
+                <tr>
+                    <td><strong>Net Discount:</strong></td>
+                    <td>{{ number_format($total_discounts, 2) }}</td>
+                </tr>
+
+            @endif
+
+            <tr>
+                <td>Parts:</td>
+                <td>{{ number_format($partsTotal, 2) }}</td>
+            </tr>
+
+            <tr>
+                <td>Labour:</td>
+                <td>{{ number_format($labourTotal, 2) }}</td>
+            </tr>
+
+            @if($temesaTotal > 0)
+
+                <tr>
+                    <td>TEMESA Fee (8%):</td>
+                    <td>{{ number_format($temesaTotal, 2) }}</td>
+                </tr>
+
+            @endif
+
+            <tr>
+                <td><strong>Sub Total:</strong></td>
+                <td>
+                    {{ number_format($partsTotal + $labourTotal + $temesaTotal, 2) }}
+                </td>
+            </tr>
+
+            <tr>
+                <td>VAT Amount (18%):</td>
+                <td>{{ number_format($vat_charges, 2) }}</td>
+            </tr>
+
+            <tr class="grand-total">
+                <td>GRAND TOTAL:</td>
+                <td>{{ number_format($grand_total_amount, 2) }}</td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <div class="clear"></div>
+
+</div>
+
+
 </body>
 </html>

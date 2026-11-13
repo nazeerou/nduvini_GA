@@ -289,6 +289,74 @@ li:hover .nav-icon-rounded {
     border-left: 3px solid transparent;
 }
 
+/* ============================================================
+   APPROVAL WORKFLOW UI
+   ============================================================ */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.status-badge i { font-size: 11px; }
+
+.status-pending  { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.status-approved { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.status-rejected { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.status-paid     { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+
+.approval-actions {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.approval-actions .btn { font-size: 11px; padding: 5px 10px; font-weight: 600; border-radius: 5px; }
+
+.approval-hint {
+    display: block;
+    font-size: 11px;
+    color: #6b7280;
+    margin-top: 4px;
+    line-height: 1.4;
+}
+.approval-hint strong { color: #374151; }
+
+/* Approval details modal styling */
+.approval-summary {
+    background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 18px;
+}
+.approval-summary .ap-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: #64748b; font-weight: 700; margin-bottom: 4px; }
+.approval-summary .ap-value { font-size: 15px; font-weight: 700; color: #0f172a; }
+.approval-summary .ap-amount { font-size: 22px; font-weight: 800; color: #1e40af; font-family: 'SFMono-Regular', Consolas, monospace; }
+
+.approval-timeline { position: relative; padding-left: 26px; margin-top: 12px; }
+.approval-timeline::before { content: ''; position: absolute; left: 8px; top: 6px; bottom: 6px; width: 2px; background: #e2e8f0; }
+.tl-item { position: relative; padding-bottom: 16px; }
+.tl-item:last-child { padding-bottom: 0; }
+.tl-item::before {
+    content: ''; position: absolute; left: -22px; top: 4px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #3b82f6; border: 2px solid #fff; box-shadow: 0 0 0 2px #3b82f6;
+}
+.tl-item.tl-approved::before { background: #059669; box-shadow: 0 0 0 2px #059669; }
+.tl-item.tl-rejected::before { background: #dc2626; box-shadow: 0 0 0 2px #dc2626; }
+.tl-item.tl-paid::before     { background: #2563eb; box-shadow: 0 0 0 2px #2563eb; }
+.tl-action { font-weight: 700; color: #0f172a; font-size: 13px; }
+.tl-meta { font-size: 11.5px; color: #6b7280; margin-top: 2px; }
+.tl-note { font-size: 12.5px; color: #374151; margin-top: 4px; font-style: italic; }
+
 </style>
     </head>
 
@@ -340,6 +408,7 @@ li:hover .nav-icon-rounded {
                                     <li>
                                         <span class="hidden-xs">  </span> 
                                     </li>
+
                                     </ul>
                                 </div>
                                 <!-- End Notification bar -->
@@ -426,7 +495,15 @@ li:hover .nav-icon-rounded {
                             </li>
                             @endif
                         @endforeach
+                        @if(Auth::check() && \App\Http\Controllers\AuditLogController::class) {{-- always true; placeholder --}}
+  <li>
+    <a href="{{ route('audit-logs.index') }}">
+      <i class="fa fa-history"></i> <span>Audit Logs</span>
+    </a>
+  </li>
+@endif
                          </ul>
+
                          
                         <div class="clearfix"></div>
                     </div>
