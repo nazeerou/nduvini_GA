@@ -535,6 +535,40 @@
 
     .cp-dot-menu{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
 
+    /* ---------- Payment Type radios ---------- */
+    .cp-radio-group{display:flex;gap:10px;flex-wrap:wrap;}
+    .cp-radio{
+        display:inline-flex;align-items:center;gap:9px;
+        padding:10px 16px;border:1px solid var(--cp-line);border-radius:9px;
+        cursor:pointer;font-size:13px;font-weight:600;color:var(--cp-ink-soft);
+        background:var(--cp-white);transition:all .18s ease;user-select:none;
+        box-shadow:var(--cp-shadow-sm);margin:0;
+    }
+    .cp-radio:hover{border-color:#cbd5e1;background:var(--cp-soft);color:var(--cp-ink);}
+    .cp-radio input[type="radio"]{
+        appearance:none;-webkit-appearance:none;
+        width:16px;height:16px;flex-shrink:0;margin:0;
+        border:2px solid #cbd5e1;border-radius:50%;
+        position:relative;cursor:pointer;transition:all .18s ease;
+    }
+    .cp-radio input[type="radio"]:checked{
+        border-color:var(--cp-primary);background:var(--cp-primary);
+    }
+    .cp-radio input[type="radio"]:checked::after{
+        content:"";position:absolute;top:50%;left:50%;
+        transform:translate(-50%,-50%);width:5px;height:5px;
+        border-radius:50%;background:#fff;
+    }
+    .cp-radio.active{
+        border-color:var(--cp-primary);
+        background:#f0f4f9;
+        color:var(--cp-ink);
+        box-shadow:0 0 0 3px rgba(30,58,95,.08);
+    }
+    .cp-radio.active input[type="radio"]{
+        border-color:var(--cp-primary);background:var(--cp-primary);
+    }
+
     @media (max-width:767px){
         .cp-head{flex-direction:column;align-items:stretch;padding:20px;}
         .cp-head-text h3{font-size:17px;}
@@ -841,8 +875,27 @@
 
                     <div class="cp-section-title" style="margin-top:8px;">Payment details</div>
 
+                    {{-- Payment type selector --}}
                     <div class="row">
-                        <div class="col-md-6">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="control-label">Payment Type <span class="req">*</span></label>
+                                <div class="cp-radio-group">
+                                    <label class="cp-radio active">
+                                        <input type="radio" name="payment_type" value="full" checked>
+                                        <span>Full Payment</span>
+                                    </label>
+                                    <label class="cp-radio">
+                                        <input type="radio" name="payment_type" value="partial">
+                                        <span>Partial Payment</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6" id="amount_wrap" style="display:none;">
                             <div class="form-group">
                                 <label class="control-label">Amount <span class="req">*</span></label>
                                 <input type="text"
@@ -856,7 +909,7 @@
                                 <span class="cp-error-text" id="paid_amount_error" style="display:none;"></span>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-12" id="date_wrap">
                             <div class="form-group">
                                 <label class="control-label">Date <span class="req">*</span></label>
                                 <div class="input-group">
@@ -1120,10 +1173,7 @@
         var url = $(this).attr('href');
         if (!url) { return; }
 
-        // Close dropdown
         $('.cp-dropdown-menu').removeClass('open');
-
-        // Show spinner modal (stays visible until download finishes)
         $('#download_modal').modal('show');
 
         fetch(url, {
@@ -1142,13 +1192,11 @@
                 response.headers.get('Content-Disposition'),
                 'client-payments.pdf'
             );
-            // response.blob() resolves only when the FULL body has arrived
             return response.blob().then(function (blob) {
                 return { blob: blob, filename: filename };
             });
         })
         .then(function (data) {
-            // Download has fully completed — now trigger the save dialog
             var blobUrl = window.URL.createObjectURL(data.blob);
             var $a = $('<a></a>')
                 .attr('href', blobUrl)
@@ -1158,13 +1206,11 @@
 
             $a[0].click();
 
-            // Clean up
             setTimeout(function () {
                 $a.remove();
                 window.URL.revokeObjectURL(blobUrl);
             }, 1500);
 
-            // Hide modal AFTER the download is fully received
             $('#download_modal').modal('hide');
         })
         .catch(function (err) {
@@ -1172,6 +1218,56 @@
             $('#download_modal').modal('hide');
             alert('Failed to download the PDF. Please try again.');
         });
+    });
+
+    /* ============================================================
+     * MONEY HELPER — float comparison with epsilon tolerance
+     * (0.005 = half a cent; tolerates IEEE-754 residue such as
+     *  1234.5599999999999 vs 1234.56 without masking real overpayments)
+     * ============================================================ */
+    var MONEY_EPSILON = 0.005;
+
+    /* ============================================================
+     * PAYMENT MODE (Full / Partial) — UI helper
+     * ============================================================ */
+    function setPaymentMode(mode) {
+        var balanceDue  = parseFloat($('#balance_due').val()) || 0;
+        var $amountWrap = $('#amount_wrap');
+        var $dateWrap   = $('#date_wrap');
+        var $input      = $('#paid_amount');
+
+        // Sync radio visual state
+        $('.cp-radio').removeClass('active');
+        $('input[name="payment_type"][value="' + mode + '"]')
+            .prop('checked', true)
+            .closest('.cp-radio')
+            .addClass('active');
+
+        if (mode === 'full') {
+            // Hide amount input; auto-fill with balance due (still submitted)
+            $amountWrap.hide();
+            $dateWrap.removeClass('col-md-6').addClass('col-md-12');
+
+            // Keep data-max and value exactly in sync with displayed balance
+            $input.attr('data-max', balanceDue.toFixed(2))
+                  .val(balanceDue.toFixed(2))
+                  .removeClass('cp-invalid');
+
+            $('#paid_amount_error').hide().text('');
+        } else {
+            // Show amount input for manual entry
+            $amountWrap.show();
+            $dateWrap.removeClass('col-md-12').addClass('col-md-6');
+            $input.val('')
+                  .removeClass('cp-invalid');
+            $('#paid_amount_error').hide().text('');
+            setTimeout(function () { $input.trigger('focus'); }, 120);
+        }
+    }
+
+    // Radio change
+    $(document).on('change', 'input[name="payment_type"]', function () {
+        setPaymentMode($(this).val());
     });
 
     /* ============================================================
@@ -1188,6 +1284,9 @@
                 var paidAmount = parseFloat(row.paid_amount) || 0;
                 var balanceDue = Math.max(0, billAmount - paidAmount);
 
+                // Guard against tiny float residue — round to 2dp for display/storage
+                balanceDue = Math.round(balanceDue * 100) / 100;
+
                 $('#payment_modal').modal('show');
                 $("#client_name").val(row.client_name);
                 $("#invoice_no").val(row.invoice_number);
@@ -1202,6 +1301,9 @@
 
                 $("#paid_amount_error").hide().text('');
                 $("#btnPay").prop('disabled', false).text('Pay');
+
+                // Default: Full payment
+                setPaymentMode('full');
             }
         });
     });
@@ -1213,6 +1315,8 @@
 
     /* ============================================================
      * PAYMENT FORM — client-side validation + AJAX submit
+     * (Float comparison with epsilon tolerance so decimals like
+     *  1234.56 do NOT falsely trigger "greater than balance due")
      * ============================================================ */
     $(document).on('submit', '#formUpdate', function(e) {
         e.preventDefault();
@@ -1221,7 +1325,10 @@
         var $error = $('#paid_amount_error');
         var $btn   = $('#btnPay');
         var raw    = ($input.val() || '').trim();
-        var max    = parseFloat($input.attr('data-max')) || Infinity;
+
+        // ---- Read max FRESH from data-max, correctly handle 0 ----
+        var maxRaw = parseFloat($input.attr('data-max'));
+        var max    = isNaN(maxRaw) ? null : maxRaw;   // null = no limit
 
         $input.removeClass('cp-invalid');
         $error.hide().text('');
@@ -1245,7 +1352,8 @@
             return false;
         }
 
-        if (amount > max) {
+        // ---- Float comparison with epsilon tolerance (fixes decimal false positives) ----
+        if (max !== null && (amount - max) > MONEY_EPSILON) {
             $input.addClass('cp-invalid');
             $error.text('Amount cannot exceed the balance due of ' + max.toFixed(2) + '.').show();
             return false;
