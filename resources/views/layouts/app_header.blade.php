@@ -495,13 +495,6 @@ li:hover .nav-icon-rounded {
                             </li>
                             @endif
                         @endforeach
-                        @if(Auth::check() && \App\Http\Controllers\AuditLogController::class) {{-- always true; placeholder --}}
-  <li>
-    <a href="{{ route('audit-logs.index') }}">
-      <i class="fa fa-history"></i> <span>Audit Logs</span>
-    </a>
-  </li>
-@endif
                          </ul>
 
                          
