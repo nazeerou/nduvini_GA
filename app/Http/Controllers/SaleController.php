@@ -561,7 +561,6 @@ public function getClientPayments() {
 
     $sales = DB::table('invoices')
     ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
-    // Deduped estimations: exactly one row per reference → no invoice multiplication
     ->leftJoinSub(
         DB::table('estimations')
             ->select('reference', DB::raw('MAX(model) as model'))
@@ -596,61 +595,74 @@ public function getClientPayments() {
     ->orderBy('invoices.created_date', 'desc')
     ->get();
 
-    /* ============================================================
-     * BRANCH-BASED SUMMARY + FILTER COUNTS
-     * (derived from $sales, which is already branch-filtered)
-     * ============================================================ */
-    $invoiceCount = $sales->count();
+/* ============================================================
+ * BRANCH-BASED SUMMARY + FILTER COUNTS
+ * Each invoice falls into exactly one bucket:
+ *   zero-value  |  fully-paid  |  partial  |  unpaid
+ * An "unpaid" invoice MUST have a positive bill amount — otherwise
+ * it's a zero-value invoice and the balance is (correctly) 0.
+ * ============================================================ */
 
-    $totalInvoiced = (float) $sales->sum(fn($s) => (float) $s->bill_amount);
-    $totalPaid     = (float) $sales->sum(fn($s) => (float) $s->paid_amount);
-    $totalUnpaid   = (float) $sales->sum(fn($s) => max(0, (float) $s->bill_amount - (float) $s->paid_amount));
+$invoiceCount = $sales->count();
 
-    $fullyPaid = $sales->filter(function ($s) {
-        return (float) $s->paid_amount >= (float) $s->bill_amount;
-    })->count();
+// Treat NULL and 0 the same; anything <= 0 is a zero-value invoice
+$billIsPositive = fn($s) => (float) $s->bill_amount > 0;
 
-    $withBalance = $sales->filter(function ($s) {
-        return ((float) $s->bill_amount - (float) $s->paid_amount) > 0;
-    })->count();
+$totalInvoiced = (float) $sales->sum(fn($s) => (float) $s->bill_amount);
+$totalPaid     = (float) $sales->sum(fn($s) => (float) $s->paid_amount);
+$totalUnpaid   = (float) $sales->filter($billIsPositive)
+                    ->sum(fn($s) => max(0, (float) $s->bill_amount - (float) $s->paid_amount));
 
-    $partialCount = $sales->filter(function ($s) {
-        $paid = (float) $s->paid_amount;
-        $bill = (float) $s->bill_amount;
-        return $paid > 0 && ($bill - $paid) > 0;
-    })->count();
+$fullyPaid = $sales->filter(function ($s) use ($billIsPositive) {
+    return $billIsPositive($s)
+        && (float) $s->paid_amount >= (float) $s->bill_amount;
+})->count();
 
-    $unpaidCount = $sales->filter(function ($s) {
-        $paid = (float) $s->paid_amount;
-        $bill = (float) $s->bill_amount;
-        return $paid <= 0 && ($bill - $paid) > 0;
-    })->count();
+$withBalance = $sales->filter(function ($s) use ($billIsPositive) {
+    return $billIsPositive($s)
+        && ((float) $s->bill_amount - (float) $s->paid_amount) > 0;
+})->count();
 
-    $paidPct = $totalInvoiced > 0
-        ? min(100, round(($totalPaid / $totalInvoiced) * 100, 1))
-        : 0;
+$partialCount = $sales->filter(function ($s) use ($billIsPositive) {
+    $paid = (float) $s->paid_amount;
+    $bill = (float) $s->bill_amount;
+    return $billIsPositive($s) && $paid > 0 && $paid < $bill;
+})->count();
 
-    $invLabel = $invoiceCount === 1 ? 'invoice' : 'invoices';
-    $balLabel = $withBalance  === 1 ? 'invoice' : 'invoices';
+$unpaidCount = $sales->filter(function ($s) use ($billIsPositive) {
+    // ← the key fix: require a real bill amount
+    return $billIsPositive($s) && (float) $s->paid_amount <= 0;
+})->count();
 
-    $accounts = Account::where('is_active', '!=', '')->get();
+// Optional: surface zero-value invoices as their own bucket so nothing is invisible
+$zeroValueCount = $sales->reject($billIsPositive)->count();
 
-    return view('pages.client-payments', compact(
-        'sales',
-        'accounts',
-        'clients',
-        'totalInvoiced',
-        'totalPaid',
-        'totalUnpaid',
-        'invoiceCount',
-        'fullyPaid',
-        'withBalance',
-        'partialCount',
-        'unpaidCount',
-        'paidPct',
-        'invLabel',
-        'balLabel'
-    ));
+$paidPct = $totalInvoiced > 0
+    ? min(100, round(($totalPaid / $totalInvoiced) * 100, 1))
+    : 0;
+
+$invLabel = $invoiceCount === 1 ? 'invoice' : 'invoices';
+$balLabel = $withBalance  === 1 ? 'invoice' : 'invoices';
+
+$accounts = Account::where('is_active', '!=', '')->get();
+
+return view('pages.client-payments', compact(
+    'sales',
+    'accounts',
+    'clients',
+    'totalInvoiced',
+    'totalPaid',
+    'totalUnpaid',
+    'invoiceCount',
+    'fullyPaid',
+    'withBalance',
+    'partialCount',
+    'unpaidCount',
+    'zeroValueCount',   // ← new
+    'paidPct',
+    'invLabel',
+    'balLabel'
+));
 }
 
     public function saveClientDebit(Request $request) {
