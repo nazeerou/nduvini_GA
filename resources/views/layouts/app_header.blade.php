@@ -854,6 +854,10 @@ use App\Models\Module;
    GAS PREMIUM NAVIGATION REFINEMENTS
    Profile actions, clearer brand identity and richer motion
    ============================================================ */
+/* ============================================================
+   GAS PREMIUM NAVIGATION REFINEMENTS
+   Profile actions, clearer brand identity and richer motion
+   ============================================================ */
 .topbar .topbar-left {
     width: var(--gas-sidebar-width);
     min-width: var(--gas-sidebar-width);
@@ -1037,61 +1041,262 @@ use App\Models\Module;
     outline-offset: 2px;
 }
 
-/* Menu motion and icon feedback */
-.gas-nav-section-title {
-    padding-top: 5px;
-    letter-spacing: .14em;
+
+/* ============================================================
+   SIDEBAR NAVIGATION · Professional refinements
+   Left gutter, aligned accents, refined rhythm
+   ============================================================ */
+
+/* Container — balanced left/right padding gives the nav breathing room */
+#sidebar-menu.gas-nav {
+    padding: 8px 16px 28px 16px;
 }
+
+/* Section spacing — clean rhythm between module groups */
+.gas-nav-section {
+    margin-bottom: 6px;
+}
+
+.gas-nav-section-title {
+    display: block;
+    padding: 16px 12px 8px;
+    margin: 0;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.gas-nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
 .gas-nav-item {
+    margin: 2px 0;
     animation: gasNavEnter .38s both;
 }
 .gas-nav-item:nth-child(2) { animation-delay: .025s; }
 .gas-nav-item:nth-child(3) { animation-delay: .05s; }
 .gas-nav-item:nth-child(4) { animation-delay: .075s; }
 .gas-nav-item:nth-child(5) { animation-delay: .1s; }
+
+/* ---- Main nav link ---- */
 .gas-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
     min-height: 48px;
+    border-radius: 10px;
+    color: #334155;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    position: relative;
     overflow: hidden;
+    transition: background .18s ease, color .18s ease;
 }
+
+.gas-nav-link:hover {
+    background: #f1f5f9;
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.gas-nav-link.active {
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+/* Active state — accent bar sits cleanly inside the link (no negative positioning) */
+.gas-nav-link.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 22px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #3b82f6, #2563eb);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, .35);
+}
+
+/* Subtle shimmer on hover */
 .gas-nav-link::after {
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(110deg, transparent 15%, rgba(255,255,255,.48) 48%, transparent 78%);
-    transform: translateX(-125%);
+    background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.5) 50%, transparent 80%);
+    transform: translateX(-130%);
     transition: transform .55s ease;
     pointer-events: none;
 }
-.gas-nav-link:hover::after { transform: translateX(125%); }
+.gas-nav-link:hover::after {
+    transform: translateX(130%);
+}
+
+/* ---- Icon ---- */
 .gas-nav-icon {
     width: 34px;
     height: 34px;
-    border: 1px solid rgba(148,163,184,.12);
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 14px;
+    flex-shrink: 0;
+    border: 1px solid rgba(148, 163, 184, .14);
+    transition: background .18s ease, color .18s ease,
+                transform .22s ease, box-shadow .22s ease;
 }
+
+.gas-nav-icon i,
+.gas-nav-icon svg {
+    font-size: 14px;
+    color: inherit;
+}
+
 .gas-nav-link:hover .gas-nav-icon {
-    transform: translateY(-1px) scale(1.04);
+    background: #dbeafe;
+    color: #2563eb;
+    transform: translateY(-1px) scale(1.03);
 }
+
 .gas-nav-link.active .gas-nav-icon {
-    transform: scale(1.03);
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 3px 8px rgba(37, 99, 235, .28);
 }
-.gas-nav-arrow i {
-    transition: transform .22s ease;
+
+/* ---- Text & arrow ---- */
+.gas-nav-text {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-.gas-nav-group.open > .gas-nav-link .gas-nav-arrow i {
+
+.gas-nav-arrow {
+    font-size: 10px;
+    color: #cbd5e1;
+    transition: transform .22s ease, color .18s ease;
+}
+.gas-nav-group.open > .gas-nav-link .gas-nav-arrow {
     transform: rotate(90deg);
+    color: #2563eb;
 }
+
+/* ---- Submenu ---- */
 .gas-nav-sub {
+    list-style: none;
+    padding: 4px 0;
+    margin: 0;
+    display: none;
+    position: relative;
     overflow: hidden;
 }
+
+/* Vertical guide line — aligned with parent icon center (29px) */
+.gas-nav-sub::before {
+    content: "";
+    position: absolute;
+    left: 29px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: #e2e8f0;
+    opacity: .7;
+}
+
 .gas-nav-sublink {
-    min-height: 35px;
+    display: flex;
+    align-items: center;
+    padding: 9px 12px 9px 46px;
+    margin: 1px 0;
+    border-radius: 8px;
+    color: #64748b;
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    position: relative;
+    transition: background .15s ease, color .15s ease, padding .2s ease;
 }
+
 .gas-nav-sublink:hover {
-    padding-left: 48px;
+    background: #f8fafc;
+    color: #2563eb;
+    padding-left: 50px;
+    text-decoration: none;
 }
+
 .gas-nav-sublink.active {
-    box-shadow: inset 2px 0 0 #3b82f6;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
 }
+
+/* Bullet — sits on the guide line, aligned with parent icon center */
+.gas-nav-bullet {
+    position: absolute;
+    left: 26px;
+    top: 50%;
+    margin: 0;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    transition: background .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+
+.gas-nav-sublink:hover .gas-nav-bullet {
+    background: #3b82f6;
+    transform: translateY(-50%) scale(1.2);
+}
+
+.gas-nav-sublink.active .gas-nav-bullet {
+    background: #2563eb;
+    transform: translateY(-50%) scale(1.25);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}
+
+/* Subtle active accent underline */
+.gas-nav-sublink.active::after {
+    content: "";
+    position: absolute;
+    left: 46px;
+    right: 12px;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #3b82f6, transparent);
+    opacity: .35;
+}
+
+/* ---- Empty state ---- */
+.gas-nav-empty {
+    padding: 24px 12px;
+    font-size: 12px;
+    color: #94a3b8;
+    text-align: center;
+}
+.gas-nav-empty i {
+    display: block;
+    font-size: 24px;
+    margin-bottom: 8px;
+    opacity: .5;
+}
+
+/* ---- Menu toggle micro-interaction ---- */
 .gas-menu-toggle {
     box-shadow: 0 2px 5px rgba(15,23,42,.035);
 }
@@ -1099,7 +1304,10 @@ use App\Models\Module;
     transform: scale(.94);
 }
 
-/* Responsive title and profile controls */
+
+/* ============================================================
+   RESPONSIVE TITLE & PROFILE CONTROLS
+   ============================================================ */
 @media (max-width: 767px) {
     .topbar .navbar {
         display: flex;
@@ -1133,7 +1341,13 @@ use App\Models\Module;
         width: 50px;
         height: 50px;
     }
+
+    /* Sidebar nav gets slightly tighter gutters on mobile so text isn't squeezed */
+    #sidebar-menu.gas-nav {
+        padding: 6px 12px 22px 12px;
+    }
 }
+
 @media (max-width: 420px) {
     .gas-page-caption { max-width: 31vw; }
     .gas-page-caption small { display: none; }
@@ -1144,22 +1358,37 @@ use App\Models\Module;
         font-size: 10.5px;
     }
 }
+
 @media (prefers-reduced-motion: reduce) {
     .gas-nav-item,
     .gas-profile-avatar,
     .gas-profile-actions .gas-profile-action,
     .gas-nav-link,
     .gas-nav-icon,
+    .gas-nav-sublink,
+    .gas-nav-bullet,
     .gas-menu-toggle {
         animation: none !important;
         transition: none !important;
     }
-}
-@keyframes gasNavEnter {
-    from { opacity: 0; transform: translateX(-7px); }
-    to { opacity: 1; transform: translateX(0); }
+    .gas-nav-link::after { display: none; }
 }
 
+@keyframes gasNavEnter {
+    from { opacity: 0; transform: translateX(-7px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+#sidebar-menu ul li a i {
+    display: inline-block;
+    font-size: 16px;
+    line-height: 17px;
+    margin-left: 3px;
+    margin-right: 0 !important;
+    text-align: center;
+    vertical-align: middle;
+    width: 20px;
+}
 </style>
     </head>
 
