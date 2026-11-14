@@ -505,7 +505,8 @@ $permission_lookup = $modules->flatMap(function ($module) {
             'clients.client_name',
             'estimations.vehicle_reg',
             'estimations.customer_name',
-            'job_cards.delivery_date'
+            'job_cards.delivery_date',
+            'estimations.profoma_invoice',
         ])
         ->leftjoin('estimations', 'estimations.job_card_no', '=', 'job_cards.job_card_no')
         ->leftJoin('invoices', 'invoices.estimate_ref', '=', 'estimations.reference') // Corrected leftJoin method parameter order
@@ -516,7 +517,7 @@ $permission_lookup = $modules->flatMap(function ($module) {
         'estimations.customer_name', 'users.fname', 'job_cards.job_card_ID',
         'users.lname', 'invoices.invoice_number', 'job_cards.status', 
         'estimations.reference', 'estimations.vehicle_reg', 'clients.client_name',
-         'estimations.created_date', 'job_cards.delivery_date') // Removed duplicate grouping
+         'estimations.created_date', 'job_cards.delivery_date', 'estimations.profoma_invoice') 
         ->orderBy('job_cards.job_card_ID', 'desc')
         ->get();
     

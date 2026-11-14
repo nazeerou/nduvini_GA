@@ -1630,7 +1630,7 @@
                                     <th width="15px">#</th>
                                     <th width="450px">Client Name</th>
                                     <th width="90px">Vehicle Reg</th>
-                                    <th width="100px">Job Card No</th>
+                                    <th width="100px">Proforma No.</th>
                                     <th width="110px">Date</th>
                                     <th width="160px">Invoice </th>
                                     <th width="130px">Work Status</th>
@@ -1670,7 +1670,7 @@
                                         <td><span class="est-cell-vehicle">{{ strtoupper($product->vehicle_reg) }}</span></td>
 
                                         <td>
-                                            <a href="#" class="est-cell-jobcard">{{ $product->job_card_no }}</a>
+                                             <a href="{{ url('estimations/details/pdf/'.$product->reference) }}" class="est-cell-jobcard">{{ $product->profoma_invoice }}</a>
                                         </td>
 
                                         <td><span class="est-cell-date">{{ $displayDate }}</span></td>
