@@ -361,6 +361,92 @@
         padding: 17px;
     }
 }
+
+/* =====================================================
+   PURCHASE SUMMARY CARDS
+===================================================== */
+
+.purchase-summary {
+    margin-bottom: 20px;
+}
+
+.purchase-summary .summary-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid #e8ebef;
+    border-radius: 8px;
+    padding: 19px 20px;
+    min-height: 112px;
+    margin-bottom: 15px;
+    box-shadow: 0 3px 14px rgba(0,0,0,.025);
+    transition: all .25s ease;
+    overflow: hidden;
+}
+
+.purchase-summary .summary-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 20px rgba(0,0,0,.06);
+    border-color: #d7dfe8;
+}
+
+.purchase-summary .summary-label {
+    display: block;
+    color: #8993a0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .45px;
+    text-transform: uppercase;
+    margin-bottom: 11px;
+}
+
+.purchase-summary .summary-value {
+    display: block;
+    color: #354152;
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.purchase-summary .summary-description {
+    display: block;
+    margin-top: 5px;
+    color: #a0a8b2;
+    font-size: 11px;
+}
+
+.purchase-summary .summary-icon {
+    position: absolute;
+    right: 18px;
+    top: 19px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #f2f5f8;
+    color: #64748b;
+    font-size: 16px;
+}
+
+@media(max-width: 767px) {
+    .purchase-summary .summary-card {
+        min-height: 100px;
+        padding: 15px;
+    }
+
+    .purchase-summary .summary-value {
+        font-size: 19px;
+    }
+
+    .purchase-summary .summary-icon {
+        width: 33px;
+        height: 33px;
+        right: 12px;
+        top: 14px;
+    }
+}
 </style>
 
 
@@ -408,7 +494,115 @@
 
                 </div>
 
+@php
+    $purchaseSummary = collect($purchases);
 
+    $totalInvoices = $purchaseSummary->count();
+
+    $totalPurchaseAmount = $purchaseSummary->sum(function ($purchase) {
+        return (float) $purchase->total +
+               (float) $purchase->calculated_vat_amount;
+    });
+
+    $totalVatAmount = $purchaseSummary->sum(function ($purchase) {
+        return (float) $purchase->calculated_vat_amount;
+    });
+
+    $totalSuppliers = $purchaseSummary
+        ->pluck('supplier_id')
+        ->filter()
+        ->unique()
+        ->count();
+@endphp
+
+<!-- PURCHASE SUMMARY -->
+<div class="row purchase-summary">
+
+    <!-- TOTAL INVOICES -->
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="summary-card">
+
+            <span class="summary-label">Total Purchase Invoices</span>
+
+            <span class="summary-value">
+                {{ number_format($totalInvoices) }}
+            </span>
+
+            <span class="summary-description">
+                Recorded purchase invoices
+            </span>
+
+            <span class="summary-icon">
+                <i class="fa fa-file-text-o"></i>
+            </span>
+
+        </div>
+    </div>
+
+    <!-- TOTAL PURCHASE AMOUNT -->
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="summary-card">
+
+            <span class="summary-label">Total Purchase Amount</span>
+
+            <span class="summary-value">
+                {{ number_format($totalPurchaseAmount, 2) }}
+            </span>
+
+            <span class="summary-description">
+                VAT inclusive
+            </span>
+
+            <span class="summary-icon">
+                <i class="fa fa-money"></i>
+            </span>
+
+        </div>
+    </div>
+
+    <!-- TOTAL VAT -->
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="summary-card">
+
+            <span class="summary-label">Total VAT Amount</span>
+
+            <span class="summary-value">
+                {{ number_format($totalVatAmount, 2) }}
+            </span>
+
+            <span class="summary-description">
+                Total calculated VAT
+            </span>
+
+            <span class="summary-icon">
+                <i class="fa fa-calculator"></i>
+            </span>
+
+        </div>
+    </div>
+
+    <!-- TOTAL SUPPLIERS -->
+    <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="summary-card">
+
+            <span class="summary-label">Total Suppliers</span>
+
+            <span class="summary-value">
+                {{ number_format($totalSuppliers) }}
+            </span>
+
+            <span class="summary-description">
+                Suppliers with purchase records
+            </span>
+
+            <span class="summary-icon">
+                <i class="fa fa-users"></i>
+            </span>
+
+        </div>
+    </div>
+
+</div>
                 <div class="panel-body">
 
                     <div class="table-responsive">

@@ -42,61 +42,295 @@ class HomeController extends Controller
      */
     public function index()
     {
-        
-          $products = Brand::all();
+        $branchId = Auth::user()->branch_id;
+        $now      = Carbon::now();
+        $yearNum  = $now->year;
+
+        /* ============================================================
+           INVENTORY
+        ============================================================ */
+        $products = Brand::all();
 
         $out_stocks = Product::where('quantity', '=', 0)
-                     ->where('products.branch_id', Auth::user()->branch_id)
-                     ->get();
-        
+            ->where('products.branch_id', $branchId)
+            ->get();
+
         $in_stocks = Product::where('quantity', '>', 0)
-                    ->where('products.branch_id', Auth::user()->branch_id)
-                    ->get();
+            ->where('products.branch_id', $branchId)
+            ->get();
 
         $less_stocks = DB::table('products')
-                    ->select('products.quantity', 'products.alert_qty', 'products.branch_id')
-                    ->whereColumn('products.quantity', '<=', 'products.alert_qty')
-                    ->where('products.branch_id', Auth::user()->branch_id)
-                    ->count();
+            ->whereColumn('products.quantity', '<=', 'products.alert_qty')
+            ->where('products.branch_id', $branchId)
+            ->count();
 
         $clients = DB::table('clients')
-                ->select('id', 'client_name')
-                ->orderBy('client_name', 'asc')
-                ->where('clients.branch_id', Auth::user()->branch_id)
-                ->get();
+            ->select('id', 'client_name')
+            ->orderBy('client_name', 'asc')
+            ->where('clients.branch_id', $branchId)
+            ->get();
 
-        $current_year = Carbon::now()->year;
+        /* ============================================================
+           YEAR RECORD
+        ============================================================ */
+        $year = Year::where('current_year', $yearNum)->first();
 
-        $year = Year::where('current_year', $current_year)->select('*')->first();
-
+        /* ============================================================
+           FINANCIAL TOTALS (year-to-date)
+        ============================================================ */
         $total_inventory_purchases = DB::table('purchases')
-                                    ->select(DB::raw('SUM((quantity * purchase_price) + ((quantity * purchase_price) * vat_amount)) as total_purchase_amount'))
-                                 //   ->whereMonth('created_date', Carbon::now()->month)
-                                    ->whereYear('created_date', Carbon::now()->year)
-                                    ->where('branch_id', Auth::user()->branch_id)
-                                    ->get();
-
+            ->select(DB::raw('SUM((quantity * purchase_price) + ((quantity * purchase_price) * vat_amount)) as total_purchase_amount'))
+            ->whereYear('created_date', $yearNum)
+            ->where('branch_id', $branchId)
+            ->get();
 
         $total_inventory_sales_value = DB::table('invoices')
-                                   // ->whereMonth('created_date', Carbon::now()->month)
-                                    ->whereYear('created_date', Carbon::now()->year)
-                                    ->where('branch_id', Auth::user()->branch_id)
-                                    ->sum('bill_amount');
+            ->whereYear('created_date', $yearNum)
+            ->where('branch_id', $branchId)
+            ->sum('bill_amount');
 
-        $month_sales =  Invoice::select([DB::raw('SUM(bill_amount) as total_month_sales')])
-                       ->whereMonth('created_date', Carbon::now()->month)
-                       ->whereYear('created_date', Carbon::now()->year)
-                       ->where('branch_id', Auth::user()->branch_id)
-                       ->get();
-        
+        /* ============================================================
+           MONTHLY TOTALS
+        ============================================================ */
+        $month_sales = Invoice::select([DB::raw('SUM(bill_amount) as total_month_sales')])
+            ->whereMonth('created_date', $now->month)
+            ->whereYear('created_date', $yearNum)
+            ->where('branch_id', $branchId)
+            ->get();
+
         $month_purchases = DB::table('purchases')
-                         ->select(DB::raw('SUM((quantity * purchase_price) + ((quantity * purchase_price) * vat_amount)) as total_month_purchases'))
-                         ->whereMonth('created_date', Carbon::now()->month)
-                         ->whereYear('created_date', Carbon::now()->year)
-                         ->where('purchases.branch_id', Auth::user()->branch_id)
-                         ->get();
-                         
-        return view('home', compact('products', 'out_stocks', 'in_stocks', 'less_stocks', 'total_inventory_purchases', 'total_inventory_sales_value','month_sales', 'month_purchases', 'clients'));
+            ->select(DB::raw('SUM((quantity * purchase_price) + ((quantity * purchase_price) * vat_amount)) as total_month_purchases'))
+            ->whereMonth('created_date', $now->month)
+            ->whereYear('created_date', $yearNum)
+            ->where('purchases.branch_id', $branchId)
+            ->get();
+
+        /* ============================================================
+           APPROVAL INBOX
+           Assumption: `approval_requests` (branch_id, status pending|approved|rejected)
+        ============================================================ */
+        $pending_approvals = $this->safeCount('approval_requests', [
+            'branch_id' => $branchId, 'status' => 'pending',
+        ]);
+        $approved_requests = $this->safeCount('approval_requests', [
+            'branch_id' => $branchId, 'status' => 'approved',
+        ]);
+        $rejected_requests = $this->safeCount('approval_requests', [
+            'branch_id' => $branchId, 'status' => 'rejected',
+        ]);
+
+        /* ============================================================
+           MESSAGES & NOTIFICATIONS
+           Assumption: `messages` (recipient_id, is_read)
+                       `notifications` (notifiable_id, read_at)
+        ============================================================ */
+        $unread_messages = $this->safeCount('messages', [
+            'recipient_id' => Auth::id(),
+            'is_read'      => 0,
+        ]);
+
+        $notifications_count = $this->safeCount('notifications', [
+            'notifiable_id' => Auth::id(),
+            'read_at'       => null,
+        ]);
+
+        /* ============================================================
+           STAFF & PAYROLL
+           Assumption: `employees` (branch_id)
+                       `attendance` (branch_id, date, status)
+                       `payrolls` (branch_id, status)
+        ============================================================ */
+        $total_employees = $this->safeCount('employees', [
+            'branch_id' => $branchId,
+        ]);
+
+        $present_employees = $this->safeCount('attendance', [
+            'branch_id' => $branchId,
+            'date'      => $now->toDateString(),
+            'status'    => 'present',
+        ]);
+
+        $pending_payroll = $this->safeCount('payrolls', [
+            'branch_id' => $branchId,
+            'status'    => 'pending',
+        ]);
+
+        /* ============================================================
+           JOB CARDS
+           Assumption: `job_cards` (branch_id, status, is_billed)
+        ============================================================ */
+        $pending_jobs = $this->safeCount('job_cards', [
+            'branch_id' => $branchId, 'status' => 'pending',
+        ]);
+        $vehicles_in_service = $this->safeCount('job_cards', [
+            'branch_id' => $branchId, 'status' => 'in_progress',
+        ]);
+        $completed_jobs = $this->safeCount('job_cards', [
+            'branch_id' => $branchId, 'status' => 'completed',
+        ]);
+        $unbilled_jobs = $this->safeCount('job_cards', [
+            'branch_id' => $branchId, 'is_billed' => 0,
+        ]);
+
+        /* ============================================================
+           ACCOUNTING & FINANCE
+           Assumption: `purchases.status`, `payments.status`, `invoices.status`
+                       `invoices.amount_paid`, `purchases.amount_paid`
+        ============================================================ */
+        $pending_purchases = $this->safeCount('purchases', [
+            'branch_id' => $branchId, 'status' => 'pending',
+        ]);
+
+        $pending_payments = $this->safeCount('payments', [
+            'branch_id' => $branchId, 'status' => 'pending',
+        ]);
+
+        $pending_invoices = $this->safeCount('invoices', [
+            'branch_id' => $branchId, 'status' => 'pending',
+        ]);
+
+$receivables = (float) DB::table('invoices')
+    ->leftJoinSub(
+        DB::table('client_payments')
+            ->select('bill_no', DB::raw('SUM(COALESCE(paid_amount, 0)) as paid_total'))
+            ->groupBy('bill_no'),
+        'cp',
+        'cp.bill_no',
+        '=',
+        'invoices.invoice_number'
+    )
+    ->where('invoices.branch_id', $branchId)
+    // ->whereIn('invoices.status', ['pending', 'partial', 'unpaid'])
+    // ->whereNull('invoices.deleted_at')
+    ->selectRaw('COALESCE(SUM(invoices.bill_amount - COALESCE(cp.paid_total, 0)), 0) as balance')
+    ->value('balance');
+
+        // Payables = amounts you owe suppliers (purchase total minus what's been paid)
+        $payables = (float) DB::table('purchases')
+    ->leftJoinSub(
+        DB::table('payments')
+            ->select('invoice_number', DB::raw('SUM(COALESCE(paid_amount, 0)) as paid_total'))
+            ->groupBy('invoice_number'),
+        'pp',
+        'pp.invoice_number',
+        '=',
+        'purchases.invoice_number'
+    )
+    ->where('purchases.branch_id', $branchId)
+    // ->whereNotIn('purchases.status', ['paid', 'cancelled', 'void'])
+    // ->whereNull('purchases.deleted_at')
+    ->selectRaw(
+        'COALESCE(SUM(
+            ((purchases.quantity * purchases.purchase_price)
+             + ((purchases.quantity * purchases.purchase_price) * purchases.vat_amount))
+            - COALESCE(pp.paid_total, 0)
+        ), 0) as balance'
+    )
+    ->value('balance');
+
+        /* ============================================================
+           RECENT ACTIVITY & MESSAGES
+           Assumption: `activity_logs` (branch_id, description, user_name, created_at)
+                       `messages` (recipient_id, sender_name, message, is_read, created_at)
+        ============================================================ */
+        $recent_activities = $this->safeGet('activity_logs', [
+            'branch_id' => $branchId,
+        ], 6);
+
+        $recent_messages = $this->safeGet('messages', [
+            'recipient_id' => Auth::id(),
+        ], 5);
+
+        /* ============================================================
+           CURRENCY
+        ============================================================ */
+        $currency = optional(Auth::user()->branch)->currency ?? 'TZS';
+
+        /* ============================================================
+           RETURN
+        ============================================================ */
+        return view('home', compact(
+            // Inventory
+            'products',
+            'out_stocks',
+            'in_stocks',
+            'less_stocks',
+            'clients',
+            'year',
+            // Financial
+            'total_inventory_purchases',
+            'total_inventory_sales_value',
+            'month_sales',
+            'month_purchases',
+            // Approvals
+            'pending_approvals',
+            'approved_requests',
+            'rejected_requests',
+            // Messages
+            'unread_messages',
+            'notifications_count',
+            // Staff
+            'total_employees',
+            'present_employees',
+            'pending_payroll',
+            // Job cards
+            'pending_jobs',
+            'vehicles_in_service',
+            'completed_jobs',
+            'unbilled_jobs',
+            // Accounting
+            'pending_purchases',
+            'pending_payments',
+            'pending_invoices',
+            'receivables',
+            'payables',
+            // Activity / messages feed
+            'recent_activities',
+            'recent_messages',
+            // Config
+            'currency'
+        ));
+    }
+
+    /* ================================================================
+       HELPERS
+       ================================================================ */
+
+    /**
+     * Safe count — returns 0 if the table doesn't exist
+     * or if the where-clause references a missing column.
+     */
+    private function safeCount(string $table, array $where = []): int
+    {
+        try {
+            if (!Schema::hasTable($table)) {
+                return 0;
+            }
+            return (int) DB::table($table)->where($where)->count();
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Safe fetch — returns an empty collection on failure.
+     * Orders by `created_at` desc if that column exists, otherwise by id desc.
+     */
+    private function safeGet(string $table, array $where = [], int $limit = 5)
+    {
+        try {
+            if (!Schema::hasTable($table)) {
+                return collect();
+            }
+
+            $query = DB::table($table)->where($where);
+
+            $orderColumn = Schema::hasColumn($table, 'created_at') ? 'created_at' : 'id';
+
+            return $query->orderByDesc($orderColumn)->limit($limit)->get();
+        } catch (\Throwable $e) {
+            return collect();
+        }
     }
 
     public function userList() {
