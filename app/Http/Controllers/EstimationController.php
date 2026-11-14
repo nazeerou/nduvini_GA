@@ -458,8 +458,8 @@ $sales = DB::table('estimations')
         'invoices.id',
     ])
 
-    ->orderBy('invoices.invoice_number', 'desc')
-    ->get();
+->orderByDesc('invoice_number')
+->get();
 
 
     $modules = Module::with('permissions')->get();
