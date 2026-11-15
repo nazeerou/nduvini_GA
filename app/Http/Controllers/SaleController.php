@@ -1694,8 +1694,7 @@ public function getSingleClientPaymentDetails($id)
     $request->validate([
         'paid_amount'    => 'required|numeric|min:0.01',
         'created_date'   => 'required',
-        'invoice_number' => 'required',
-        'client_id'      => 'required',
+        'invoice_number' => 'required'
     ], [
         'paid_amount.numeric' => 'Please enter a valid number.',
         'paid_amount.min'     => 'Amount must be greater than zero.',
@@ -1753,7 +1752,7 @@ public function getSingleClientPaymentDetails($id)
         ->first();
     $client_name = Client::where('id', $request->client_id)->first();
     $balance     = $account_balance['total_balance'] + $paid_amount;
-    $name        = $client_name['client_name'];
+    $name        = $client_name['client_name'] ?? null;
 
     DB::table('accounts')
         ->where('id', $request->account_id)
