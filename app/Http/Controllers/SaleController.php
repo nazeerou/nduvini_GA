@@ -1294,50 +1294,353 @@ public function exportClientPaymentsPdf(Request $request)
     return $pdf->download($filename);
 }
 
-//     public function getSingleClientPaymentDetails($id)
-// {
-//     $client_details = DB::table('invoices')
-//         ->leftJoin('estimations', 'estimations.reference', '=', 'invoices.estimate_ref')
-//         ->leftJoin('clients', 'clients.id', '=', 'estimations.client_name')
-//         ->select(
-//             'invoices.invoice_number',
-//             'invoices.bill_amount',
-//             'invoices.client_id',
-//             'clients.client_name'
-//         )
-//         ->where('invoices.invoice_number', '=', $id)
-//         ->where('invoices.branch_id', Auth::user()->branch_id)
-//         ->distinct()
-//         ->get();
-
-//     return $client_details;
-// }
-
-
 
 public function getSingleClientPaymentDetails($id)
 {
-    $client_details = DB::table('invoices')
-        ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+    // $client_details = DB::table('invoices')
+    //     ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
+    //     ->leftJoinSub(
+    //         DB::table('client_payments')
+    //             ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
+    //             ->where('client_payments.branch_id', Auth::user()->branch_id)
+    //             ->groupBy('bill_no'),
+    //         'payments',
+    //         'invoices.invoice_number', '=', 'payments.bill_no'
+    //     )
+    //     ->select(
+    //         'invoices.invoice_number',
+    //         'invoices.bill_amount',
+    //         'invoices.client_id',
+    //         'clients.client_name',
+    //         DB::raw('COALESCE(payments.total_paid, 0) as paid_amount'),
+    //         DB::raw('(invoices.bill_amount - COALESCE(payments.total_paid, 0)) as balance_due')
+    //     )
+    //     ->where('invoices.invoice_number', '=', $id)
+    //     ->where('invoices.branch_id', Auth::user()->branch_id)
+    //     ->distinct()
+    //     ->get();
+
+       /*
+    |--------------------------------------------------------------------------
+    | 2. LABOUR TOTALS
+    |--------------------------------------------------------------------------
+    */
+
+    $branchId = Auth::user()->branch_id;
+
+
+    $labourTotals = DB::table('labour_estimations')
+        ->select([
+            'estimate_reference',
+            DB::raw('SUM(total_amount) AS total_labour')
+        ])
+        ->groupBy('estimate_reference');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. ESTIMATION CALCULATIONS
+    |--------------------------------------------------------------------------
+    | One row per estimation reference.
+    */
+
+    $estimationTotals = DB::table('estimations')
+
         ->leftJoinSub(
-            DB::table('client_payments')
-                ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
-                ->where('client_payments.branch_id', Auth::user()->branch_id)
-                ->groupBy('bill_no'),
-            'payments',
-            'invoices.invoice_number', '=', 'payments.bill_no'
+            $labourTotals,
+            'labour_totals',
+            function ($join) {
+                $join->on(
+                    'labour_totals.estimate_reference',
+                    '=',
+                    'estimations.reference'
+                );
+            }
         )
-        ->select(
+
+        ->select([
+
+            'estimations.reference',
+
+            // Estimation information
+            DB::raw('MAX(estimations.model) AS model'),
+            DB::raw('MAX(estimations.job_card_no) AS job_card_no'),
+            DB::raw('MAX(estimations.profoma_invoice) AS profoma_invoice'),
+            DB::raw('MAX(estimations.customer_name) AS customer_name'),
+            DB::raw('MAX(estimations.vehicle_reg) AS vehicle_reg'),
+            DB::raw('MAX(estimations.client_name ) AS client_id'),
+
+            // Gross materials
+            DB::raw("
+                COALESCE(
+                    SUM(
+                        CAST(estimations.selling_price AS DECIMAL(18,2))
+                        *
+                        CAST(estimations.qty AS DECIMAL(18,2))
+                    ), 0
+                ) AS gross_materials
+            "),
+
+            // Total discount
+            DB::raw("
+                COALESCE(
+                    SUM(estimations.total_discount), 0
+                ) AS total_discount
+            "),
+
+            // Materials after discount
+            DB::raw("
+                (
+                    COALESCE(
+                        SUM(estimations.selling_price * estimations.qty), 0
+                    )
+                    -
+                    COALESCE(SUM(estimations.total_discount), 0)
+                ) AS total_materials
+            "),
+
+            // Labour
+            DB::raw("
+                COALESCE(MAX(labour_totals.total_labour), 0)
+                AS total_labour
+            "),
+
+            // TEMESA percentage
+            DB::raw("
+                COALESCE(MAX(estimations.temesa_fee), 0)
+                AS temesa_fee
+            "),
+
+            // TEMESA amount
+            DB::raw("
+                (
+                    (
+                        COALESCE(
+                            SUM(estimations.selling_price * estimations.qty), 0
+                        )
+                        -
+                        COALESCE(SUM(estimations.total_discount), 0)
+                        +
+                        COALESCE(MAX(labour_totals.total_labour), 0)
+                    )
+                    *
+                    COALESCE(MAX(estimations.temesa_fee), 0)
+                ) AS temesa_fee_amount
+            "),
+
+            // Total before VAT
+            DB::raw("
+                (
+                    (
+                        COALESCE(
+                            SUM(estimations.selling_price * estimations.qty), 0
+                        )
+                        -
+                        COALESCE(SUM(estimations.total_discount), 0)
+                        +
+                        COALESCE(MAX(labour_totals.total_labour), 0)
+                    )
+                    *
+                    (
+                        1 + COALESCE(MAX(estimations.temesa_fee), 0)
+                    )
+                ) AS total_before_vat
+            "),
+
+            // VAT percentage
+            DB::raw("
+                COALESCE(MAX(estimations.vat_amount), 0)
+                AS vat_amount
+            "),
+
+            // VAT total
+            DB::raw("
+                (
+                    (
+                        (
+                            COALESCE(
+                                SUM(estimations.selling_price * estimations.qty), 0
+                            )
+                            -
+                            COALESCE(SUM(estimations.total_discount), 0)
+                            +
+                            COALESCE(MAX(labour_totals.total_labour), 0)
+                        )
+                        *
+                        (
+                            1 + COALESCE(MAX(estimations.temesa_fee), 0)
+                        )
+                    )
+                    *
+                    COALESCE(MAX(estimations.vat_amount), 0)
+                ) AS vat_total
+            "),
+
+            // GRAND TOTAL - DYNAMIC TOTAL BILL
+            DB::raw("
+                (
+                    (
+                        (
+                            COALESCE(
+                                SUM(estimations.selling_price * estimations.qty), 0
+                            )
+                            -
+                            COALESCE(SUM(estimations.total_discount), 0)
+                            +
+                            COALESCE(MAX(labour_totals.total_labour), 0)
+                        )
+                        *
+                        (
+                            1 + COALESCE(MAX(estimations.temesa_fee), 0)
+                        )
+                    )
+                    *
+                    (
+                        1 + COALESCE(MAX(estimations.vat_amount), 0)
+                    )
+                ) AS grand_total_amount
+            ")
+
+        ])
+
+        ->where('estimations.branch_id', $branchId)
+
+        ->whereNotNull('estimations.profoma_invoice')
+
+        ->groupBy('estimations.reference');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. PAYMENT TOTALS
+    |--------------------------------------------------------------------------
+    */
+
+    $paymentTotals = DB::table('client_payments')
+
+        ->select([
+            'bill_no',
+            DB::raw('SUM(paid_amount) AS total_paid')
+        ])
+
+        ->where('branch_id', $branchId)
+
+        ->groupBy('bill_no');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. INVOICES + DYNAMIC TOTAL BILL
+    |--------------------------------------------------------------------------
+    */
+
+    $client_details = DB::table('invoices')
+
+        // Estimation calculations
+        ->leftJoinSub(
+            $estimationTotals,
+            'est',
+            function ($join) {
+                $join->on(
+                    'est.reference',
+                    '=',
+                    'invoices.estimate_ref'
+                );
+            }
+        )
+
+        // Payment totals
+        ->leftJoinSub(
+            $paymentTotals,
+            'client_payments',
+            function ($join) {
+                $join->on(
+                    'client_payments.bill_no',
+                    '=',
+                    'invoices.invoice_number'
+                );
+            }
+        )
+
+        // Client
+        ->leftJoin(
+            'clients',
+            'clients.id',
+            '=',
+            'invoices.client_id'
+        )
+
+        // User
+        ->leftJoin(
+            'users',
+            'users.id',
+            '=',
+            'invoices.user_id'
+        )
+
+        ->select([
+
+            // Invoice information
+            'invoices.id',
             'invoices.invoice_number',
-            'invoices.bill_amount',
-            'invoices.client_id',
+            'invoices.created_date',
+
+            // DYNAMIC TOTAL BILL
+            DB::raw("
+                CAST(
+                    COALESCE(est.grand_total_amount, 0)
+                    AS DECIMAL(18,2)
+                ) AS bill_amount
+            "),
+
+            // Total paid
+            DB::raw("
+                CAST(
+                    COALESCE(client_payments.total_paid, 0)
+                    AS DECIMAL(18,2)
+                ) AS paid_amount
+            "),
+
+            // Remaining balance
+            DB::raw("
+                GREATEST(
+                    COALESCE(est.grand_total_amount, 0)
+                    -
+                    COALESCE(client_payments.total_paid, 0),
+                    0
+                ) AS balance
+            "),
+
+            // Estimation breakdown
+            'est.gross_materials',
+            'est.total_discount',
+            'est.total_materials',
+            'est.total_labour',
+            'est.temesa_fee',
+            'est.customer_name',
+            'est.temesa_fee_amount',
+            'est.total_before_vat',
+            'est.vat_amount',
+            'est.vat_total',
+            'est.grand_total_amount',
+
+            // Other details
+            'est.model',
+            'est.job_card_no',
+            'est.profoma_invoice',
+            'est.reference',
+            'est.customer_name',
+            'est.vehicle_reg',
+
             'clients.client_name',
-            DB::raw('COALESCE(payments.total_paid, 0) as paid_amount'),
-            DB::raw('(invoices.bill_amount - COALESCE(payments.total_paid, 0)) as balance_due')
-        )
+            'clients.place',
+            'clients.id as client_id',
+            'users.fname',
+            'users.lname',
+
+        ])
         ->where('invoices.invoice_number', '=', $id)
         ->where('invoices.branch_id', Auth::user()->branch_id)
-        ->distinct()
         ->get();
 
     return $client_details;
