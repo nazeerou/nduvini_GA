@@ -227,6 +227,23 @@
         background:var(--sp-soft);color:var(--sp-muted);cursor:not-allowed;
     }
 
+    /* Payment type radio group */
+    .sp-paytype{display:flex;gap:10px;flex-wrap:wrap;}
+    .sp-paytype-opt{
+        flex:1;min-width:160px;cursor:pointer;margin:0;
+        border:1px solid var(--sp-line);border-radius:8px;
+        padding:10px 14px;background:var(--sp-white);
+        font-size:13px;font-weight:600;color:var(--sp-ink-soft);
+        display:flex;align-items:center;gap:8px;
+        transition:all .15s ease;
+    }
+    .sp-paytype-opt:hover{border-color:#d1d5db;background:var(--sp-soft);}
+    .sp-paytype-opt input{accent-color:var(--sp-primary);margin:0;}
+    .sp-paytype-opt:has(input:checked){
+        border-color:var(--sp-primary);background:#eef3f9;color:var(--sp-primary);
+    }
+    .sp-paytype-opt:has(input:checked) i{color:var(--sp-primary);}
+
     /* Footer buttons */
     .sp-modal .btn-default{
         background:var(--sp-white);border:1px solid var(--sp-line);color:var(--sp-ink-soft);
@@ -242,6 +259,9 @@
     }
     .sp-modal .btn-primary:hover{
         background:var(--sp-primary-dark);border-color:var(--sp-primary-dark);
+    }
+    .sp-modal .btn-primary[disabled]{
+        opacity:.75;cursor:not-allowed;
     }
 
     /* Section divider inside modals */
@@ -410,6 +430,9 @@
                                                 @else
                                                     <button type="button"
                                                             value="{{ $purchase->invoice_number }}"
+                                                            data-total="{{ number_format((float) $purchase->total_amount, 2, '.', '') }}"
+                                                            data-paid="{{ number_format((float) $purchase->total_paid_amount, 2, '.', '') }}"
+                                                            data-balance="{{ number_format($balance, 2, '.', '') }}"
                                                             class="sp-act sp-act-pay addPayment">
                                                         <i class="fa fa-plus"></i> Pay
                                                     </button>
@@ -475,14 +498,48 @@
 
                     <div class="sp-section-title" style="margin-top:8px;">Payment details</div>
 
+                    {{-- Payment type selector --}}
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="control-label">Payment Type <span class="req">*</span></label>
+                                <div class="sp-paytype">
+                                    <label class="sp-paytype-opt">
+                                        <input type="radio" name="payment_type" value="full" checked>
+                                        <span><i class="fa fa-check-circle"></i> Full Payment</span>
+                                    </label>
+                                    <label class="sp-paytype-opt">
+                                        <input type="radio" name="payment_type" value="partial">
+                                        <span><i class="fa fa-adjust"></i> Partial Payment</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Balance + Amount --}}
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label class="control-label">Amount <span class="req">*</span></label>
-                                <input type="text" name="paid_amount" id="paid_amount" class="form-control"
-                                       required placeholder="Enter amount to pay">
+                                <label class="control-label">Balance Due</label>
+                                <input type="text" id="balance_due" readonly class="form-control">
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="control-label">Amount <span class="req">*</span></label>
+                                <input type="text" name="paid_amount" id="paid_amount"
+                                       class="form-control" required readonly
+                                       placeholder="Enter amount to pay">
+                                <small id="partial_hint" class="text-muted" style="display:none;font-size:11.5px;">
+                                    Enter an amount less than the balance due.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Date --}}
+                    <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label class="control-label">Date <span class="req">*</span></label>
@@ -509,7 +566,9 @@
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary">Save Payment</button>
+                    <button type="submit" class="btn btn-primary" id="savePaymentBtn">
+                        <i class="fa fa-save"></i> Save Payment
+                    </button>
                 </div>
             </div>
         </form>
@@ -517,32 +576,148 @@
 </div>
 
 <script>
-  $(document).ready(function () {
+$(document).ready(function () {
+
     $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') }
+    });
+
+    // Holds the balance for the invoice currently being paid
+    var currentBalance = 0;
+
+    /* ---------- Open modal / load invoice ---------- */
+    $('.addPayment').click(function () {
+        var $btn       = $(this);
+        var invoice_id = $btn.val();
+        currentBalance = parseFloat($btn.data('balance') || 0);
+
+        $.ajax({
+            url: `../accounts/payments-details/${invoice_id}`,
+            type: "GET",
+            success: function (response) {
+                var a = parseFloat(response[0].total || 0);
+                var b = parseFloat(response[0].calculated_vat_amount || 0);
+
+                $("#supplier_id").val(response[0].supplier_id);
+                $("#supplier_name").val(response[0].supplier_name);
+                $("#invoice_number").val(response[0].invoice_number);
+                $("#total_amount").val((a + b).toFixed(2));
+                $("#vat_amount").val(response[0].vat_amount);
+                $("#balance_due").val(currentBalance.toFixed(2));
+
+                // Default → Full Payment
+                $('input[name="payment_type"][value="full"]').prop('checked', true);
+                $("#paid_amount")
+                    .val(currentBalance.toFixed(2))
+                    .prop('readonly', true);
+                $("#partial_hint").hide();
+
+                // Fresh date field
+                $("#datepicker-autoclose").val('');
+
+                // Reset submit button state
+                resetSubmitButton();
+
+                $('#payment_modal').modal('show');
+            }
+        });
+    });
+
+    /* ---------- Toggle Full / Partial ---------- */
+    $(document).on('change', 'input[name="payment_type"]', function () {
+        if ($(this).val() === 'full') {
+            $("#paid_amount")
+                .val(currentBalance.toFixed(2))
+                .prop('readonly', true)
+                .removeClass('is-invalid');
+            $("#partial_hint").hide();
+        } else {
+            $("#paid_amount")
+                .val('')
+                .prop('readonly', false)
+                .focus();
+            $("#partial_hint").show();
         }
     });
 
-    $('.addPayment').click(function() {
-         var invoice_id = $(this).val();
-         $.ajax({
-             url: `../accounts/payments-details/${invoice_id}`,
-             type: "GET",
-             success: function (response) {
-                 $('#payment_modal').modal('show');
-                 var a = parseFloat(response[0].total, 2);
-                 var b = parseFloat(response[0].calculated_vat_amount, 2);
-                 $("#supplier_id").val(response[0].supplier_id);
-                 $("#supplier_name").val(response[0].supplier_name);
-                 $("#invoice_number").val(response[0].invoice_number);
-                 $("#total_amount").val(a + b);
-                 $("#vat_amount").val(response[0].vat_amount);
-               }
-         });
+    /* ---------- Live validation on amount ---------- */
+    $(document).on('input', '#paid_amount', function () {
+        var v = parseFloat($(this).val() || 0);
+        if (v > currentBalance) {
+            $(this).addClass('is-invalid')
+                   .css('border-color', '#dc2626');
+        } else {
+            $(this).removeClass('is-invalid')
+                   .css('border-color', '');
+        }
     });
 
-  });
+    /* ---------- Helper: reset submit button to idle state ---------- */
+    function resetSubmitButton() {
+        var $btn = $('#savePaymentBtn');
+        var original = $btn.data('original-html') || '<i class="fa fa-save"></i> Save Payment';
+        $btn.prop('disabled', false)
+            .removeData('processing')
+            .html(original);
+    }
+
+    /* ---------- Validate + processing state before submit ---------- */
+    $('#AddPaymentForm').on('submit', function (e) {
+        var $form  = $(this);
+        var $btn   = $('#savePaymentBtn');
+        var amount = parseFloat($('#paid_amount').val() || 0);
+
+        // ---- validation ----
+        if (isNaN(amount) || amount <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid payment amount.');
+            return false;
+        }
+
+        if (amount > currentBalance + 0.0001) { // small float tolerance
+            e.preventDefault();
+            alert('Amount cannot exceed the balance due of '
+                  + currentBalance.toFixed(2));
+            return false;
+        }
+
+        // ---- block double submit ----
+        if ($btn.data('processing')) {
+            e.preventDefault();
+            return false;
+        }
+
+        // ---- enter processing state ----
+        // Save original HTML once, then swap to spinner
+        if (!$btn.data('original-html')) {
+            $btn.data('original-html', $btn.html());
+        }
+        $btn.data('processing', true)
+            .prop('disabled', true)
+            .html('<i class="fa fa-spinner fa-spin"></i> Processing...');
+
+        // Do NOT preventDefault → form submits normally (redirect / reload expected).
+        // If your controller returns JSON instead, see AJAX variant below.
+    });
+
+    /* ---------- Restore button if browser restores page from bfcache ---------- */
+    window.addEventListener('pageshow', function (evt) {
+        if (evt.persisted) {
+            resetSubmitButton();
+        }
+    });
+
+    /* ---------- Reset when modal closes ---------- */
+    $('#payment_modal').on('hidden.bs.modal', function () {
+        $('#AddPaymentForm')[0].reset();
+        resetSubmitButton();
+
+        currentBalance = 0;
+        $("#paid_amount").prop('readonly', true).css('border-color', '');
+        $("#partial_hint").hide();
+    });
+
+});
 </script>
 
 @endsection

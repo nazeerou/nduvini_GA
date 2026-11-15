@@ -4,7 +4,6 @@
 <style>
     /* ===================== Client Payments – Professional UI ===================== */
     :root{
-        /* Core palette */
         --cp-primary:#1e3a5f;
         --cp-primary-dark:#152a45;
         --cp-primary-light:#2d5282;
@@ -16,7 +15,6 @@
         --cp-soft:#f8fafc;
         --cp-white:#ffffff;
 
-        /* Semantic colors */
         --cp-paid:#059669;
         --cp-paid-dark:#047857;
         --cp-paid-bg:#ecfdf5;
@@ -35,7 +33,6 @@
         --cp-overpaid:#065f46;
         --cp-overpaid-bg:#d1fae5;
 
-        /* Shadows */
         --cp-shadow-sm:0 1px 2px rgba(15,23,42,.04);
         --cp-shadow:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
         --cp-shadow-md:0 4px 12px rgba(15,23,42,.08), 0 2px 4px rgba(15,23,42,.04);
@@ -43,14 +40,11 @@
 
     .cp-wrap *{box-sizing:border-box;}
     .cp-wrap .panel-custom{
-        background:var(--cp-white);
-        border:1px solid var(--cp-line);
+        background:var(--cp-white);border:1px solid var(--cp-line);
         border-radius:14px;overflow:hidden;
-        box-shadow:var(--cp-shadow);
-        border-top:none;
+        box-shadow:var(--cp-shadow);border-top:none;
     }
 
-    /* ---------- Step indicator ---------- */
     .cp-steps{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:20px;}
     .cp-steps a{
         font-size:12px;font-weight:500;letter-spacing:.02em;padding:7px 14px;border-radius:8px;
@@ -65,7 +59,6 @@
     }
     .cp-steps .cp-sep{color:#cbd5e1;font-size:11px;}
 
-    /* ---------- Card header ---------- */
     .cp-head{
         display:flex;justify-content:space-between;align-items:flex-start;gap:20px;
         padding:24px 28px;border-bottom:1px solid var(--cp-line);
@@ -78,7 +71,6 @@
     .cp-head-text h3 i{color:var(--cp-primary);margin-right:8px;}
     .cp-head-text p{margin:0;font-size:13px;color:var(--cp-muted);line-height:1.5;}
 
-    /* ---------- Buttons ---------- */
     .cp-btn-primary{
         display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border:none;
         border-radius:8px;font-size:13px;font-weight:600;letter-spacing:.01em;cursor:pointer;
@@ -90,53 +82,31 @@
     .cp-btn-primary:hover{
         background:linear-gradient(180deg, var(--cp-primary) 0%, var(--cp-primary-dark) 100%);
         transform:translateY(-1px);color:#fff;
-        box-shadow:0 3px 8px rgba(30,58,95,.25), inset 0 1px 0 rgba(255,255,255,.10);
     }
     .cp-btn-primary i{font-size:12px;}
 
-    /* ---------- Summary KPI cards ---------- */
     .cp-summary{
-        display:grid;
-        grid-template-columns:repeat(4,1fr);
-        gap:16px;
-        padding:24px 28px 8px;
+        display:grid;grid-template-columns:repeat(4,1fr);
+        gap:16px;padding:24px 28px 8px;
     }
     @media (max-width:1199px){ .cp-summary{grid-template-columns:repeat(2,1fr);} }
     @media (max-width:575px){ .cp-summary{grid-template-columns:1fr;} }
 
     .cp-kpi{
-        position:relative;
-        background:var(--cp-white);
-        border:1px solid var(--cp-line);
-        border-radius:12px;
-        padding:18px 20px;
-        display:flex;
-        justify-content:space-between;
-        align-items:flex-start;
-        gap:14px;
-        overflow:hidden;
-        box-shadow:var(--cp-shadow-sm);
-        transition:all .22s ease;
+        position:relative;background:var(--cp-white);
+        border:1px solid var(--cp-line);border-radius:12px;
+        padding:18px 20px;display:flex;justify-content:space-between;
+        align-items:flex-start;gap:14px;overflow:hidden;
+        box-shadow:var(--cp-shadow-sm);transition:all .22s ease;
     }
     .cp-kpi::before{
         content:"";position:absolute;left:0;top:0;right:0;height:3px;
         background:linear-gradient(90deg, var(--cp-primary-light), var(--cp-primary));
     }
-    .cp-kpi.kpi-paid::before{
-        background:linear-gradient(90deg, #34d399, var(--cp-paid));
-    }
-    .cp-kpi.kpi-unpaid::before{
-        background:linear-gradient(90deg, #fbbf24, var(--cp-partial));
-    }
-    .cp-kpi.kpi-count::before{
-        background:linear-gradient(90deg, #94a3b8, #475569);
-    }
-
-    .cp-kpi:hover{
-        border-color:#cbd5e1;
-        box-shadow:var(--cp-shadow-md);
-        transform:translateY(-2px);
-    }
+    .cp-kpi.kpi-paid::before{background:linear-gradient(90deg, #34d399, var(--cp-paid));}
+    .cp-kpi.kpi-unpaid::before{background:linear-gradient(90deg, #fbbf24, var(--cp-partial));}
+    .cp-kpi.kpi-count::before{background:linear-gradient(90deg, #94a3b8, #475569);}
+    .cp-kpi:hover{border-color:#cbd5e1;box-shadow:var(--cp-shadow-md);transform:translateY(-2px);}
 
     .cp-kpi-body{min-width:0;flex:1;}
     .cp-kpi-label{
@@ -146,53 +116,31 @@
     .cp-kpi-value{
         font-family:'SFMono-Regular',Consolas,monospace;
         font-size:20px;font-weight:700;color:var(--cp-ink);line-height:1.1;
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        letter-spacing:-.02em;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em;
     }
-    .cp-kpi-sub{
-        font-size:11.5px;color:var(--cp-muted);margin-top:8px;line-height:1.35;
-    }
+    .cp-kpi-sub{font-size:11.5px;color:var(--cp-muted);margin-top:8px;line-height:1.35;}
     .cp-kpi-icon{
         width:42px;height:42px;flex-shrink:0;
         display:flex;align-items:center;justify-content:center;
         border-radius:10px;
         background:linear-gradient(135deg, var(--cp-line-soft), var(--cp-line));
-        color:var(--cp-primary);
-        font-size:16px;
+        color:var(--cp-primary);font-size:16px;
         box-shadow:inset 0 1px 0 rgba(255,255,255,.6);
     }
-    .cp-kpi.kpi-paid .cp-kpi-icon{
-        background:linear-gradient(135deg, #d1fae5, var(--cp-paid-border));
-        color:var(--cp-paid-dark);
-    }
-    .cp-kpi.kpi-unpaid .cp-kpi-icon{
-        background:linear-gradient(135deg, #fef3c7, var(--cp-partial-border));
-        color:var(--cp-partial-dark);
-    }
-    .cp-kpi.kpi-count .cp-kpi-icon{
-        background:linear-gradient(135deg, #f1f5f9, #e2e8f0);
-        color:var(--cp-ink-soft);
-    }
-
+    .cp-kpi.kpi-paid .cp-kpi-icon{background:linear-gradient(135deg, #d1fae5, var(--cp-paid-border));color:var(--cp-paid-dark);}
+    .cp-kpi.kpi-unpaid .cp-kpi-icon{background:linear-gradient(135deg, #fef3c7, var(--cp-partial-border));color:var(--cp-partial-dark);}
+    .cp-kpi.kpi-count .cp-kpi-icon{background:linear-gradient(135deg, #f1f5f9, #e2e8f0);color:var(--cp-ink-soft);}
     .cp-kpi.kpi-paid .cp-kpi-value{color:var(--cp-paid-dark);}
     .cp-kpi.kpi-unpaid .cp-kpi-value{color:var(--cp-partial-dark);}
 
-    .cp-kpi-progress{
-        position:relative;height:5px;background:var(--cp-line);
-        border-radius:999px;margin-top:10px;overflow:hidden;
-    }
+    .cp-kpi-progress{position:relative;height:5px;background:var(--cp-line);border-radius:999px;margin-top:10px;overflow:hidden;}
     .cp-kpi-progress > span{
         display:block;height:100%;
         background:linear-gradient(90deg, #34d399, var(--cp-paid));
-        border-radius:999px;
-        transition:width .4s ease;
+        border-radius:999px;transition:width .4s ease;
     }
 
-    /* ---------- Filter bar ---------- */
-    .cp-filters{
-        display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-        padding:20px 28px 16px;
-    }
+    .cp-filters{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:20px 28px 16px;}
     .cp-filters-label{
         font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
         color:var(--cp-muted);margin-right:8px;
@@ -202,112 +150,60 @@
         padding:8px 14px;font-size:12.5px;font-weight:600;
         color:var(--cp-ink-soft);background:var(--cp-white);
         border:1px solid var(--cp-line);border-radius:8px;
-        cursor:pointer;transition:all .18s ease;
-        box-shadow:var(--cp-shadow-sm);
+        cursor:pointer;transition:all .18s ease;box-shadow:var(--cp-shadow-sm);
     }
-    .cp-filter:hover{
-        background:var(--cp-soft);
-        border-color:#cbd5e1;
-        color:var(--cp-ink);
-        transform:translateY(-1px);
-        box-shadow:var(--cp-shadow);
-    }
-    .cp-filter:focus{outline:none;box-shadow:0 0 0 3px rgba(30,58,95,.10);}
-    .cp-filter.active,
-    .cp-filter.active:hover{
-        transform:none;
-    }
-
-    /* Per-filter active colors */
-    .cp-filter[data-filter="all"].active{
-        background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary));
-        color:#fff;border-color:var(--cp-primary);
-        box-shadow:0 2px 6px rgba(30,58,95,.25);
-    }
-    .cp-filter[data-filter="paid"].active{
-        background:linear-gradient(180deg, #10b981, var(--cp-paid));
-        color:#fff;border-color:var(--cp-paid);
-        box-shadow:0 2px 6px rgba(5,150,105,.28);
-    }
-    .cp-filter[data-filter="partial"].active{
-        background:linear-gradient(180deg, #f59e0b, var(--cp-partial));
-        color:#fff;border-color:var(--cp-partial);
-        box-shadow:0 2px 6px rgba(217,119,6,.28);
-    }
-    .cp-filter[data-filter="unpaid"].active{
-        background:linear-gradient(180deg, #ef4444, var(--cp-unpaid));
-        color:#fff;border-color:var(--cp-unpaid);
-        box-shadow:0 2px 6px rgba(220,38,38,.28);
-    }
+    .cp-filter:hover{background:var(--cp-soft);border-color:#cbd5e1;color:var(--cp-ink);transform:translateY(-1px);box-shadow:var(--cp-shadow);}
+    .cp-filter.active, .cp-filter.active:hover{transform:none;}
+    .cp-filter[data-filter="all"].active{background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary));color:#fff;border-color:var(--cp-primary);}
+    .cp-filter[data-filter="paid"].active{background:linear-gradient(180deg, #10b981, var(--cp-paid));color:#fff;border-color:var(--cp-paid);}
+    .cp-filter[data-filter="partial"].active{background:linear-gradient(180deg, #f59e0b, var(--cp-partial));color:#fff;border-color:var(--cp-partial);}
+    .cp-filter[data-filter="unpaid"].active{background:linear-gradient(180deg, #ef4444, var(--cp-unpaid));color:#fff;border-color:var(--cp-unpaid);}
 
     .cp-filter .cp-count{
         display:inline-flex;align-items:center;justify-content:center;
         min-width:22px;height:20px;padding:0 7px;
         font-size:11px;font-weight:700;border-radius:999px;
         background:var(--cp-line-soft);color:var(--cp-ink-soft);
-        font-variant-numeric:tabular-nums;
-        transition:all .18s ease;
+        font-variant-numeric:tabular-nums;transition:all .18s ease;
     }
-    .cp-filter:hover .cp-count{
-        background:var(--cp-line);
-    }
-    .cp-filter.active .cp-count{
-        background:rgba(255,255,255,.28);color:#fff;
-    }
+    .cp-filter:hover .cp-count{background:var(--cp-line);}
+    .cp-filter.active .cp-count{background:rgba(255,255,255,.28);color:#fff;}
 
     .cp-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
     .cp-dot-paid{background:var(--cp-paid);box-shadow:0 0 0 2px var(--cp-paid-bg);}
     .cp-dot-partial{background:var(--cp-partial);box-shadow:0 0 0 2px var(--cp-partial-bg);}
     .cp-dot-unpaid{background:var(--cp-unpaid);box-shadow:0 0 0 2px var(--cp-unpaid-bg);}
 
-    /* ---------- Table ---------- */
     .cp-body{padding:0 0 12px;}
     .cp-table-outer{position:relative;}
     .cp-table-wrap{width:100%;overflow-x:auto;padding:8px 28px 0;}
     .cp-wrap #datatable{
         width:100%!important;border-collapse:collapse;margin:0;font-size:13px;
-        border:1px solid var(--cp-line);border-radius:0;
-        background:var(--cp-white);
+        border:1px solid var(--cp-line);border-radius:0;background:var(--cp-white);
     }
     .cp-wrap #datatable thead th{
         background:linear-gradient(180deg, var(--cp-primary-light) 0%, var(--cp-primary) 100%);
-        color:#fff;
-        font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
-        padding:15px 14px;text-align:left;border:none;white-space:nowrap;
-        vertical-align:middle;
-        position:relative;
+        color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;
+        letter-spacing:.08em;padding:15px 14px;text-align:left;
+        border:none;white-space:nowrap;vertical-align:middle;position:relative;
     }
     .cp-wrap #datatable thead th + th::before{
         content:"";position:absolute;left:0;top:28%;bottom:28%;
         width:1px;background:rgba(255,255,255,.14);
     }
     .cp-wrap #datatable thead th:last-child{text-align:center;}
-
     .cp-wrap #datatable tbody td{
-        padding:13px 14px;
-        border-bottom:1px solid var(--cp-line-soft);
+        padding:13px 14px;border-bottom:1px solid var(--cp-line-soft);
         vertical-align:middle;color:var(--cp-ink-soft);
-        background:var(--cp-white);
-        transition:background .15s ease;
+        background:var(--cp-white);transition:background .15s ease;
     }
-    .cp-wrap #datatable tbody tr:nth-child(even) td{
-        background:#fbfcfd;
-    }
-    .cp-wrap #datatable tbody tr:hover td{
-        background:#f1f5f9;
-    }
+    .cp-wrap #datatable tbody tr:nth-child(even) td{background:#fbfcfd;}
+    .cp-wrap #datatable tbody tr:hover td{background:#f1f5f9;}
     .cp-wrap #datatable tbody tr:last-child td{border-bottom:none;}
 
-    /* Row status accent (left border) */
-    .cp-wrap #datatable tbody tr[data-status="paid"] td:first-child{
-        box-shadow:inset 3px 0 0 var(--cp-paid);
-    }
-    .cp-wrap #datatable tbody tr[data-status="partial"] td:first-child{
-        box-shadow:inset 3px 0 0 var(--cp-partial);
-    }
-    .cp-wrap #datatable tbody tr[data-status="unpaid"] td:first-child{
-        box-shadow:inset 3px 0 0 var(--cp-unpaid);
-    }
+    .cp-wrap #datatable tbody tr[data-status="paid"] td:first-child{box-shadow:inset 3px 0 0 var(--cp-paid);}
+    .cp-wrap #datatable tbody tr[data-status="partial"] td:first-child{box-shadow:inset 3px 0 0 var(--cp-partial);}
+    .cp-wrap #datatable tbody tr[data-status="unpaid"] td:first-child{box-shadow:inset 3px 0 0 var(--cp-unpaid);}
 
     .cp-wrap #datatable tbody td.num{
         font-family:'SFMono-Regular', Consolas, monospace;
@@ -316,113 +212,64 @@
     }
     .cp-wrap #datatable tbody td.center{text-align:center;}
 
-    /* ---------- Loading overlay ---------- */
     .cp-table-loading{
-        position:absolute;inset:0;
-        display:none;align-items:center;justify-content:center;
-        background:rgba(255,255,255,.78);
-        backdrop-filter:blur(2px);
-        z-index:5;min-height:200px;
-        border-radius:0;
+        position:absolute;inset:0;display:none;
+        align-items:center;justify-content:center;
+        background:rgba(255,255,255,.78);backdrop-filter:blur(2px);
+        z-index:5;min-height:200px;border-radius:0;
     }
     .cp-table-loading.show{display:flex;}
     .cp-spinner{
-        width:38px;height:38px;
-        border:3px solid var(--cp-line);
-        border-top-color:var(--cp-primary);
-        border-radius:50%;
+        width:38px;height:38px;border:3px solid var(--cp-line);
+        border-top-color:var(--cp-primary);border-radius:50%;
         animation:cp-spin .8s linear infinite;
     }
     @keyframes cp-spin{to{transform:rotate(360deg);}}
 
-    /* ---------- Download modal ---------- */
     #download_modal .modal-content{
         border:none;border-radius:14px;overflow:hidden;
-        box-shadow:0 24px 60px rgba(15,23,42,.20);
-        background:var(--cp-white);
+        box-shadow:0 24px 60px rgba(15,23,42,.20);background:var(--cp-white);
     }
     #download_modal .modal-body{padding:34px 24px;}
     #download_modal .cp-spinner{
-        width:44px;height:44px;
-        border:3px solid var(--cp-line);
-        border-top-color:var(--cp-primary);
-        border-radius:50%;
-        animation:cp-spin .8s linear infinite;
-        margin:0 auto 18px;
+        width:44px;height:44px;border:3px solid var(--cp-line);
+        border-top-color:var(--cp-primary);border-radius:50%;
+        animation:cp-spin .8s linear infinite;margin:0 auto 18px;
     }
 
-    /* ---------- Inline validation ---------- */
-    .cp-error-text{
-        display:block;margin-top:6px;font-size:11.5px;font-weight:600;color:var(--cp-unpaid);
-    }
-    .cp-modal .form-control.cp-invalid{
-        border-color:var(--cp-unpaid);
-        box-shadow:0 0 0 3px rgba(220,38,38,.10);
-    }
+    .cp-error-text{display:block;margin-top:6px;font-size:11.5px;font-weight:600;color:var(--cp-unpaid);}
+    .cp-modal .form-control.cp-invalid{border-color:var(--cp-unpaid);box-shadow:0 0 0 3px rgba(220,38,38,.10);}
 
-    /* Amount emphasis */
-    .cp-amount{
-        font-weight:600;color:var(--cp-ink);
-        font-family:'SFMono-Regular', Consolas, monospace;
-        font-variant-numeric:tabular-nums;
-    }
+    .cp-amount{font-weight:600;color:var(--cp-ink);font-family:'SFMono-Regular', Consolas, monospace;font-variant-numeric:tabular-nums;}
     .cp-unpaid{color:var(--cp-unpaid-dark);font-weight:700;}
     .cp-zero{color:#94a3b8;font-weight:500;}
     .cp-balance{color:var(--cp-primary);font-weight:700;}
     .cp-overpaid-txt{color:var(--cp-overpaid);font-weight:700;}
 
-    /* Status pills */
-    .cp-pill{
-        display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;
-        font-size:11.5px;font-weight:600;line-height:1.4;
-    }
-    .cp-pill-paid{background:var(--cp-paid-bg);color:var(--cp-paid-dark);}
-    .cp-pill-unpaid{background:var(--cp-unpaid-bg);color:var(--cp-unpaid-dark);}
-    .cp-pill i{font-size:10px;}
-
-    /* ---------- Action buttons ---------- */
     .cp-actions{display:flex;gap:6px;justify-content:center;flex-wrap:nowrap;}
     .cp-act{
         display:inline-flex;align-items:center;gap:5px;padding:6px 11px;border-radius:6px;
         font-size:12px;font-weight:600;text-decoration:none;cursor:pointer;
-        border:1px solid transparent;
-        transition:all .15s ease;white-space:nowrap;
+        border:1px solid transparent;transition:all .15s ease;white-space:nowrap;
         box-shadow:var(--cp-shadow-sm);
     }
     .cp-act i{font-size:11px;}
     .cp-act:hover{text-decoration:none;transform:translateY(-1px);box-shadow:var(--cp-shadow);}
 
-    .cp-act-pay{
-        background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary));
-        color:#fff;border-color:var(--cp-primary);
-    }
-    .cp-act-pay:hover{
-        background:linear-gradient(180deg, var(--cp-primary), var(--cp-primary-dark));
-        color:#fff;
-    }
-
-    .cp-act-view{
-        background:var(--cp-white);color:var(--cp-ink-soft);border-color:var(--cp-line);
-    }
-    .cp-act-view:hover{
-        background:var(--cp-soft);color:var(--cp-ink);border-color:#cbd5e1;
-    }
-
-    .cp-act-paid{
-        background:var(--cp-paid-bg);color:var(--cp-paid-dark);
-        border-color:var(--cp-paid-border);cursor:default;
-    }
+    .cp-act-pay{background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary));color:#fff;border-color:var(--cp-primary);}
+    .cp-act-pay:hover{background:linear-gradient(180deg, var(--cp-primary), var(--cp-primary-dark));color:#fff;}
+    .cp-act-view{background:var(--cp-white);color:var(--cp-ink-soft);border-color:var(--cp-line);}
+    .cp-act-view:hover{background:var(--cp-soft);color:var(--cp-ink);border-color:#cbd5e1;}
+    .cp-act-paid{background:var(--cp-paid-bg);color:var(--cp-paid-dark);border-color:var(--cp-paid-border);cursor:default;}
     .cp-act-paid:hover{transform:none;box-shadow:var(--cp-shadow-sm);}
 
-    /* ---------- Modals ---------- */
     .cp-wrap .modal-content, .cp-modal .modal-content{
         border:none;border-radius:14px;overflow:hidden;
         box-shadow:0 24px 60px rgba(15,23,42,.20);
     }
     .cp-wrap .modal-header, .cp-modal .modal-header{
         background:linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
-        border-bottom:1px solid var(--cp-line);
-        padding:20px 24px;
+        border-bottom:1px solid var(--cp-line);padding:20px 24px;
     }
     .cp-wrap .modal-header h4, .cp-modal .modal-header h4{
         margin:0;font-size:16px;font-weight:700;color:var(--cp-ink);
@@ -431,29 +278,22 @@
         font-size:24px;color:var(--cp-muted);opacity:.7;margin-top:-2px;
     }
     .cp-wrap .modal-header .close:hover, .cp-modal .modal-header .close:hover{opacity:1;color:var(--cp-ink);}
-
     .cp-wrap .modal-body, .cp-modal .modal-body{padding:24px;background:var(--cp-white);}
-
     .cp-wrap .modal-footer, .cp-modal .modal-footer{
-        background:var(--cp-soft);border-top:1px solid var(--cp-line);
-        padding:14px 24px;
+        background:var(--cp-soft);border-top:1px solid var(--cp-line);padding:14px 24px;
     }
-
     .cp-wrap .form-group, .cp-modal .form-group{margin-bottom:18px;}
     .cp-wrap .control-label, .cp-modal .control-label{
         display:block;margin-bottom:7px;font-size:12px;font-weight:600;
         color:var(--cp-ink-soft);letter-spacing:.02em;
     }
     .cp-wrap .control-label .req, .cp-modal .control-label .req{color:var(--cp-unpaid);font-weight:700;}
-
     .cp-wrap .form-control, .cp-modal .form-control{
         width:100%;height:42px;padding:0 12px;font-size:14px;color:var(--cp-ink);
         background:var(--cp-white);border:1px solid var(--cp-line);border-radius:8px;
         outline:none;box-shadow:none;transition:all .18s ease;
     }
-    .cp-wrap select.form-control, .cp-modal select.form-control{
-        height:42px;padding:0 34px 0 12px;
-    }
+    .cp-wrap select.form-control, .cp-modal select.form-control{height:42px;padding:0 34px 0 12px;}
     .cp-wrap .form-control:hover, .cp-modal .form-control:hover{border-color:#cbd5e1;}
     .cp-wrap .form-control:focus, .cp-modal .form-control:focus{
         border-color:var(--cp-primary);box-shadow:0 0 0 3px rgba(30,58,95,.10);
@@ -461,14 +301,10 @@
     .cp-wrap .form-control[readonly], .cp-modal .form-control[readonly]{
         background:var(--cp-line-soft);color:var(--cp-muted);cursor:not-allowed;
     }
-
     .cp-wrap .input-group-addon, .cp-modal .input-group-addon{
         background:linear-gradient(180deg, var(--cp-primary-light), var(--cp-primary))!important;
-        color:#fff!important;border:none;
-        border-radius:0 8px 8px 0;
+        color:#fff!important;border:none;border-radius:0 8px 8px 0;
     }
-
-    /* Footer buttons */
     .cp-wrap .btn-default, .cp-modal .btn-default{
         background:var(--cp-white);border:1px solid var(--cp-line);color:var(--cp-ink-soft);
         border-radius:8px;padding:9px 18px;font-weight:600;font-size:13px;
@@ -486,20 +322,14 @@
         background:linear-gradient(180deg, var(--cp-primary), var(--cp-primary-dark));
         border-color:var(--cp-primary-dark);
     }
-    .cp-wrap .btn-rounded, .cp-modal .btn-rounded{border-radius:8px;}
 
-    /* Section divider inside modals */
     .cp-section-title{
         font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
         color:var(--cp-muted);margin:0 0 14px;padding-bottom:8px;
         border-bottom:1px solid var(--cp-line);
     }
 
-    /* ---------- Actions group (right of filter bar) ---------- */
-    .cp-head-actions{
-        display:flex;gap:10px;align-items:center;
-        margin-left:auto;
-    }
+    .cp-head-actions{display:flex;gap:10px;align-items:center;margin-left:auto;}
 
     .cp-btn-secondary{
         display:inline-flex;align-items:center;gap:8px;padding:9px 16px;
@@ -527,15 +357,10 @@
         color:var(--cp-ink-soft);text-decoration:none;border-radius:6px;
         transition:all .15s ease;
     }
-    .cp-dropdown-menu li a:hover{
-        background:var(--cp-soft);color:var(--cp-ink);text-decoration:none;
-    }
+    .cp-dropdown-menu li a:hover{background:var(--cp-soft);color:var(--cp-ink);text-decoration:none;}
     .cp-dropdown-menu li a i{width:14px;text-align:center;font-size:12px;}
     .cp-dropdown-menu .cp-divider{height:1px;background:var(--cp-line);margin:4px 0;}
 
-    .cp-dot-menu{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
-
-    /* ---------- Payment Type radios ---------- */
     .cp-radio-group{display:flex;gap:10px;flex-wrap:wrap;}
     .cp-radio{
         display:inline-flex;align-items:center;gap:9px;
@@ -551,23 +376,17 @@
         border:2px solid #cbd5e1;border-radius:50%;
         position:relative;cursor:pointer;transition:all .18s ease;
     }
-    .cp-radio input[type="radio"]:checked{
-        border-color:var(--cp-primary);background:var(--cp-primary);
-    }
+    .cp-radio input[type="radio"]:checked{border-color:var(--cp-primary);background:var(--cp-primary);}
     .cp-radio input[type="radio"]:checked::after{
         content:"";position:absolute;top:50%;left:50%;
         transform:translate(-50%,-50%);width:5px;height:5px;
         border-radius:50%;background:#fff;
     }
     .cp-radio.active{
-        border-color:var(--cp-primary);
-        background:#f0f4f9;
-        color:var(--cp-ink);
+        border-color:var(--cp-primary);background:#f0f4f9;color:var(--cp-ink);
         box-shadow:0 0 0 3px rgba(30,58,95,.08);
     }
-    .cp-radio.active input[type="radio"]{
-        border-color:var(--cp-primary);background:var(--cp-primary);
-    }
+    .cp-radio.active input[type="radio"]{border-color:var(--cp-primary);background:var(--cp-primary);}
 
     @media (max-width:767px){
         .cp-head{flex-direction:column;align-items:stretch;padding:20px;}
@@ -582,7 +401,6 @@
 
 <div class="cp-wrap">
 
-    {{-- ===== Step indicator ===== --}}
     <div class="row">
         <div class="col-lg-12">
             <div class="cp-steps">
@@ -593,16 +411,12 @@
         </div>
     </div>
 
-    {{-- ===== Main panel ===== --}}
     <div class="row">
         <div class="col-lg-12">
             <div class="panel panel-custom panel-border">
-
                 <div class="cp-body">
 
-                    {{-- ===== Summary KPI cards ===== --}}
                     <div class="cp-summary">
-
                         <div class="cp-kpi">
                             <div class="cp-kpi-body">
                                 <p class="cp-kpi-label">Total Invoiced</p>
@@ -641,10 +455,8 @@
                             </div>
                             <div class="cp-kpi-icon"><i class="fa fa-list-alt"></i></div>
                         </div>
-
                     </div>
 
-                    {{-- ===== Filter bar + Action buttons (right) ===== --}}
                     <div class="cp-filters">
                         <span class="cp-filters-label">Filter:</span>
 
@@ -667,60 +479,27 @@
                             Unpaid <span class="cp-count">{{ $unpaidCount }}</span>
                         </button>
 
-                        {{-- Actions moved to the right --}}
                         <div class="cp-head-actions">
-
-                            {{-- Export PDF dropdown --}}
                             <div class="cp-dropdown">
                                 <button type="button" class="cp-btn-secondary cp-dropdown-toggle">
                                     <i class="fa fa-file-pdf-o"></i> Export PDF
                                     <i class="fa fa-angle-down" style="font-size:10px;margin-left:4px;"></i>
                                 </button>
                                 <ul class="cp-dropdown-menu">
-                                    <li>
-                                        <a href="{{ route('client-payments.pdf', ['status' => 'all']) }}"
-                                           data-export="all">
-                                            <i class="fa fa-file-pdf-o" style="color:var(--cp-primary);"></i>
-                                            All Invoices
-                                        </a>
-                                    </li>
+                                    <li><a href="{{ route('client-payments.pdf', ['status' => 'all']) }}" data-export="all"><i class="fa fa-file-pdf-o" style="color:var(--cp-primary);"></i> All Invoices</a></li>
                                     <li class="cp-divider"></li>
-                                    <li>
-                                        <a href="{{ route('client-payments.pdf', ['status' => 'paid']) }}"
-                                           data-export="paid">
-                                            <i class="fa fa-file-pdf-o" style="color:var(--cp-paid);"></i>
-                                            Paid Only
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('client-payments.pdf', ['status' => 'partial']) }}"
-                                           data-export="partial">
-                                            <i class="fa fa-file-pdf-o" style="color:var(--cp-partial);"></i>
-                                            Partial Only
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a href="{{ route('client-payments.pdf', ['status' => 'unpaid']) }}"
-                                           data-export="unpaid">
-                                            <i class="fa fa-file-pdf-o" style="color:var(--cp-unpaid);"></i>
-                                            Unpaid Only
-                                        </a>
-                                    </li>
+                                    <li><a href="{{ route('client-payments.pdf', ['status' => 'paid']) }}" data-export="paid"><i class="fa fa-file-pdf-o" style="color:var(--cp-paid);"></i> Paid Only</a></li>
+                                    <li><a href="{{ route('client-payments.pdf', ['status' => 'partial']) }}" data-export="partial"><i class="fa fa-file-pdf-o" style="color:var(--cp-partial);"></i> Partial Only</a></li>
+                                    <li><a href="{{ route('client-payments.pdf', ['status' => 'unpaid']) }}" data-export="unpaid"><i class="fa fa-file-pdf-o" style="color:var(--cp-unpaid);"></i> Unpaid Only</a></li>
                                 </ul>
                             </div>
 
-                            {{-- Add Debit button --}}
-                            <button type="button"
-                                    class="cp-btn-primary"
-                                    data-toggle="modal"
-                                    data-target=".bs-example-modal-lg">
+                            <button type="button" class="cp-btn-primary" data-toggle="modal" data-target=".bs-example-modal-lg">
                                 <i class="fa fa-plus"></i> Add Debit
                             </button>
-
                         </div>
                     </div>
 
-                    {{-- ===== Table ===== --}}
                     <div class="cp-table-outer">
                         <div class="cp-table-loading" id="cpTableLoading">
                             <div class="cp-spinner"></div>
@@ -756,8 +535,8 @@
                                         @endphp
                                         <tr data-status="{{ $rowStatus }}">
                                             <td class="center">{{ $key + 1 }}</td>
-                                            <td><strong style="color:var(--cp-ink);">{{ strtoupper($product->client_name ?? $product->customer_name ) }}</strong></td>
-                                            <td>{{ strtoupper($product->vehicle_reg) }} | {{ strtoupper($product->model) }} </td>
+                                            <td><strong style="color:var(--cp-ink);">{{ strtoupper($product->client_name ?? $product->customer_name) }}</strong></td>
+                                            <td>{{ strtoupper($product->vehicle_reg) }} | {{ strtoupper($product->model) }}</td>
                                             <td>
                                                 <span style="font-family:'SFMono-Regular',Consolas,monospace;font-size:12.5px;color:#475569;">
                                                     {{ $product->invoice_number }}
@@ -789,26 +568,19 @@
                                             <td>
                                                 <div class="cp-actions">
                                                     @if ($check == 0)
-                                                        <button type="button"
-                                                                value="{{ $product->invoice_number }}"
-                                                                class="cp-act cp-act-paid">
+                                                        <button type="button" value="{{ $product->invoice_number }}" class="cp-act cp-act-paid">
                                                             <i class="fa fa-check"></i> Paid
                                                         </button>
                                                     @else
-                                                        <button type="button"
-                                                                value="{{ $product->invoice_number }}"
-                                                                class="cp-act cp-act-pay addPayment">
+                                                        <button type="button" value="{{ $product->invoice_number }}" class="cp-act cp-act-pay addPayment">
                                                             <i class="fa fa-plus"></i> Pay
                                                         </button>
                                                     @endif
 
                                                     @if(!$product->invoice_number)
-                                                        <a class="cp-act cp-act-view viewModal">
-                                                            <i class="fa fa-eye"></i> View
-                                                        </a>
+                                                        <a class="cp-act cp-act-view viewModal"><i class="fa fa-eye"></i> View</a>
                                                     @else
-                                                        <a href="{{ url('clients/payments/view-payments/'.$product->invoice_number) }}"
-                                                           class="cp-act cp-act-view">
+                                                        <a href="{{ url('clients/payments/view-payments/'.$product->invoice_number) }}" class="cp-act cp-act-view">
                                                             <i class="fa fa-eye"></i> View
                                                         </a>
                                                     @endif
@@ -875,7 +647,6 @@
 
                     <div class="cp-section-title" style="margin-top:8px;">Payment details</div>
 
-                    {{-- Payment type selector --}}
                     <div class="row">
                         <div class="col-md-12">
                             <div class="form-group">
@@ -1037,27 +808,95 @@
     </div>
 </div>
 
+
 <script>
-  $(document).ready(function () {
+$(document).ready(function () {
+
+    /* ============================================================
+       1. AJAX CSRF CONFIGURATION
+    ============================================================ */
     $.ajaxSetup({
         headers: {
             'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
         }
     });
 
-    jQuery('#datepicker1').datepicker({
+    $('#datepicker1').datepicker({
         autoclose: true,
         todayHighlight: true
     });
 
+
     /* ============================================================
-     * FILTER + LOADER + PAGINATION-AWARE RENUMBERING
-     * ============================================================ */
+       2. DECIMAL-SAFE MONEY FUNCTIONS
+       All monetary calculations use integer cents.
+       Handles 3+ decimal input by rounding half-up at cent level.
+    ============================================================ */
+
+    function parseMoneyToCents(value) {
+        if (value === null || value === undefined) {
+            return NaN;
+        }
+
+        var s = String(value).trim().replace(/,/g, '');
+        if (!s) {
+            return NaN;
+        }
+
+        // Match optional sign, whole digits, optional decimal with 1+ digits
+        var match = s.match(/^(-?)(\d+)(?:\.(\d+))?$/);
+        if (!match) {
+            return NaN;
+        }
+
+        var sign    = match[1] === '-' ? -1 : 1;
+        var whole   = Number(match[2]);
+        var decimal = match[3] || '';
+
+        // Take first 2 digits of decimal (pad if fewer)
+        var cents = whole * 100 +
+            Number((decimal + '00').substring(0, 2));
+
+        // If 3rd decimal digit is 5 or more, round up
+        if (decimal.length > 2 && Number(decimal.charAt(2)) >= 5) {
+            cents += 1;
+        }
+
+        if (!Number.isSafeInteger(cents)) {
+            return NaN;
+        }
+
+        return sign * cents;
+    }
+
+
+    function centsToMoney(cents) {
+        if (!Number.isSafeInteger(cents)) {
+            return '';
+        }
+
+        var sign = cents < 0 ? '-' : '';
+        var absolute = Math.abs(cents);
+        var whole = Math.floor(absolute / 100);
+        var decimal = absolute % 100;
+
+        return sign + whole + '.' + String(decimal).padStart(2, '0');
+    }
+
+
+    /* ============================================================
+       3. DATATABLES FILTER + LOADER + PAGINATION
+    ============================================================ */
+
     var currentFilter = 'all';
-    var filterTimer   = null;
+    var filterTimer = null;
 
     function hasDataTable() {
-        return !!(window.jQuery && $.fn.DataTable && $.fn.DataTable.isDataTable('#datatable'));
+        return !!(
+            window.jQuery &&
+            $.fn.DataTable &&
+            $.fn.DataTable.isDataTable('#datatable')
+        );
     }
 
     if ($.fn.dataTable && $.fn.dataTable.ext && $.fn.dataTable.ext.search) {
@@ -1081,10 +920,9 @@
 
     function renumberVisibleRows() {
         if (hasDataTable()) {
-            var dt      = $('#datatable').DataTable();
-            var start   = dt.page.info().start;
+            var dt = $('#datatable').DataTable();
+            var start = dt.page.info().start;
             var counter = start + 1;
-
             dt.rows({ page: 'current' }).nodes().each(function (row) {
                 $(row).find('td').first().text(counter++);
             });
@@ -1111,7 +949,7 @@
         } else {
             $('#datatable tbody tr').each(function () {
                 var status = $(this).data('status');
-                var show   = (currentFilter === 'all') || (status === currentFilter);
+                var show = (currentFilter === 'all' || status === currentFilter);
                 $(this).toggle(show);
             });
             renumberVisibleRows();
@@ -1119,15 +957,15 @@
     }
 
     $(document).on('click', '.cp-filter', function () {
-        var $btn   = $(this);
+        var $btn = $(this);
         var filter = $btn.data('filter');
 
-        if (filter === currentFilter) { return; }
+        if (filter === currentFilter) return;
 
         $('.cp-filter').removeClass('active');
         $btn.addClass('active');
 
-        if (filterTimer) { clearTimeout(filterTimer); }
+        if (filterTimer) clearTimeout(filterTimer);
         showTableSpinner();
 
         filterTimer = setTimeout(function () {
@@ -1138,9 +976,10 @@
         }, 250);
     });
 
+
     /* ============================================================
-     * EXPORT DROPDOWN open/close
-     * ============================================================ */
+       4. EXPORT DROPDOWN
+    ============================================================ */
     $(document).on('click', '.cp-dropdown-toggle', function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -1148,17 +987,19 @@
         $('.cp-dropdown-menu').not($menu).removeClass('open');
         $menu.toggleClass('open');
     });
+
     $(document).on('click', function (e) {
         if (!$(e.target).closest('.cp-dropdown').length) {
             $('.cp-dropdown-menu').removeClass('open');
         }
     });
 
+
     /* ============================================================
-     * EXPORT PDF — fetch blob, hide modal ONLY on full download
-     * ============================================================ */
+       5. PDF EXPORT
+    ============================================================ */
     function extractFilename(disposition, fallback) {
-        if (!disposition) { return fallback; }
+        if (!disposition) return fallback;
         var match = disposition.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)/i);
         if (match && match[1]) {
             try { return decodeURIComponent(match[1]); }
@@ -1169,9 +1010,8 @@
 
     $(document).on('click', '.cp-dropdown-menu a[data-export]', function (e) {
         e.preventDefault();
-
         var url = $(this).attr('href');
-        if (!url) { return; }
+        if (!url) return;
 
         $('.cp-dropdown-menu').removeClass('open');
         $('#download_modal').modal('show');
@@ -1185,9 +1025,7 @@
             }
         })
         .then(function (response) {
-            if (!response.ok) {
-                throw new Error('Server returned ' + response.status);
-            }
+            if (!response.ok) throw new Error('Server returned ' + response.status);
             var filename = extractFilename(
                 response.headers.get('Content-Disposition'),
                 'client-payments.pdf'
@@ -1220,23 +1058,25 @@
         });
     });
 
-    /* ============================================================
-     * MONEY HELPER — float comparison with epsilon tolerance
-     * (0.005 = half a cent; tolerates IEEE-754 residue such as
-     *  1234.5599999999999 vs 1234.56 without masking real overpayments)
-     * ============================================================ */
-    var MONEY_EPSILON = 0.005;
 
     /* ============================================================
-     * PAYMENT MODE (Full / Partial) — UI helper
-     * ============================================================ */
+       6. PAYMENT MODE (FULL / PARTIAL)
+       - Full: auto-fill paid_amount with balance_due, hide input
+       - Partial: show input, pre-set data-max = balance_due
+       The submitted balance_due is ALWAYS the same value — read from
+       the #balance_due field which is a named form input.
+    ============================================================ */
     function setPaymentMode(mode) {
-        var balanceDue  = parseFloat($('#balance_due').val()) || 0;
-        var $amountWrap = $('#amount_wrap');
-        var $dateWrap   = $('#date_wrap');
-        var $input      = $('#paid_amount');
+        var balanceCents = parseMoneyToCents($('#balance_due').val());
+        if (isNaN(balanceCents) || balanceCents < 0) {
+            balanceCents = 0;
+        }
 
-        // Sync radio visual state
+        var balanceStr = centsToMoney(balanceCents);
+        var $amountWrap = $('#amount_wrap');
+        var $dateWrap = $('#date_wrap');
+        var $input = $('#paid_amount');
+
         $('.cp-radio').removeClass('active');
         $('input[name="payment_type"][value="' + mode + '"]')
             .prop('checked', true)
@@ -1244,150 +1084,198 @@
             .addClass('active');
 
         if (mode === 'full') {
-            // Hide amount input; auto-fill with balance due (still submitted)
             $amountWrap.hide();
             $dateWrap.removeClass('col-md-6').addClass('col-md-12');
 
-            // Keep data-max and value exactly in sync with displayed balance
-            $input.attr('data-max', balanceDue.toFixed(2))
-                  .val(balanceDue.toFixed(2))
-                  .removeClass('cp-invalid');
+            $input
+                .attr('data-max', balanceStr)
+                .val(balanceStr)
+                .removeClass('cp-invalid');
 
             $('#paid_amount_error').hide().text('');
         } else {
-            // Show amount input for manual entry
             $amountWrap.show();
             $dateWrap.removeClass('col-md-12').addClass('col-md-6');
-            $input.val('')
-                  .removeClass('cp-invalid');
+
+            $input
+                .attr('data-max', balanceStr)
+                .val('')
+                .removeClass('cp-invalid');
+
             $('#paid_amount_error').hide().text('');
-            setTimeout(function () { $input.trigger('focus'); }, 120);
+
+            setTimeout(function () {
+                $input.trigger('focus');
+            }, 120);
         }
     }
 
-    // Radio change
     $(document).on('change', 'input[name="payment_type"]', function () {
         setPaymentMode($(this).val());
     });
 
-    /* ============================================================
-     * PAYMENT MODAL — load invoice, balance and prepare validation
-     * ============================================================ */
-    $('.addPayment').click(function() {
-        var invoice_no = $(this).val();
-        $.ajax({
-            url: `../clients/payments-details/${invoice_no}`,
-            type: "GET",
-            success: function (response) {
-                var row        = response[0];
-                var billAmount = parseFloat(row.bill_amount) || 0;
-                var paidAmount = parseFloat(row.paid_amount) || 0;
-                var balanceDue = Math.max(0, billAmount - paidAmount);
 
-                // Guard against tiny float residue — round to 2dp for display/storage
-                balanceDue = Math.round(balanceDue * 100) / 100;
+    /* ============================================================
+       7. OPEN PAYMENT MODAL
+    ============================================================ */
+    $(document).on('click', '.addPayment', function () {
+        var invoiceNo = $(this).val();
+
+        $.ajax({
+            url: '../clients/payments-details/' + encodeURIComponent(invoiceNo),
+            type: 'GET',
+            dataType: 'json',
+
+            success: function (response) {
+                var row = Array.isArray(response) ? response[0] : response;
+                if (!row) {
+                    alert('Invoice information not found.');
+                    return;
+                }
+
+                var billCents = parseMoneyToCents(row.bill_amount);
+                var paidCents = parseMoneyToCents(row.paid_amount);
+
+                if (isNaN(billCents) || isNaN(paidCents) || billCents < 0 || paidCents < 0) {
+                    alert('Invalid invoice amount. Please check the invoice records.');
+                    return;
+                }
+
+                var balanceCents = Math.max(0, billCents - paidCents);
+                var billStr = centsToMoney(billCents);
+                var balanceStr = centsToMoney(balanceCents);
 
                 $('#payment_modal').modal('show');
-                $("#client_name").val(row.client_name);
-                $("#invoice_no").val(row.invoice_number);
-                $("#bill_amount").val(billAmount.toFixed(2));
-                $("#balance_due").val(balanceDue.toFixed(2));
-                $("#client_id").val(row.client_id);
+                $('#client_name').val(row.client_name);
+                $('#invoice_no').val(row.invoice_number);
+                $('#bill_amount').val(billStr);
+                $('#balance_due').val(balanceStr);
+                $('#client_id').val(row.client_id);
 
-                $("#paid_amount")
-                    .val('')
-                    .removeClass('cp-invalid')
-                    .attr('data-max', balanceDue.toFixed(2));
+                $('#paid_amount')
+                    .val(balanceStr)
+                    .attr('data-max', balanceStr)
+                    .removeClass('cp-invalid');
 
-                $("#paid_amount_error").hide().text('');
-                $("#btnPay").prop('disabled', false).text('Pay');
+                $('#paid_amount_error').hide().text('');
+                $('#btnPay').prop('disabled', false).text('Pay');
 
-                // Default: Full payment
                 setPaymentMode('full');
+            },
+
+            error: function (xhr) {
+                console.error('Payment details error:', xhr.responseText);
+                alert('Unable to retrieve invoice payment details.');
             }
         });
     });
 
+
+    /* ============================================================
+       8. PAYMENT INPUT — clear error on typing
+    ============================================================ */
     $(document).on('input', '#paid_amount', function () {
         $(this).removeClass('cp-invalid');
         $('#paid_amount_error').hide().text('');
     });
 
+
     /* ============================================================
-     * PAYMENT FORM — client-side validation + AJAX submit
-     * (Float comparison with epsilon tolerance so decimals like
-     *  1234.56 do NOT falsely trigger "greater than balance due")
-     * ============================================================ */
-    $(document).on('submit', '#formUpdate', function(e) {
+       9. PAYMENT FORM SUBMISSION — integer-cent validation
+       The controller now takes balance_due from this form, so
+       we only need to verify paidCents <= maxCents here.
+    ============================================================ */
+    $(document).on('submit', '#formUpdate', function (e) {
         e.preventDefault();
 
+        var $form = $(this);
         var $input = $('#paid_amount');
         var $error = $('#paid_amount_error');
-        var $btn   = $('#btnPay');
-        var raw    = ($input.val() || '').trim();
-
-        // ---- Read max FRESH from data-max, correctly handle 0 ----
-        var maxRaw = parseFloat($input.attr('data-max'));
-        var max    = isNaN(maxRaw) ? null : maxRaw;   // null = no limit
+        var $btn = $('#btnPay');
+        var raw = String($input.val() || '').trim();
 
         $input.removeClass('cp-invalid');
         $error.hide().text('');
 
-        if (raw === '') {
-            $input.addClass('cp-invalid');
-            $error.text('Please enter a payment amount.').show();
-            return false;
-        }
-
+        // Format check
         if (!/^\d+(\.\d{1,2})?$/.test(raw)) {
             $input.addClass('cp-invalid');
-            $error.text('Please enter a valid number (e.g. 1500 or 1500.50).').show();
+            $error.text('Please enter a valid amount, e.g. 1500 or 1500.50.').show();
             return false;
         }
 
-        var amount = parseFloat(raw);
-        if (amount <= 0) {
+        var amountCents = parseMoneyToCents(raw);
+        var maxCents = parseMoneyToCents($input.attr('data-max'));
+
+        if (isNaN(amountCents) || isNaN(maxCents)) {
+            $input.addClass('cp-invalid');
+            $error.text('Invalid payment amount or outstanding balance.').show();
+            return false;
+        }
+
+        if (amountCents <= 0) {
             $input.addClass('cp-invalid');
             $error.text('Amount must be greater than zero.').show();
             return false;
         }
 
-        // ---- Float comparison with epsilon tolerance (fixes decimal false positives) ----
-        if (max !== null && (amount - max) > MONEY_EPSILON) {
+        if (amountCents > maxCents) {
             $input.addClass('cp-invalid');
-            $error.text('Amount cannot exceed the balance due of ' + max.toFixed(2) + '.').show();
+            $error.text(
+                'Amount cannot exceed the outstanding balance of ' +
+                centsToMoney(maxCents) + '.'
+            ).show();
             return false;
         }
 
+        if ($btn.prop('disabled')) return false;
+
         $btn.prop('disabled', true).text('Processing...');
 
+        // Normalize to 2dp so the controller receives a clean string
+        $input.val(centsToMoney(amountCents));
+
         $.ajax({
-            url:  $(this).attr('action'),
+            url: $form.attr('action'),
             type: 'POST',
-            data: $(this).serialize(),
-            success: function() {
+            data: $form.serialize(),
+            dataType: 'json',
+
+            success: function (response) {
                 $('#payment_modal').modal('hide');
                 window.location.reload();
             },
-            error: function(xhr) {
+
+            error: function (xhr) {
                 $btn.prop('disabled', false).text('Pay');
+
                 var errors = xhr.responseJSON && xhr.responseJSON.errors;
+
                 if (errors && errors.paid_amount) {
                     $input.addClass('cp-invalid');
                     $error.text(errors.paid_amount[0]).show();
+                } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                    $error.text(xhr.responseJSON.message).show();
                 } else {
-                    $error.text('An error occurred. Please try again.').show();
+                    $error.text('An error occurred while processing payment. Please try again.').show();
                 }
+
+                console.error('Payment submission error:', xhr.responseText);
             }
         });
 
         return false;
     });
 
-    $('.viewModal').click(function() {
+
+    /* ============================================================
+       10. VIEW MODAL FALLBACK
+    ============================================================ */
+    $(document).on('click', '.viewModal', function () {
         alert('Bill number not Created');
     });
-  });
+
+});
 </script>
 
 @endsection

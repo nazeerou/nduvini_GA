@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Auth;
 use App\Models\Account;
 use App\Models\AccountStatement;
+use Illuminate\Support\Str;
 
 class PurchaseController extends Controller
 {

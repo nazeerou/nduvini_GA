@@ -1689,40 +1689,25 @@ public function getSingleClientPaymentDetails($id)
 }
 
 
-  public function addClientPayments(Request $request)
+public function addClientPayments(Request $request)
 {
     $request->validate([
         'paid_amount'    => 'required|numeric|min:0.01',
+        'balance_due'    => 'required|numeric|min:0.01',
+        'bill_amount'    => 'required|numeric|min:0.01',   // ← now required too
         'created_date'   => 'required',
-        'invoice_number' => 'required'
+        'invoice_number' => 'required',
     ], [
         'paid_amount.numeric' => 'Please enter a valid number.',
         'paid_amount.min'     => 'Amount must be greater than zero.',
+        'balance_due.numeric' => 'Invalid balance due.',
+        'balance_due.min'     => 'This invoice has already been fully paid.',
+        'bill_amount.numeric' => 'Invalid invoice amount.',
+        'bill_amount.min'     => 'Invoice amount must be greater than zero.',
+        'client_id.required'  => 'Client not identified.',
     ]);
 
     $isAjax = $request->ajax() || $request->wantsJson();
-
-    $paid_amount = (float) $request->paid_amount;
-
-    /* --- Fetch the invoice + already-paid (branch-scoped) --- */
-    $invoice = DB::table('invoices')
-        ->leftJoinSub(
-            DB::table('client_payments')
-                ->select('bill_no', DB::raw('SUM(paid_amount) as total_paid'))
-                ->where('client_payments.branch_id', Auth::user()->branch_id)
-                ->groupBy('bill_no'),
-            'payments',
-            'invoices.invoice_number', '=', 'payments.bill_no'
-        )
-        ->select(
-            'invoices.invoice_number',
-            'invoices.bill_amount',
-            'invoices.client_id',
-            DB::raw('COALESCE(payments.total_paid, 0) as paid_amount')
-        )
-        ->where('invoices.invoice_number', $request->invoice_number)
-        ->where('invoices.branch_id', Auth::user()->branch_id)
-        ->first();
 
     $fail = function ($message) use ($isAjax) {
         return $isAjax
@@ -1730,34 +1715,99 @@ public function getSingleClientPaymentDetails($id)
             : redirect()->back()->withErrors(['paid_amount' => $message])->withInput();
     };
 
+    /* ============================================================
+     * CENTS PARSER
+     * ============================================================ */
+    $toCents = function ($value) {
+        if ($value === null || $value === '') return 0;
+
+        if (is_string($value)) {
+            $s = trim(str_replace(',', '', $value));
+            if (preg_match('/^(-?)(\d+)(?:\.(\d+))?$/', $s, $m)) {
+                $sign    = $m[1] === '-' ? -1 : 1;
+                $whole   = (int) $m[2];
+                $decimal = $m[3] ?? '';
+                $cents   = $whole * 100 + (int) str_pad(substr($decimal, 0, 2), 2, '0');
+                if (isset($decimal[2]) && (int) $decimal[2] >= 5) {
+                    $cents += 1;
+                }
+                return $sign * $cents;
+            }
+        }
+
+        return (int) round(((float) $value) * 100);
+    };
+
+    /* ============================================================
+     * FETCH INVOICE — only to verify it belongs to this branch
+     * (amounts come from the form; the DB column is legacy/stale)
+     * ============================================================ */
+    $invoice = DB::table('invoices')
+        ->select('invoices.invoice_number', 'invoices.bill_amount', 'invoices.client_id')
+        ->where('invoices.invoice_number', $request->invoice_number)
+        ->where('invoices.branch_id', Auth::user()->branch_id)
+        ->first();
+
     if (!$invoice) {
         return $fail('Invoice not found for this branch.');
     }
 
-    $bill_amount  = (float) $invoice->bill_amount;
-    $already_paid = (float) $invoice->paid_amount;
-    $remaining    = $bill_amount - $already_paid;
+    /* ============================================================
+     * FORM VALUES — authoritative
+     * ============================================================ */
+    $paidCents     = $toCents($request->paid_amount);
+    $maxCents      = $toCents($request->balance_due);
+    $formBillCents = $toCents($request->bill_amount);
 
-    if ($remaining <= 0) {
+    if ($paidCents <= 0) {
+        return $fail('Payment amount must be greater than zero.');
+    }
+    if ($maxCents <= 0) {
         return $fail('This invoice has already been fully paid.');
     }
 
-    if ($paid_amount > $remaining) {
-        return $fail('Amount exceeds the outstanding balance of ' . number_format($remaining, 2) . '.');
+    // Sanity: balance_due cannot exceed the invoice amount the user sees
+    if ($formBillCents > 0 && $maxCents > $formBillCents) {
+        return $fail('Invalid balance due — exceeds invoice amount.');
     }
 
-    /* --- Original accounting logic (unchanged flow) --- */
+    // The real cap: paid <= balance_due (integer cents)
+    if ($paidCents > $maxCents) {
+        return $fail(
+            'Amount exceeds the outstanding balance of '
+            . number_format($maxCents / 100, 2) . '.'
+        );
+    }
+
+    /* ---- decimals for storage ---- */
+    $bill_amount = $formBillCents > 0
+        ? $formBillCents / 100
+        : $toCents($invoice->bill_amount) / 100;
+
+    $paid_amount = $paidCents / 100;
+
+    /* ============================================================
+     * ACCOUNTING
+     * ============================================================ */
     $account_balance = Account::where('name', 'SALES ACCOUNT')
         ->where('branch_id', Auth::user()->branch_id)
         ->first();
-    $client_name = Client::where('id', $request->client_id)->first();
-    $balance     = $account_balance['total_balance'] + $paid_amount;
-    $name        = $client_name['client_name'] ?? null;
 
-    DB::table('accounts')
-        ->where('id', $request->account_id)
-        ->where('branch_id', Auth::user()->branch_id)
-        ->update(['total_balance' => $balance]);
+    $client_name = Client::where('id', $request->client_id)->first();
+
+    $prevCents = $toCents($account_balance['total_balance'] ?? 0);
+    $newCents  = $prevCents + $paidCents;
+
+    $prev_balance = $prevCents / 100;
+    $balance      = $newCents  / 100;
+    $name         = $client_name['client_name'] ?? null;
+
+    if (!empty($request->account_id)) {
+        DB::table('accounts')
+            ->where('id', $request->account_id)
+            ->where('branch_id', Auth::user()->branch_id)
+            ->update(['total_balance' => $balance]);
+    }
 
     AccountStatement::create([
         'branch_id'       => Auth::user()->branch_id,
@@ -1766,7 +1816,7 @@ public function getSingleClientPaymentDetails($id)
         'name'            => $name,
         'debit'           => '',
         'credit'          => $paid_amount,
-        'initial_balance' => $account_balance['total_balance'],
+        'initial_balance' => $prev_balance,
         'balance'         => $balance,
         'created_at'      => $request->created_date,
     ]);
@@ -1783,14 +1833,12 @@ public function getSingleClientPaymentDetails($id)
     if ($isAjax) {
         return response()->json([
             'message' => 'Payment saved successfully!',
-            'balance' => number_format(max(0, $remaining - $paid_amount), 2),
+            'balance' => number_format(($maxCents - $paidCents) / 100, 2),
         ], 200);
     }
 
     return redirect()->back()->with('message', 'Payment saved Successful!');
-  }
-
-
+}
   public function getPriceDetails($id) {
 
     $stocks = DB::table('price_lists')

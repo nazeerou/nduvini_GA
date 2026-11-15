@@ -442,7 +442,7 @@ use App\Models\Module;
     .gas-nav-link {
         display: flex;
         align-items: center;
-        gap: 12px;
+        /* gap: 12px; */
         padding: 4px 10px;
         border-radius: 9px;
         color: var(--gas-text-soft);
@@ -1089,7 +1089,7 @@ use App\Models\Module;
     align-items: center;
     gap: 12px;
     padding: 10px 12px;
-    min-height: 48px;
+    min-height: 40px;
     border-radius: 10px;
     color: #334155;
     font-size: 13px;
