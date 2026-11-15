@@ -756,7 +756,7 @@
                                         @endphp
                                         <tr data-status="{{ $rowStatus }}">
                                             <td class="center">{{ $key + 1 }}</td>
-                                            <td><strong style="color:var(--cp-ink);">{{ strtoupper($product->client_name) }}</strong></td>
+                                            <td><strong style="color:var(--cp-ink);">{{ strtoupper($product->client_name ?? $product->customer_name ) }}</strong></td>
                                             <td>{{ strtoupper($product->vehicle_reg) }} | {{ strtoupper($product->model) }} </td>
                                             <td>
                                                 <span style="font-family:'SFMono-Regular',Consolas,monospace;font-size:12.5px;color:#475569;">

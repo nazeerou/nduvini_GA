@@ -290,178 +290,283 @@ $permission_lookup = $modules->flatMap(function ($module) {
             ->get();
 
     
-$sales = DB::table('estimations')
+            $branchId = Auth::user()->branch_id;
+
+/*
+|--------------------------------------------------------------------------
+| 1. Calculate labour totals per estimation
+|--------------------------------------------------------------------------
+*/
+$labourTotals = DB::table('labour_estimations')
     ->select([
+        'estimate_reference',
+        DB::raw('SUM(total_amount) AS total_labour')
+    ])
+    ->groupBy('estimate_reference');
 
-        // 1. Total Discount
-        DB::raw("
-            IFNULL(SUM(estimations.total_discount), 0)
-            AS total_discount
-        "),
 
-        // 2. Gross Materials
-        DB::raw("
-            IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-            AS gross_materials
-        "),
+/*
+|--------------------------------------------------------------------------
+| 2. Calculate estimation totals
+|--------------------------------------------------------------------------
+*/
+$estimationTotals = DB::table('estimations')
+    ->leftJoinSub($labourTotals, 'labour_totals', function ($join) {
+        $join->on(
+            'labour_totals.estimate_reference',
+            '=',
+            'estimations.reference'
+        );
+    })
+    ->select([
+        'estimations.reference',
 
-        // 3. Total Materials After Discount
-        DB::raw("
-            (
-                IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-                - IFNULL(SUM(estimations.total_discount), 0)
+        DB::raw('MAX(estimations.profoma_invoice) AS profoma_invoice'),
+
+        DB::raw('MAX(estimations.model) AS model'),
+
+        DB::raw('MAX(estimations.job_card_no) AS job_card_no'),
+
+        DB::raw('MAX(estimations.customer_name) AS customer_name'),
+
+        DB::raw('MAX(estimations.vehicle_reg) AS vehicle_reg'),
+
+        DB::raw('MAX(estimations.client_name) AS client_name'),
+
+        // Gross materials
+        DB::raw('
+            SUM(
+                COALESCE(estimations.selling_price, 0) *
+                COALESCE(estimations.qty, 0)
             ) AS total_materials
-        "),
+        '),
 
-        // 4. Total Labour
-        DB::raw("
-            IFNULL(MAX(labour_totals.total_labour), 0)
+        // Total discount
+        DB::raw('
+            SUM(COALESCE(estimations.total_discount, 0))
+            AS total_discount
+        '),
+
+        // Labour
+        DB::raw('
+            COALESCE(MAX(labour_totals.total_labour), 0)
             AS total_labour
-        "),
+        '),
 
-        // 5. TEMESA Fee
-        DB::raw("
-            (
-                (
-                    IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-                    - IFNULL(SUM(estimations.total_discount), 0)
-                    + IFNULL(MAX(labour_totals.total_labour), 0)
-                ) * IFNULL(MAX(estimations.temesa_fee), 0)
-            ) AS temesa_fee_amount
-        "),
+        // TEMESA rate
+        DB::raw('
+            MAX(COALESCE(estimations.temesa_fee, 0))
+            AS temesa_rate
+        '),
 
-        // 6. Total Before VAT
-        DB::raw("
+        // VAT rate
+        DB::raw('
+            MAX(COALESCE(estimations.vat_amount, 0))
+            AS vat_rate
+        '),
+
+        /*
+         * Materials after discount
+         */
+        DB::raw('
             (
-                (
-                    IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-                    - IFNULL(SUM(estimations.total_discount), 0)
+                SUM(
+                    COALESCE(estimations.selling_price, 0) *
+                    COALESCE(estimations.qty, 0)
                 )
-                + IFNULL(MAX(labour_totals.total_labour), 0)
-                +
+                -
+                SUM(COALESCE(estimations.total_discount, 0))
+            ) AS materials_after_discount
+        '),
+
+        /*
+         * TEMESA amount:
+         * (Materials after discount + Labour) * TEMESA rate
+         */
+        DB::raw('
+            (
                 (
-                    (
-                        IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-                        - IFNULL(SUM(estimations.total_discount), 0)
-                        + IFNULL(MAX(labour_totals.total_labour), 0)
-                    ) * IFNULL(MAX(estimations.temesa_fee), 0)
+                    SUM(
+                        COALESCE(estimations.selling_price, 0) *
+                        COALESCE(estimations.qty, 0)
+                    )
+                    -
+                    SUM(COALESCE(estimations.total_discount, 0))
+                    +
+                    COALESCE(MAX(labour_totals.total_labour), 0)
+                )
+                *
+                MAX(COALESCE(estimations.temesa_fee, 0))
+            ) AS temesa_amount
+        '),
+
+        /*
+         * Total before VAT
+         */
+        DB::raw('
+            (
+                (
+                    SUM(
+                        COALESCE(estimations.selling_price, 0) *
+                        COALESCE(estimations.qty, 0)
+                    )
+                    -
+                    SUM(COALESCE(estimations.total_discount, 0))
+                    +
+                    COALESCE(MAX(labour_totals.total_labour), 0)
+                )
+                *
+                (
+                    1 + MAX(COALESCE(estimations.temesa_fee, 0))
                 )
             ) AS total_before_vat
-        "),
+        '),
 
-        // 7. VAT Amount
-        DB::raw("
+        /*
+         * Grand total including VAT
+         */
+        DB::raw('
             (
                 (
                     (
-                        IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-                        - IFNULL(SUM(estimations.total_discount), 0)
+                        SUM(
+                            COALESCE(estimations.selling_price, 0) *
+                            COALESCE(estimations.qty, 0)
+                        )
+                        -
+                        SUM(COALESCE(estimations.total_discount, 0))
+                        +
+                        COALESCE(MAX(labour_totals.total_labour), 0)
                     )
-                    + IFNULL(MAX(labour_totals.total_labour), 0)
-                    +
+                    *
                     (
-                        (
-                            IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-                            - IFNULL(SUM(estimations.total_discount), 0)
-                            + IFNULL(MAX(labour_totals.total_labour), 0)
-                        ) * IFNULL(MAX(estimations.temesa_fee), 0)
+                        1 + MAX(COALESCE(estimations.temesa_fee, 0))
                     )
-                ) * IFNULL(MAX(estimations.vat_amount), 0)
-            ) AS vat_total
-        "),
-
-        // 8. Grand Total
-        DB::raw("
-            (
+                )
+                *
                 (
-                    (
-                        IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-                        - IFNULL(SUM(estimations.total_discount), 0)
-                    )
-                    + IFNULL(MAX(labour_totals.total_labour), 0)
-                    +
-                    (
-                        (
-                            IFNULL(SUM(estimations.selling_price * estimations.qty), 0)
-                            - IFNULL(SUM(estimations.total_discount), 0)
-                            + IFNULL(MAX(labour_totals.total_labour), 0)
-                        ) * IFNULL(MAX(estimations.temesa_fee), 0)
-                    )
-                ) * (1 + IFNULL(MAX(estimations.vat_amount), 0))
+                    1 + MAX(COALESCE(estimations.vat_amount, 0))
+                )
             ) AS grand_total_amount
-        "),
-
-        // Invoice details
-        DB::raw('MAX(invoices.invoice_number) AS invoice_number'),
-        DB::raw('MAX(invoices.created_date) AS created_date'),
-
-        // Other details
-        'clients.place',
-        'estimations.model',
-        'estimations.job_card_no',
-        'estimations.profoma_invoice',
-        'users.fname',
-        'users.lname',
-        'estimations.reference',
-        'clients.client_name',
-        'estimations.customer_name',
-        'estimations.vehicle_reg',
-        'invoices.id',
-
+        ')
     ])
+    ->where('estimations.branch_id', $branchId)
 
-    ->join('products', 'products.pid', '=', 'estimations.product_id')
+    // Do not filter by profoma_invoice.
+    // This allows all invoice-related estimations to be included.
 
-    ->leftJoin('clients', 'clients.id', '=', 'estimations.client_name')
+    ->groupBy('estimations.reference');
 
-    ->leftJoin('job_cards', 'job_cards.job_card_no', '=', 'estimations.job_card_no')
 
-    ->join('invoices', 'invoices.estimate_ref', '=', 'estimations.reference')
+/*
+|--------------------------------------------------------------------------
+| 3. Get ALL invoices
+|--------------------------------------------------------------------------
+*/
+$sales = DB::table('invoices')
 
-    // Labour totals
-    ->leftJoinSub(
-        DB::table('labour_estimations')
-            ->select(
-                'estimate_reference',
-                DB::raw('SUM(total_amount) AS total_labour')
-            )
-            ->groupBy('estimate_reference'),
-        'labour_totals',
-        function ($join) {
-            $join->on(
-                'labour_totals.estimate_reference',
-                '=',
-                'estimations.reference'
-            );
-        }
-    )
+    ->leftJoinSub($estimationTotals, 'est', function ($join) {
+        $join->on(
+            'est.reference',
+            '=',
+            'invoices.estimate_ref'
+        );
+    })
 
-    ->leftJoin('users', 'users.id', '=', 'estimations.user_id')
+    ->leftJoin('clients', 'clients.id', '=', 'invoices.client_id')
 
-    ->where('estimations.branch_id', Auth::user()->branch_id)
+    ->leftJoin('users', 'users.id', '=', 'invoices.user_id')
 
-    ->whereNotNull('estimations.profoma_invoice')
-
-    ->groupBy([
-        'estimations.reference',
-        'estimations.job_card_no',
-        'estimations.model',
-        'estimations.profoma_invoice',
+    ->select([
+        'invoices.id',
+        'invoices.invoice_number',
         'invoices.created_date',
-        'estimations.customer_name',
-        'estimations.vehicle_reg',
-        'clients.place',
+        'invoices.estimate_ref',
+        'invoices.client_id',
+        'invoices.user_id',
+
+        // Client information
         'clients.client_name',
-        'job_cards.amount',
+        'clients.place',
+
+        // User information
         'users.fname',
         'users.lname',
-        'invoices.id',
+
+        // Estimation information
+        'est.profoma_invoice',
+        'est.model',
+        'est.job_card_no',
+        'est.customer_name',
+        'est.vehicle_reg',
+         'est.reference',
+        // Materials
+        DB::raw('
+            CAST(COALESCE(est.total_materials, 0) AS DECIMAL(18,2))
+            AS total_materials
+        '),
+
+        // Discount
+        DB::raw('
+            CAST(COALESCE(est.total_discount, 0) AS DECIMAL(18,2))
+            AS total_discount
+        '),
+
+        // Labour
+        DB::raw('
+            CAST(COALESCE(est.total_labour, 0) AS DECIMAL(18,2))
+            AS total_labour
+        '),
+
+        // TEMESA
+        DB::raw('
+            CAST(COALESCE(est.temesa_amount, 0) AS DECIMAL(18,2))
+            AS temesa_amount
+        '),
+
+        // Total before VAT
+        DB::raw('
+            CAST(COALESCE(est.total_before_vat, 0) AS DECIMAL(18,2))
+            AS total_before_vat
+        '),
+
+        // Grand total = invoice amount
+        DB::raw('
+            CAST(COALESCE(est.grand_total_amount, 0) AS DECIMAL(18,2))
+            AS grand_total_amount
+        ')
     ])
 
-->orderByDesc('invoice_number')
-->get();
+    ->where('invoices.branch_id', $branchId)
+
+    ->orderByDesc('invoices.created_date')
+    ->orderByDesc('invoices.id')
+    ->get();
 
 
+/*
+|--------------------------------------------------------------------------
+| 4. Invoice summary
+|--------------------------------------------------------------------------
+*/
+$invoiceCount = $sales->count();
+
+$totalInvoiced = $sales->sum(function ($invoice) {
+    return (float) $invoice->grand_total_amount;
+});
+
+$zeroValueCount = $sales->filter(function ($invoice) {
+    return (float) $invoice->grand_total_amount <= 0;
+})->count();
+
+$invLabel = $invoiceCount === 1 ? 'invoice' : 'invoices';
+
+
+/*
+|--------------------------------------------------------------------------
+| 5. Other page data
+|--------------------------------------------------------------------------
+*/
     $modules = Module::with('permissions')->get();
 
 $assigned_permissions = $role->permissions
@@ -477,15 +582,236 @@ $permission_lookup = $modules->flatMap(function ($module) {
     });
 });
 
-     return view('estimations.all-invoices', 
-     compact('sales', 
-     'role', 'clients', 
-     'products', 
-     'labours', 
-     'modules',
+$clients = DB::table('clients')
+    ->where('branch_id', $branchId)
+    ->get();
+
+
+/*
+|--------------------------------------------------------------------------
+| 6. Return view
+|--------------------------------------------------------------------------
+*/
+return view('estimations.all-invoices', compact(
+    'sales',
+    'role',
+    'clients',
+    'products',
+    'labours',
+    'modules',
     'assigned_permissions',
-    'permission_lookup'));
+    'permission_lookup'
+));
+
     }
+// $sales = DB::table('estimations')
+//     ->select([
+
+//         // 1. Total Discount
+//         DB::raw("
+//             COALESCE(SUM(estimations.total_discount), 0)
+//             AS total_discount
+//         "),
+
+//         // 2. Gross Materials
+//         DB::raw("
+//             COALESCE(
+//                 SUM(estimations.selling_price * estimations.qty), 0
+//             ) AS gross_materials
+//         "),
+
+//         // 3. Total Materials After Discount
+//         DB::raw("
+//             (
+//                 COALESCE(
+//                     SUM(estimations.selling_price * estimations.qty), 0
+//                 )
+//                 -
+//                 COALESCE(SUM(estimations.total_discount), 0)
+//             ) AS total_materials
+//         "),
+
+//         // 4. Total Labour
+//         DB::raw("
+//             COALESCE(MAX(labour_totals.total_labour), 0)
+//             AS total_labour
+//         "),
+
+//         // 5. TEMESA Fee Amount
+//         DB::raw("
+//             (
+//                 (
+//                     COALESCE(
+//                         SUM(estimations.selling_price * estimations.qty), 0
+//                     )
+//                     -
+//                     COALESCE(SUM(estimations.total_discount), 0)
+//                     +
+//                     COALESCE(MAX(labour_totals.total_labour), 0)
+//                 )
+//                 *
+//                 COALESCE(MAX(estimations.temesa_fee), 0)
+//             ) AS temesa_fee_amount
+//         "),
+
+//         // 6. Total Before VAT
+//         DB::raw("
+//             (
+//                 (
+//                     COALESCE(
+//                         SUM(estimations.selling_price * estimations.qty), 0
+//                     )
+//                     -
+//                     COALESCE(SUM(estimations.total_discount), 0)
+//                     +
+//                     COALESCE(MAX(labour_totals.total_labour), 0)
+//                 )
+//                 *
+//                 (
+//                     1 + COALESCE(MAX(estimations.temesa_fee), 0)
+//                 )
+//             ) AS total_before_vat
+//         "),
+
+//         // 7. VAT Total
+//         DB::raw("
+//             (
+//                 (
+//                     (
+//                         COALESCE(
+//                             SUM(estimations.selling_price * estimations.qty), 0
+//                         )
+//                         -
+//                         COALESCE(SUM(estimations.total_discount), 0)
+//                         +
+//                         COALESCE(MAX(labour_totals.total_labour), 0)
+//                     )
+//                     *
+//                     (
+//                         1 + COALESCE(MAX(estimations.temesa_fee), 0)
+//                     )
+//                 )
+//                 *
+//                 COALESCE(MAX(estimations.vat_amount), 0)
+//             ) AS vat_total
+//         "),
+
+//         // 8. GRAND TOTAL
+//         // Total Before VAT + VAT
+//         DB::raw("
+//             (
+//                 (
+//                     (
+//                         COALESCE(
+//                             SUM(estimations.selling_price * estimations.qty), 0
+//                         )
+//                         -
+//                         COALESCE(SUM(estimations.total_discount), 0)
+//                         +
+//                         COALESCE(MAX(labour_totals.total_labour), 0)
+//                     )
+//                     *
+//                     (
+//                         1 + COALESCE(MAX(estimations.temesa_fee), 0)
+//                     )
+//                 )
+//                 *
+//                 (
+//                     1 + COALESCE(MAX(estimations.vat_amount), 0)
+//                 )
+//             ) AS grand_total_amount
+//         "),
+
+//         // Invoice details
+//         DB::raw('MAX(invoices.invoice_number) AS invoice_number'),
+//         DB::raw('MAX(invoices.created_date) AS created_date'),
+
+//         // Other details
+//         'clients.place',
+//         'estimations.model',
+//         'estimations.profoma_invoice',
+//         'users.fname',
+//         'users.lname',
+//         'estimations.reference',
+//         'clients.client_name',
+//         'estimations.customer_name',
+//         'estimations.vehicle_reg',
+//         'invoices.id',
+
+//     ])
+
+//     ->join('products', 'products.pid', '=', 'estimations.product_id')
+
+//     ->leftJoin('clients', 'clients.id', '=', 'estimations.client_name')
+
+//     ->join('invoices', 'invoices.estimate_ref', '=', 'estimations.reference')
+
+//     // Labour totals
+//     ->leftJoinSub(
+//         DB::table('labour_estimations')
+//             ->select(
+//                 'estimate_reference',
+//                 DB::raw('SUM(total_amount) AS total_labour')
+//             )
+//             ->groupBy('estimate_reference'),
+//         'labour_totals',
+//         function ($join) {
+//             $join->on(
+//                 'labour_totals.estimate_reference',
+//                 '=',
+//                 'estimations.reference'
+//             );
+//         }
+//     )
+
+//     ->leftJoin('users', 'users.id', '=', 'invoices.user_id')
+
+//     ->where('estimations.branch_id', Auth::user()->branch_id)
+
+//     ->whereNotNull('estimations.profoma_invoice')
+
+//     ->groupBy([
+//         'estimations.reference',
+//         'estimations.model',
+//         'estimations.profoma_invoice',
+//         'invoices.created_date',
+//         'estimations.customer_name',
+//         'estimations.vehicle_reg',
+//         'clients.place',
+//         'clients.client_name',
+//         'users.fname',
+//         'users.lname',
+//         'invoices.id',
+//     ])
+
+//     ->orderByDesc('invoice_number')
+//     ->get();
+
+
+//     $modules = Module::with('permissions')->get();
+
+// $assigned_permissions = $role->permissions
+//     ->pluck('id')
+//     ->map(fn($id) => (int) $id)
+//     ->toArray();
+
+// $permission_lookup = $modules->flatMap(function ($module) {
+//     return $module->permissions->mapWithKeys(function ($permission) {
+//         return [
+//             strtolower($permission->name) => (int) $permission->id
+//         ];
+//     });
+// });
+
+//      return view('estimations.all-invoices', 
+//      compact('sales', 
+//      'role', 'clients', 
+//      'products', 
+//      'labours', 
+//      'modules',
+//     'assigned_permissions',
+//     'permission_lookup'));
+//     }
 
     public function getJobCards() {
 
