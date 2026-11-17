@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\{
     AdminController,
@@ -35,7 +37,7 @@ use App\Http\Controllers\{
     AccountTransactionController,
     DebtController,
     AuditLogController,
-    ApprovalController
+    PayrollRequestController
 
 };
 
@@ -76,6 +78,7 @@ Route::middleware('auth')->group(function() {
         Route::get('logs', 'logActivity');
         Route::get('settings/activity_logs', 'logActivity')->name('activity-log');
         
+        Route::post('/profile/signature/update', 'updateSignature')->name('profile.signature.update');
         // User routes
         Route::get('users/edit/{id}', 'editUser')->name('edit-user');
         Route::get('users/details/{id}', 'getUser')->name('get-user');
@@ -483,13 +486,14 @@ Route::resource('contributions', ContributionController::class)->only(['index', 
 Route::post('/salary-groups/store', [PayrollController::class, 'saveSalaryGroup'])->name('salary-groups.store');
 Route::post('/salary-groups/generate', [PayrollController::class, 'generatePayroll'])->name('payroll.generate');
 Route::resource('salary-groups', SalaryGroupController::class)->only(['store', 'update', 'destroy']);
-Route::get('/payrolls/salary-slip-fetch/view', [PayrollController::class, 'fetchSalarySlip'])->name('payrolls.slip.fetch');
+Route::get('/salary-slip', [PayrollController::class, 'fetchSalarySlip'])->name('payrolls.slip.fetch');
 Route::get('/payrolls/salary-slip-download/view/pdf', [PayrollController::class, 'downloadSalarySlip'])->name('salary-slip.download');
-Route::get('/payrolls/details/{reference}', [PayrollController::class, 'details']);
-Route::get('/payrolls/download/view/details/{reference}', [PayrollController::class, 'downloadPayrollDetails']);
+Route::get('/payrolls/{reference}/details', [PayrollController::class, 'details']);
+Route::get('/payrolls/{reference}/download', [PayrollController::class, 'downloadPayrollDetails']);
 
 Route::delete('/payrolls/delete/{id}', [PayrollController::class, 'rollbackPayroll'])->name('payrolls.rollback');
 
+//  payrolls/2105/rollback
 // Bank details
 Route::post('employee-bank/store', [EmployeeBankController::class, 'store'])->name('employee.bank.store');
 Route::put('employee-bank/{id}', [EmployeeBankController::class, 'update'])->name('employee.bank.update');
@@ -585,4 +589,71 @@ route::prefix('/accounting')->middleware(['auth'])->group(function () {
 
     Route::patch('/payments/{payment}', [DebtController::class, 'updatePayment'])->name('debts.payments.update');
 Route::delete('/payments/{payment}', [DebtController::class, 'destroyPayment'])->name('debts.payments.destroy');
+});
+
+Route::prefix('payroll-requests')->name('payroll-requests.')->group(function () {
+    Route::get('/',              [PayrollRequestController::class, 'index'])->name('index');
+    Route::get('/create',        [PayrollRequestController::class, 'create'])->name('create');
+    Route::post('/',             [PayrollRequestController::class, 'store'])->name('store');
+    Route::get('/{request}',     [PayrollRequestController::class, 'show'])->name('show');
+    Route::post('/{request}/submit',  [PayrollRequestController::class, 'submit'])->name('submit');
+    Route::post('/{request}/approve', [PayrollRequestController::class, 'approve'])->name('approve');
+    Route::post('/{request}/reject',  [PayrollRequestController::class, 'reject'])->name('reject');
+    Route::post('/{request}/cancel',  [PayrollRequestController::class, 'cancel'])->name('cancel');
+    Route::post('/{request}/bulk-approve', [PayrollRequestController::class, 'bulkApprove'])->name('bulk-approve');
+
+    // Per-month summary used by the Requests tab
+    Route::get('/summary', [PayrollRequestController::class, 'monthlySummary'])->name('summary');
+    
+});
+
+Route::post('payrolls/{id}/rollback', [PayrollController::class, 'rollbackPayroll'])->name('payrolls.rollback');
+
+Route::get('/payrolls/{reference}/employees',  [PayrollController::class, 'employeesForPayment'])->name('payrolls.employees');
+Route::post('/payrolls/{reference}/pay-employees', [PayrollController::class, 'markEmployeesPaid'])->name('payrolls.pay-employees');
+
+Route::post('salary-advances/pay', [SalaryAdvanceController::class, 'markPaid'])
+    ->name('salary-advances.pay');
+
+Route::post('loans/{loan}/repayments', [LoanController::class, 'recordRepayment'])
+    ->name('loans.repayments.store');
+
+Route::get('loans/{loan}/statement-pdf', [LoanController::class, 'repaymentStatementPdf'])
+->name('loans.statement-pdf');
+
+
+Route::put('/salary-advances/{id}', 
+    [SalaryAdvanceController::class, 'update'])
+    ->name('salary-advances.update');
+
+Route::delete('/salary-advances/{id}', 
+    [SalaryAdvanceController::class, 'destroy'])
+    ->name('salary-advances.destroy');
+
+
+Route::get('/test-nextsms', function () {
+
+    $token = trim((string) config('services.nextsms.token'));
+
+    $response = Http::withToken($token)
+        ->acceptJson()
+        ->asJson()
+        ->post(
+            'https://messaging-service.co.tz/api/sms/v2/test/text/single',
+            [
+                'from' => config('services.nextsms.sender'),
+                'to' => ['255686382142'],
+                'text' => 'MANANI TECH NextSMS API configuration test.',
+            ]
+        );
+
+    Log::info('NEXTSMS INDEPENDENT TEST', [
+        'status' => $response->status(),
+        'response' => $response->json() ?? $response->body(),
+    ]);
+
+    return response()->json([
+        'http_status' => $response->status(),
+        'response' => $response->json() ?? $response->body(),
+    ]);
 });

@@ -10,7 +10,7 @@ class Payroll extends Model
     use HasFactory;
 
     protected $fillable = ['employee_id', 'branch_id', 'month', 'basic_salary', 'allowance', 'paye', 
-    'description', 'net_salary', 'reference', 'is_paid'];
+    'description', 'net_salary', 'reference', 'is_paid', 'created_by', 'paid_by'];
 
     public function employee()
     {

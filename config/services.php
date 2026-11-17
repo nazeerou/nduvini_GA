@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+  
+'nextsms' => [
+    'username'  => env('NEXTSMS_USERNAME'),
+    'password'  => env('NEXTSMS_PASSWORD'),
+    'sender_id' => env('NEXTSMS_SENDER_ID'),
+],
+
 ];

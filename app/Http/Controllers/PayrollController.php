@@ -13,6 +13,8 @@ use App\Models\PayrollContribution;
 use App\Models\Loan;
 use App\Models\SalaryAdvance;
 use App\Models\LoanRepayment;
+use App\Models\PayrollRequest;
+use App\Models\PayrollRequestEvent;
 use App\Models\AssignedEmployeeContribution;
 use App\Models\SalaryGroup;
     use Illuminate\Support\Facades\DB;
@@ -23,9 +25,11 @@ use Illuminate\Support\Str;
 
 class PayrollController extends Controller
 {
-    public function index()
+public function index()
 {
     $branchId = Auth::user()->branch_id;
+    $currentYear  = now()->year;
+    $currentMonth = now()->format('Y-m');
 
     $employees = DB::table('employees')
         ->select(
@@ -41,80 +45,47 @@ class PayrollController extends Controller
         ->leftJoin('designations', 'designations.id', 'employees.designation_id')
         ->where('employees.branch_id', $branchId)
         ->get();
-     
+
     $contributions = Contribution::all();
-
-    $branches = Branch::where('id', $branchId)->get();
-
+    $branches      = Branch::where('id', $branchId)->get();
     $salary_groups = SalaryGroup::where('branch_id', $branchId)->get();
-
 
     $payrolls = Payroll::with('employee')
         ->where('payrolls.branch_id', $branchId)
         ->orderBy('payrolls.month', 'desc')
         ->get();
 
-    $totalEmployees = Employee::where('branch_id', $branchId)->count();
+    $totalEmployees    = Employee::where('branch_id', $branchId)->count();
     $salaryGroupsCount = Contribution::count();
-
-    $currentMonth = now()->format('Y-m');
 
     $currentMonthPayroll_1 = Payroll::where('month', $currentMonth)
         ->where('branch_id', $branchId)
         ->sum('basic_salary');
 
-     $currentMonthPayroll_2 = Payroll::where('month', $currentMonth)
+    $currentMonthPayroll_2 = Payroll::where('month', $currentMonth)
         ->where('branch_id', $branchId)
         ->sum('allowance');
 
-        // return $currentMonthPayroll_1;
+    $currentMonthPayroll = $currentMonthPayroll_1 + $currentMonthPayroll_2;
 
-     $currentMonthPayroll = $currentMonthPayroll_1 + $currentMonthPayroll_2;
-     
-    $workingDaysPerMonth = now()->daysInMonth;
-    $presentDays = Attendance::whereMonth('date', now()->month)
+    $months = collect();
+
+    $loans = Loan::with(['employee', 'loanRepayments'])
         ->where('branch_id', $branchId)
-        ->where('status', 'present')
-        ->count();
+        ->get();
 
-    $denominator = $totalEmployees * $workingDaysPerMonth;
-    $attendanceRate = $denominator > 0 ? round(($presentDays / $denominator) * 100, 2) : 0;
-
-    $lowAttendanceAlerts = Attendance::select('employee_id')
-        ->whereMonth('date', now()->month)
+    // Load ALL salary advances for the branch (not just current month) so that
+    // each month's advance deduction can be computed accurately below.
+    $salary_advances = SalaryAdvance::with('employee')
         ->where('branch_id', $branchId)
-        ->where('status', 'absent')
-        ->groupBy('employee_id')
-        ->havingRaw('COUNT(*) > ?', [3])
-        ->with('employee')
-        ->get()
-        ->map(function ($row) {
-            return (object)[
-                'employee' => $row->employee,
-                'absences' => Attendance::where('employee_id', $row->employee_id)
-                    ->whereMonth('date', now()->month)
-                    ->where('status', 'absent')
-                    ->count()
-            ];
-        });
+        ->get();
 
-    // Loop through all months of the current year
-   $currentYear = now()->year;
-$currentMonthNum = now()->month;
-$currentMonth = now()->format('Y-m'); // "2025-08"
-
-$months = collect();
-
-$loans = Loan::with(['employee', 'loanRepayments'])
-         ->where('branch_id', Auth::user()->branch_id)
-         ->get();
-
-$salary_advances = SalaryAdvance::with('employee')
-         ->where('branch_id', Auth::user()->branch_id)
-         ->where('month', $currentMonth)  // matches "2025-08"
-         ->get();;
-    
-    for ($m = $currentMonthNum; $m >= 1; $m--) {
+    /* ------------------------------------------------------------------
+     |  Build the payroll summary for every month of the current year
+     |  (January → December). Months without a payroll run become
+     |  placeholder rows so the front-end can list all 12 months.
+     | ------------------------------------------------------------------ */
+    for ($m = 12; $m >= 1; $m--) {
         $monthStr = Carbon::createFromDate($currentYear, $m, 1)->format('Y-m');
 
         $payrollsByMonth = Payroll::where('month', $monthStr)
@@ -124,61 +95,64 @@ $salary_advances = SalaryAdvance::with('employee')
 
         if ($payrollsByMonth->isEmpty()) {
             $months->push([
-                'month' => $monthStr,
-                'exists' => false,
+                'month'          => $monthStr,
+                'exists'         => false,
                 'paid_employees' => 0,
-                'total_amount' => 0,
-                'nssf' => 0,
-                'nhif' => 0,
-                'wcf' => 0,
-                'tuico' => 0,
-                'paye' => 0,
-                'net_paid' => 0,
-                'id' => null,
-                'reference' => null,
+                'total_count'    => 0,
+                'paid_count'     => 0,
+                'total_amount'   => 0,
+                'nssf'           => 0,
+                'nhif'           => 0,
+                'wcf'            => 0,
+                'tuico'          => 0,
+                'paye'           => 0,
+                'net_paid'       => 0,
+                'id'             => null,
+                'reference'      => null,
             ]);
             continue;
         }
 
         $totalGrossAmount = 0;
-        $totalNssf = 0;
-        $totalNhif = 0;
-        $totalWcf = 0;
-        $totalTuico = 0;
-        $totalNetPaid = 0;
+        $totalNssf        = 0;
+        $totalNhif        = 0;
+        $totalWcf         = 0;
+        $totalTuico       = 0;
+        $totalNetPaid     = 0;
 
         foreach ($payrollsByMonth as $payroll) {
-            $basic = floatval($payroll->basic_salary);
+            $basic     = floatval($payroll->basic_salary);
             $allowance = floatval($payroll->allowance);
-            $gross = $basic + $allowance;
+            $gross     = $basic + $allowance;
 
             $nssf = $wcf = $nhif = $tuico = 0;
 
             foreach ($payroll->contributions as $p) {
                 $contribution = $p->contribution;
                 if ($contribution) {
-                    $type = strtolower($contribution->type);
-                    $name = strtoupper($contribution->name);
+                    $type   = strtolower($contribution->type);
+                    $name   = strtoupper($contribution->name);
                     $amount = ($type === 'fixed')
                         ? floatval($contribution->rate)
-                        : (($type === 'percentage') ? (floatval($contribution->rate) / 100) * $basic : 0);
+                        : (($type === 'percentage')
+                            ? (floatval($contribution->rate) / 100) * $basic
+                            : 0);
 
                     switch ($name) {
-                        case 'NSSF': $nssf = $amount; break;
-                        case 'WCF': $wcf = $amount; break;
-                        case 'NHIF': $nhif = $amount; break;
+                        case 'NSSF':  $nssf  = $amount; break;
+                        case 'WCF':   $wcf   = $amount; break;
+                        case 'NHIF':  $nhif  = $amount; break;
                         case 'TUICO': $tuico = $amount; break;
                     }
                 }
             }
 
-            // Salary Advance
             $advance_pay = $salary_advances
                 ->where('employee_id', $payroll->employee_id)
                 ->where('month', $monthStr)
                 ->sum('amount');
 
-            // Loan Repayments
+
             $loan_deductions = $loans
                 ->where('employee_id', $payroll->employee_id)
                 ->flatMap(function ($loan) use ($monthStr) {
@@ -187,28 +161,32 @@ $salary_advances = SalaryAdvance::with('employee')
                 ->sum('amount');
 
             $total_deductions = $nssf + $nhif + $tuico + $advance_pay + $loan_deductions;
-            $net = $gross - $total_deductions;
+            $net              = $gross - $total_deductions;
 
             $totalGrossAmount += $gross;
-            $totalNssf += $nssf;
-            $totalNhif += $nhif;
-            $totalTuico += $tuico;
-
-            $totalNetPaid += $net;
+            $totalNssf        += $nssf;
+            $totalNhif        += $nhif;
+            $totalTuico       += $tuico;
+            $totalNetPaid     += $net;
         }
 
+        $totalCount = $payrollsByMonth->count();
+        $paidCount  = $payrollsByMonth->where('is_paid', 1)->count();
+
         $months->push([
-            'month' => $monthStr,
-            'exists' => true,
-            'paid_employees' => $payrollsByMonth->count(),
-            'total_amount' => $totalGrossAmount,
-            'nssf' => $totalNssf,
-            'nhif' => $totalNhif,
-            'wcf' => $totalWcf,
-            'tuico' => $totalTuico,
-            'net_paid' => $totalNetPaid,
-            'id' => $payrollsByMonth->first()->id ?? null,
-            'reference' => $payrollsByMonth->first()->reference ?? null,
+            'month'          => $monthStr,
+            'exists'         => true,
+            'paid_employees' => $totalCount,
+            'total_count'    => $totalCount,
+            'paid_count'     => $paidCount,
+            'total_amount'   => $totalGrossAmount,
+            'nssf'           => $totalNssf,
+            'nhif'           => $totalNhif,
+            'wcf'            => $totalWcf,
+            'tuico'          => $totalTuico,
+            'net_paid'       => $totalNetPaid,
+            'id'             => $payrollsByMonth->first()->id        ?? null,
+            'reference'      => $payrollsByMonth->first()->reference ?? null,
         ]);
     }
 
@@ -216,7 +194,6 @@ $salary_advances = SalaryAdvance::with('employee')
         'totalEmployees',
         'salaryGroupsCount',
         'currentMonthPayroll',
-        'attendanceRate',
         'payrolls',
         'contributions',
         'branches',
@@ -227,7 +204,6 @@ $salary_advances = SalaryAdvance::with('employee')
         'salary_groups'
     ));
 }
-
 
     public function create()
     {
@@ -365,26 +341,19 @@ $salary_advances = SalaryAdvance::with('employee')
 public function store(Request $request)
 {
     $request->validate([
-        'month' => 'required|date_format:Y-m',
+        'month'     => 'required|date_format:Y-m',
         'employees' => 'required|array|min:1',
     ]);
 
-    $month = $request->input('month');
+    $month     = $request->input('month');
     $employees = $request->input('employees', []);
-    $branchId = Auth::user()->branch_id;
+    $branchId  = Auth::user()->branch_id;
 
     $created = 0;
     $skipped = 0;
 
-    /*
-     * IMPORTANT:
-     * One reference for the entire payroll batch.
-     * Do not generate a different reference inside the loop.
-     */
-    $batchReference = 'PAY-'
-        . str_replace('-', '', $month)
-        . '-'
-        . strtoupper(Str::random(8));
+    /* One reference for the entire payroll batch */
+    $batchReference =  random_int(10000000, 99999999);
 
     try {
         DB::transaction(function () use (
@@ -402,7 +371,6 @@ public function store(Request $request)
 
                 // Support employees[12][selected] checkbox submissions.
                 $selectedValue = $data['selected'] ?? false;
-
                 $isSelected = in_array(
                     $selectedValue,
                     [true, 1, '1', 'on', 'yes'],
@@ -414,7 +382,6 @@ public function store(Request $request)
                 }
 
                 $employeeId = (int) ($data['employee_id'] ?? $key);
-
                 if ($employeeId <= 0) {
                     continue;
                 }
@@ -439,82 +406,127 @@ public function store(Request $request)
                     continue;
                 }
 
-                $basicSalary = max(
-                    0,
-                    (float) ($data['basic_salary'] ?? 0)
-                );
-
-                $allowance = max(
-                    0,
-                    (float) ($data['allowance'] ?? 0)
-                );
-
+                $basicSalary = max(0, (float) ($data['basic_salary'] ?? 0));
+                $allowance   = max(0, (float) ($data['allowance']    ?? 0));
                 $grossSalary = $basicSalary + $allowance;
 
-                $loanDeduction = 0;
+                $loanDeduction    = 0;
                 $advanceDeduction = 0;
-                $nssf = 0;
-                $paye = 0;
+                $nssf             = 0;
+                $nhif             = 0;
+                $tuico            = 0;
+                $paye             = 0;
 
-                /*
-                 * Outstanding loan.
-                 */
-                $loan = DB::table('loans')
-                    ->where('employee_id', $employeeId)
-                    ->where('branch_id', $branchId)
-                    ->where('balance', '>', 0)
-                    ->orderByDesc('id')
-                    ->lockForUpdate()
-                    ->first();
+                /* ================= Outstanding loan ================= */
+                // $loan = DB::table('loans')
+                //     ->where('employee_id', $employeeId)
+                //     ->where('branch_id', $branchId)
+                //     ->where('balance', '>', 0)
+                //     ->orderByDesc('id')
+                //     ->lockForUpdate()
+                //     ->first();
 
-                if ($loan) {
-                    $balance = max(0, (float) $loan->balance);
+                // if ($loan) {
+                //     $balance       = max(0, (float) $loan->balance);
+                //     $monthlyAmount = max(0, (float) ($loan->monthly_deduction ?? 0));
+                //     $loanDeduction = min($monthlyAmount, $balance);
 
-                    $monthlyAmount = max(
-                        0,
-                        (float) ($loan->monthly_deduction ?? 0)
-                    );
+                //     if ($loanDeduction > 0) {
+                //         $newBalance = round($balance - $loanDeduction, 2);
 
-                    $loanDeduction = min($monthlyAmount, $balance);
+                //         DB::table('loans')
+                //             ->where('id', $loan->id)
+                //             ->update([
+                //                 'balance'    => $newBalance,
+                //                 'status'     => $newBalance <= 0 ? 'paid' : 'active',
+                //                 'updated_at' => now(),
+                //             ]);
 
-                    if ($loanDeduction > 0) {
-                        $newBalance = round(
-                            $balance - $loanDeduction,
-                            2
-                        );
+                //         DB::table('loan_repayments')->insert([
+                //             'loan_id'        => $loan->id,
+                //             'branch_id'      => $branchId,
+                //             'employee_id'    => $employeeId,
+                //             'amount'         => $loanDeduction,
+                //             'deduction_date' => $month . '-01',
+                //             'created_at'     => now(),
+                //             'updated_at'     => now(),
+                //         ]);
+                //     }
+                // }
 
-                        DB::table('loans')
-                            ->where('id', $loan->id)
-                            ->update([
-                                'balance' => $newBalance,
-                                'status' => $newBalance <= 0
-                                    ? 'paid'
-                                    : 'active',
-                                'updated_at' => now(),
-                            ]);
 
-                        DB::table('loan_repayments')->insert([
-                            'loan_id' => $loan->id,
-                            'branch_id' => $branchId,
-                            'employee_id' => $employeeId,
-                            'amount' => $loanDeduction,
-                            'deduction_date' => $month,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                    }
-                }
+$loan = DB::table('loans')
+    ->where('employee_id', $employeeId)
+    ->where('branch_id', $branchId)
+    ->where('status', '!=', 'paid')
+    ->orderByDesc('id')
+    ->lockForUpdate()
+    ->first();
 
-                /*
-                 * Salary advance.
-                 */
+if ($loan) {
+
+    // Calculate total repayments already made
+    $totalRepaid = DB::table('loan_repayments')
+        ->where('loan_id', $loan->id)
+        ->sum('amount');
+
+    // Calculate actual remaining balance
+    $balance = max(
+        0,
+        round((float) $loan->principal - (float) $totalRepaid, 2)
+    );
+
+    // Monthly deduction
+    $monthlyAmount = max(
+        0,
+        (float) ($loan->monthly_deduction ?? 0)
+    );
+
+    // Amount to deduct this month
+    $loanDeduction = min($monthlyAmount, $balance);
+
+    if ($loanDeduction > 0) {
+
+        // Insert repayment
+        DB::table('loan_repayments')->insert([
+            'loan_id'        => $loan->id,
+            'branch_id'      => $branchId,
+            'employee_id'    => $employeeId,
+            'amount'         => $loanDeduction,
+            'deduction_date' => $month . '-01',
+            'created_at'     => now(),
+            'updated_at'     => now(),
+        ]);
+
+        // Recalculate balance after inserting repayment
+        $newTotalRepaid = DB::table('loan_repayments')
+            ->where('loan_id', $loan->id)
+            ->sum('amount');
+
+        $newBalance = max(
+            0,
+            round((float) $loan->principal - (float) $newTotalRepaid, 2)
+        );
+
+        // Update loan
+        DB::table('loans')
+            ->where('id', $loan->id)
+            ->update([
+                'balance'    => $newBalance,
+                'status'     => $newBalance <= 0 ? 'paid' : 'active',
+                'updated_at' => now(),
+            ]);
+    }
+}
+
+                /* ================= Salary advance ================= */
                 $advance = DB::table('salary_advances')
                     ->where('employee_id', $employeeId)
                     ->where('branch_id', $branchId)
                     ->where('month', $month)
                     ->where(function ($query) {
                         $query->whereNull('status')
-                            ->orWhere('status', '!=', 'deducted');
+                              ->orWhere('status', '!=', 'deducted');
                     })
                     ->orderByDesc('id')
                     ->lockForUpdate()
@@ -526,14 +538,12 @@ public function store(Request $request)
                     DB::table('salary_advances')
                         ->where('id', $advance->id)
                         ->update([
-                            'status' => 'deducted',
+                            'status'     => 'deducted',
                             'updated_at' => now(),
                         ]);
                 }
 
-                /*
-                 * Selected contributions.
-                 */
+                /* ================= Contributions ================= */
                 $contributionIds = array_values(array_unique(
                     array_filter(
                         (array) ($data['contributions'] ?? []),
@@ -548,25 +558,34 @@ public function store(Request $request)
                         ->keyBy('id');
 
                 foreach ($contributions as $contribution) {
-                    if (stripos(
-                        (string) $contribution->name,
-                        'NSSF'
-                    ) !== false) {
-                        $rate = (float) $contribution->rate;
+                    $name = strtoupper((string) $contribution->name);
+                    $type = strtolower((string) $contribution->type);
+                    $rate = (float) $contribution->rate;
 
-                        if (strtolower($contribution->type) === 'percentage') {
-                            $nssf += $grossSalary * $rate / 100;
-                        } elseif (strtolower($contribution->type) === 'fixed') {
-                            $nssf += $rate;
-                        }
+                    // Compute the amount for this contribution record.
+                    $amount = 0;
+                    if ($type === 'percentage') {
+                        $amount = $grossSalary * $rate / 100;
+                    } elseif ($type === 'fixed') {
+                        $amount = $rate;
                     }
+
+                    // Route to the correct accumulator.
+                    if (str_contains($name, 'NSSF')) {
+                        $nssf += $amount;
+                    } elseif (str_contains($name, 'NHIF')) {
+                        $nhif += $amount;
+                    } elseif (str_contains($name, 'TUICO')) {
+                        $tuico += $amount;
+                    }
+                    // WCF is EMPLOYER-paid — do NOT deduct from net salary.
                 }
 
-                $nssf = round($nssf, 2);
+                $nssf  = round($nssf,  2);
+                $nhif  = round($nhif,  2);
+                $tuico = round($tuico, 2);
 
-                /*
-                 * PAYE calculation using your existing tax brackets.
-                 */
+                /* ================= PAYE ================= */
                 $taxableIncome = max(0, $grossSalary - $nssf);
 
                 if ($taxableIncome <= 270000) {
@@ -574,66 +593,70 @@ public function store(Request $request)
                 } elseif ($taxableIncome <= 520000) {
                     $paye = ($taxableIncome - 270000) * 0.08;
                 } elseif ($taxableIncome <= 760000) {
-                    $paye = 20000
-                        + ($taxableIncome - 520000) * 0.20;
+                    $paye = 20000 + (($taxableIncome - 520000) * 0.20);
                 } elseif ($taxableIncome <= 1000000) {
-                    $paye = 68000
-                        + ($taxableIncome - 760000) * 0.25;
+                    $paye = 68000 + (($taxableIncome - 760000) * 0.25);
                 } else {
-                    $paye = 128000
-                        + ($taxableIncome - 1000000) * 0.30;
+                    $paye = 128000 + (($taxableIncome - 1000000) * 0.30);
                 }
 
                 $paye = round(max(0, $paye), 2);
 
+                /* ================= NET SALARY =================
+                 * NHIF and TUICO are now included.
+                 * WCF is employer-paid → excluded.
+                 */
                 $netSalary = round(
                     $grossSalary
                     - $loanDeduction
                     - $advanceDeduction
                     - $nssf
+                    - $nhif
+                    - $tuico
                     - $paye,
                     2
                 );
 
-                /*
-                 * SAVE PAYROLL.
-                 *
-                 * Every employee in this batch receives the same
-                 * reference, so the details page can retrieve all.
-                 */
+                /* ================= Save payroll ================= */
                 $payroll = new Payroll();
 
-                $payroll->employee_id = $employeeId;
-                $payroll->branch_id = $branchId;
-                $payroll->reference = $batchReference;
-                $payroll->month = $month;
+                $payroll->employee_id  = $employeeId;
+                $payroll->branch_id    = $branchId;
+                $payroll->reference    = $batchReference;
+                $payroll->month        = $month;
                 $payroll->basic_salary = $basicSalary;
-                $payroll->allowance = $allowance;
-                $payroll->paye = $paye;
-                $payroll->net_salary = $netSalary;
-
+                $payroll->allowance    = $allowance;
+                $payroll->paye         = $paye;
+                $payroll->net_salary   = $netSalary;
+                $payroll->created_by   = Auth::id();
                 $payroll->save();
 
-                /*
-                 * Save the selected contribution records.
-                 */
+                /* Save contribution records */
                 foreach ($contributions as $contribution) {
                     PayrollContribution::create([
-                        'payroll_id' => $payroll->id,
+                        'payroll_id'      => $payroll->id,
                         'contribution_id' => $contribution->id,
-                        'name' => $contribution->name,
-                        'rate' => $contribution->rate,
-                        'branch_id' => $branchId,
+                        'name'            => $contribution->name,
+                        'rate'            => $contribution->rate,
+                        'branch_id'       => $branchId,
                     ]);
                 }
 
                 $created++;
 
                 Log::info('Employee payroll generated', [
-                    'employee_id' => $employeeId,
-                    'payroll_id' => $payroll->id,
-                    'reference' => $batchReference,
-                    'month' => $month,
+                    'employee_id'    => $employeeId,
+                    'payroll_id'     => $payroll->id,
+                    'reference'      => $batchReference,
+                    'month'          => $month,
+                    'gross'          => $grossSalary,
+                    'nssf'           => $nssf,
+                    'nhif'           => $nhif,
+                    'tuico'          => $tuico,
+                    'paye'           => $paye,
+                    'loan'           => $loanDeduction,
+                    'advance'        => $advanceDeduction,
+                    'net_salary'     => $netSalary,
                 ]);
             }
 
@@ -646,11 +669,11 @@ public function store(Request $request)
 
     } catch (\Throwable $e) {
         Log::error('Payroll generation failed', [
-            'month' => $month,
+            'month'     => $month,
             'branch_id' => $branchId,
-            'error' => $e->getMessage(),
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
+            'error'     => $e->getMessage(),
+            'file'      => $e->getFile(),
+            'line'      => $e->getLine(),
         ]);
 
         return redirect()->back()->with(
@@ -660,7 +683,6 @@ public function store(Request $request)
     }
 
     $message = "Payroll generated successfully for {$created} employee(s).";
-
     if ($skipped > 0) {
         $message .= " {$skipped} employee(s) skipped because payroll already exists.";
     }
@@ -732,7 +754,7 @@ public function fetchSalarySlip(Request $request)
     
     // Get loan repayments for the employee for this month
     $loanRepayments = LoanRepayment::where('employee_id', $employeeId)
-        ->where('deduction_date', $monthRaw_2)
+        ->whereRaw("DATE_FORMAT(deduction_date, '%Y-%m') = ?", [$monthRaw_2])
         ->get()
         ->groupBy('employee_id');
 
@@ -866,7 +888,7 @@ public function downloadSalarySlip(Request $request)
         
         // Get loan repayments for the employee for this month
         $loanRepayments = LoanRepayment::where('employee_id', $employeeId)
-            ->where('deduction_date', $monthRaw_2)
+            ->whereRaw("DATE_FORMAT(deduction_date, '%Y-%m') = ?", [$monthRaw_2])
             ->get()
             ->groupBy('employee_id');
     
@@ -991,7 +1013,8 @@ public function details($reference)
         'employees.firstname as employee_name',
         'payroll_contributions.id as contribution_id',
         'contributions.name as contribution_name',
-        'payroll_contributions.amount'
+        'payroll_contributions.amount',
+        'payrolls.is_paid'
     )
     ->get();
 
@@ -1000,7 +1023,7 @@ public function details($reference)
 
     // Get loan repayments for all employees in this payroll batch and for the same month
     $loanRepayments = LoanRepayment::whereIn('employee_id', $employeeIds)
-        ->where('deduction_date', $month_repayment)
+        ->whereRaw("DATE_FORMAT(deduction_date, '%Y-%m') = ?", [$month_repayment])
         ->get()
         ->groupBy('employee_id');
 
@@ -1094,129 +1117,455 @@ public function details($reference)
 
 
 
+
 public function downloadPayrollDetails($reference)
 {
+    // =====================================================
+    // 1. GENERAL SETTINGS
+    // =====================================================
 
-    $settings= DB::table('general_settings')
-    ->select('business_name')
-    ->get(); 
+    $settings = DB::table('general_settings')
+        ->select('business_name')
+        ->get();
 
-$payrollIds = Payroll::where('reference', $reference)->pluck('id');
-    
-if ($payrollIds->isEmpty()) {
-    return response()->json(['success' => false, 'message' => 'No data found.']);
-}
 
-// Get main payroll for date/month info
-$mainPayroll = Payroll::find($payrollIds->first());
-$month = \Carbon\Carbon::parse($mainPayroll->month)->format('F Y');
-$month_repayment = \Carbon\Carbon::parse($mainPayroll->month)->format('Y-m');
+    // =====================================================
+    // 2. GET PAYROLL IDS
+    // =====================================================
 
-// Load contributions
-$contributions = PayrollContribution::whereIn('payroll_id', $payrollIds)
-    ->with(['payroll.employee', 'contribution'])
-    ->get();
+    $payrollIds = Payroll::where('reference', $reference)
+        ->pluck('id');
 
-// Get employee IDs for those payrolls
-$employeeIds = Payroll::whereIn('id', $payrollIds)->pluck('employee_id');
+    if ($payrollIds->isEmpty()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No payroll data found.'
+        ], 404);
+    }
 
-// Get loan repayments for all employees in this payroll batch and for the same month
-$loanRepayments = LoanRepayment::whereIn('employee_id', $employeeIds)
-    ->where('deduction_date', $month_repayment)
-    ->get()
-    ->groupBy('employee_id');
 
-// Get salary advances for this month
-$salaryAdvances = DB::table('salary_advances')
+    // =====================================================
+    // 3. GET CREATOR AND APPROVER INFORMATION
+    // =====================================================
+
+    $mainPayroll = DB::table('payrolls')
+
+        // Creator from payrolls.created_by
+        ->leftJoin('users as creator', 'creator.id', '=', 'payrolls.created_by')
+        ->leftJoin('roles as creator_role', 'creator_role.id', '=', 'creator.role_id')
+
+        // Approver from payroll_requests.approved_by
+        ->leftJoin('payroll_requests', function ($join) {
+            $join->on('payroll_requests.reference', '=', 'payrolls.reference');
+        })
+
+        ->leftJoin('users as approver', 'approver.id', '=', 'payroll_requests.approved_by')
+        ->leftJoin('roles as approver_role', 'approver_role.id', '=', 'approver.role_id')
+
+        ->where('payrolls.id', $payrollIds->first())
+
+        ->select(
+            'payrolls.*',
+
+            // Creator information
+            'creator.id as creator_id',
+
+            DB::raw("
+                TRIM(CONCAT_WS(' ',
+                    NULLIF(creator.fname, ''),
+                    NULLIF(creator.lname, '')
+                )) as creator_name
+            "),
+
+            'creator_role.name as creator_role',
+            'creator.signature as creator_signature',
+
+            // Approver information
+            'approver.id as approver_id',
+
+            DB::raw("
+                TRIM(CONCAT_WS(' ',
+                    NULLIF(approver.fname, ''),
+                    NULLIF(approver.lname, '')
+                )) as approver_name
+            "),
+
+            'approver_role.name as approver_role',
+            'approver.signature as approver_signature'
+        )
+
+        ->first();
+
+        
+    if (!$mainPayroll) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Main payroll record not found.'
+        ], 404);
+    }
+
+
+    // =====================================================
+    // 4. PREPARE SIGNATURE IMAGE PATHS
+    // =====================================================
+
+    $getSignaturePath = function ($signature) {
+
+        if (empty($signature)) {
+            return null;
+        }
+
+        $signature = str_replace('\\', '/', $signature);
+
+        // Remove public/ prefix if stored in database
+        $signature = preg_replace('#^public/#', '', $signature);
+
+        // Remove leading slash
+        $signature = ltrim($signature, '/');
+
+        $path = public_path($signature);
+
+        return file_exists($path) ? $path : null;
+    };
+
+
+    // Creator details
+    $creator = [
+        'id' => $mainPayroll->creator_id,
+        'name' => $mainPayroll->creator_name ?: 'N/A',
+        'role' => $mainPayroll->creator_role ?: 'N/A',
+        'signature' => $getSignaturePath($mainPayroll->creator_signature),
+    ];
+
+
+    // Approver details
+    $approver = [
+        'id' => $mainPayroll->approver_id,
+        'name' => $mainPayroll->approver_name ?: 'N/A',
+        'role' => $mainPayroll->approver_role ?: 'N/A',
+        'signature' => $getSignaturePath($mainPayroll->approver_signature),
+    ];
+
+
+    // =====================================================
+    // 5. PAYROLL MONTH
+    // =====================================================
+
+    $month = \Carbon\Carbon::parse($mainPayroll->month)
+        ->format('F Y');
+
+    $month_repayment = \Carbon\Carbon::parse($mainPayroll->month)
+        ->format('Y-m');
+
+
+    // =====================================================
+    // 6. GET PAYROLL CONTRIBUTIONS
+    // =====================================================
+
+    $contributions = PayrollContribution::whereIn('payroll_id', $payrollIds)
+        ->with([
+            'payroll.employee',
+            'contribution'
+        ])
+        ->get();
+
+
+    // =====================================================
+    // 7. GET EMPLOYEE IDS
+    // =====================================================
+
+    $employeeIds = Payroll::whereIn('id', $payrollIds)
+        ->pluck('employee_id');
+
+
+    // =====================================================
+    // 8. GET LOAN REPAYMENTS
+    // =====================================================
+
+    $loanRepayments = LoanRepayment::whereIn('employee_id', $employeeIds)
+        ->whereRaw("DATE_FORMAT(deduction_date, '%Y-%m') = ?", [$month_repayment])
+        ->get()
+        ->groupBy('employee_id');
+
+
+    // =====================================================
+    // 9. GET SALARY ADVANCES
+    // =====================================================
+
+    $salaryAdvances = DB::table('salary_advances')
         ->whereIn('employee_id', $employeeIds)
         ->where('month', $month_repayment)
         ->get()
         ->groupBy('employee_id');
-    
-// Group contributions by employee
-$grouped = $contributions->groupBy(function ($item) {
-    return $item->payroll->employee_id ?? 0;
-});
 
-$slips = $grouped->map(function ($rows, $employeeId) use ($loanRepayments, $salaryAdvances) {
-    $first = $rows->first();
 
-    $basic_salary = floatval($first->payroll->basic_salary ?? 0);
-    $allowance = floatval($first->payroll->allowance ?? 0);
-    $paye = floatval($first->payroll->paye ?? 0);
+    // =====================================================
+    // 10. GROUP CONTRIBUTIONS BY EMPLOYEE
+    // =====================================================
 
-    $gross_salary = $basic_salary + $allowance;
+    $grouped = $contributions->groupBy(function ($item) {
+        return $item->payroll->employee_id ?? 0;
+    });
 
-    $nssf = 0;
-    $nhif = 0;
-    $tuico = 0;
-    $advance_pay = 0;
-    $loan = 0;
 
-    foreach ($rows as $p) {
-        $contribution = $p->contribution;
-        if ($contribution) {
+    // =====================================================
+    // 11. CALCULATE EMPLOYEE SALARIES
+    // =====================================================
+
+    $slips = $grouped->map(function ($rows, $employeeId) use (
+        $loanRepayments,
+        $salaryAdvances
+    ) {
+
+        $first = $rows->first();
+
+        $basic_salary = (float) ($first->payroll->basic_salary ?? 0);
+        $allowance = (float) ($first->payroll->allowance ?? 0);
+        $paye = (float) ($first->payroll->paye ?? 0);
+
+        $gross_salary = $basic_salary + $allowance;
+
+        $nssf = 0;
+        $nhif = 0;
+        $tuico = 0;
+
+        // Calculate contributions
+        foreach ($rows as $p) {
+
+            $contribution = $p->contribution;
+
+            if (!$contribution) {
+                continue;
+            }
+
             $type = strtolower($contribution->type);
             $name = strtoupper($contribution->name);
+
             $amount = 0;
 
             if ($type === 'fixed') {
-                $amount = floatval($contribution->rate);
+
+                $amount = (float) $contribution->rate;
+
             } elseif ($type === 'percentage') {
-                $rate = floatval($contribution->rate);
+
+                $rate = (float) $contribution->rate;
+
                 $amount = ($rate / 100) * $gross_salary;
-                $amount_ = ($rate / 100) * $basic_salary;
             }
 
             switch ($name) {
-                case 'NSSF': $nssf = $amount; break;
-                case 'NHIF': $nhif = $amount; break;
-                case 'TUICO': $tuico = $amount_; break;
+
+                case 'NSSF':
+                    $nssf = $amount;
+                    break;
+
+                case 'NHIF':
+                    $nhif = $amount;
+                    break;
+
+                case 'TUICO':
+                    $tuico = $amount;
+                    break;
             }
         }
-    }
 
-   // Get salary advance for this employee
-$advance_pay = $salaryAdvances->has($employeeId)
-? $salaryAdvances[$employeeId]->sum('amount')
-: 0;
 
-// Get loan repayment for this employee
-$loan = $loanRepayments->has($employeeId)
-? $loanRepayments[$employeeId]->sum('amount')
-: 0;
+        // Salary advances
+        $advance_pay = $salaryAdvances->has($employeeId)
+            ? (float) $salaryAdvances[$employeeId]->sum('amount')
+            : 0;
 
-    $net_salary = ($basic_salary + $allowance) - ($nssf + $nhif + $tuico + $advance_pay + $loan + $paye);
 
-    return [
-        'employee_name' => isset($first->payroll->employee)
-            ? $first->payroll->employee->firstname . ' ' .
-              $first->payroll->employee->middlename . ' ' .
-              $first->payroll->employee->surname
-            : 'N/A',
-        'basic_salary'     => $basic_salary,
-        'allowance'        => $allowance,
-        'salary_advance'   => $advance_pay,
-        'nssf'             => $nssf,
-        'nhif'             => $nhif,
-        'tuico'            => $tuico,
-        'loan'             => $loan,
-        'paye'             => $paye,
-        'net_salary'       => $net_salary,
-        'reference' => $first->payroll->reference ?? 'N/A',
-    ];
-})->values();
+        // Loan repayments
+        $loan = $loanRepayments->has($employeeId)
+            ? (float) $loanRepayments[$employeeId]->sum('amount')
+            : 0;
 
-$pdf = Pdf::loadView('payrolls.payrolls_details_pdf', [
-    'slips' => $slips,
-    'month' => $month,
-    'settings' => $settings
-])
-->setPaper('a4', 'landscape'); // ✅ lowercase 'a4' is safer
 
-return $pdf->download("Payroll-Details-{$month}.pdf");
+        // Net salary
+        $net_salary = $gross_salary - (
+            $nssf +
+            $nhif +
+            $tuico +
+            $advance_pay +
+            $loan +
+            $paye
+        );
 
+
+        return [
+
+            'employee_name' => isset($first->payroll->employee)
+                ? trim(
+                    $first->payroll->employee->firstname . ' ' .
+                    $first->payroll->employee->middlename . ' ' .
+                    $first->payroll->employee->surname
+                )
+                : 'N/A',
+
+            'basic_salary' => $basic_salary,
+            'allowance' => $allowance,
+            'salary_advance' => $advance_pay,
+            'nssf' => $nssf,
+            'nhif' => $nhif,
+            'tuico' => $tuico,
+            'loan' => $loan,
+            'paye' => $paye,
+            'net_salary' => $net_salary,
+
+            'reference' => $first->payroll->reference ?? 'N/A',
+        ];
+
+    })->values();
+
+
+    // =====================================================
+    // 12. GENERATE PDF
+    // =====================================================
+
+    $pdf = Pdf::loadView('payrolls.payrolls_details_pdf', [
+
+        'slips' => $slips,
+
+        'month' => $month,
+
+        'settings' => $settings,
+
+        'creator' => $creator,
+
+        'approver' => $approver,
+
+    ])->setPaper('a4', 'landscape');
+
+
+    return $pdf->download("Payroll-Details-{$month}.pdf");
 }
+
+
+// public function downloadPayrollDetails($reference)
+// {
+
+//     $settings= DB::table('general_settings')
+//     ->select('business_name')
+//     ->get(); 
+
+// $payrollIds = Payroll::where('reference', $reference)->pluck('id');
+    
+// if ($payrollIds->isEmpty()) {
+//     return response()->json(['success' => false, 'message' => 'No data found.']);
+// }
+
+// // Get main payroll for date/month info
+// $mainPayroll = Payroll::find($payrollIds->first());
+// $month = \Carbon\Carbon::parse($mainPayroll->month)->format('F Y');
+// $month_repayment = \Carbon\Carbon::parse($mainPayroll->month)->format('Y-m');
+
+// // Load contributions
+// $contributions = PayrollContribution::whereIn('payroll_id', $payrollIds)
+//     ->with(['payroll.employee', 'contribution'])
+//     ->get();
+
+// // Get employee IDs for those payrolls
+// $employeeIds = Payroll::whereIn('id', $payrollIds)->pluck('employee_id');
+
+// // Get loan repayments for all employees in this payroll batch and for the same month
+// $loanRepayments = LoanRepayment::whereIn('employee_id', $employeeIds)
+//     ->where('deduction_date', $month_repayment)
+//     ->get()
+//     ->groupBy('employee_id');
+
+// // Get salary advances for this month
+// $salaryAdvances = DB::table('salary_advances')
+//         ->whereIn('employee_id', $employeeIds)
+//         ->where('month', $month_repayment)
+//         ->get()
+//         ->groupBy('employee_id');
+    
+// // Group contributions by employee
+// $grouped = $contributions->groupBy(function ($item) {
+//     return $item->payroll->employee_id ?? 0;
+// });
+
+// $slips = $grouped->map(function ($rows, $employeeId) use ($loanRepayments, $salaryAdvances) {
+//     $first = $rows->first();
+
+//     $basic_salary = floatval($first->payroll->basic_salary ?? 0);
+//     $allowance = floatval($first->payroll->allowance ?? 0);
+//     $paye = floatval($first->payroll->paye ?? 0);
+
+//     $gross_salary = $basic_salary + $allowance;
+
+//     $nssf = 0;
+//     $nhif = 0;
+//     $tuico = 0;
+//     $advance_pay = 0;
+//     $loan = 0;
+
+//     foreach ($rows as $p) {
+//         $contribution = $p->contribution;
+//         if ($contribution) {
+//             $type = strtolower($contribution->type);
+//             $name = strtoupper($contribution->name);
+//             $amount = 0;
+
+//             if ($type === 'fixed') {
+//                 $amount = floatval($contribution->rate);
+//             } elseif ($type === 'percentage') {
+//                 $rate = floatval($contribution->rate);
+//                 $amount = ($rate / 100) * $gross_salary;
+//                 $amount_ = ($rate / 100) * $basic_salary;
+//             }
+
+//             switch ($name) {
+//                 case 'NSSF': $nssf = $amount; break;
+//                 case 'NHIF': $nhif = $amount; break;
+//                 case 'TUICO': $tuico = $amount_; break;
+//             }
+//         }
+//     }
+
+//    // Get salary advance for this employee
+// $advance_pay = $salaryAdvances->has($employeeId)
+// ? $salaryAdvances[$employeeId]->sum('amount')
+// : 0;
+
+// // Get loan repayment for this employee
+// $loan = $loanRepayments->has($employeeId)
+// ? $loanRepayments[$employeeId]->sum('amount')
+// : 0;
+
+//     $net_salary = ($basic_salary + $allowance) - ($nssf + $nhif + $tuico + $advance_pay + $loan + $paye);
+
+//     return [
+//         'employee_name' => isset($first->payroll->employee)
+//             ? $first->payroll->employee->firstname . ' ' .
+//               $first->payroll->employee->middlename . ' ' .
+//               $first->payroll->employee->surname
+//             : 'N/A',
+//         'basic_salary'     => $basic_salary,
+//         'allowance'        => $allowance,
+//         'salary_advance'   => $advance_pay,
+//         'nssf'             => $nssf,
+//         'nhif'             => $nhif,
+//         'tuico'            => $tuico,
+//         'loan'             => $loan,
+//         'paye'             => $paye,
+//         'net_salary'       => $net_salary,
+//         'reference' => $first->payroll->reference ?? 'N/A',
+//     ];
+// })->values();
+
+// $pdf = Pdf::loadView('payrolls.payrolls_details_pdf', [
+//     'slips' => $slips,
+//     'month' => $month,
+//     'settings' => $settings
+// ])
+// ->setPaper('a4', 'landscape'); // ✅ lowercase 'a4' is safer
+
+// return $pdf->download("Payroll-Details-{$month}.pdf");
+
+// }
 
 
 
@@ -1622,37 +1971,190 @@ public function rollbackPayroll($id)
 
         // Get the selected payroll
         $referencePayroll = Payroll::findOrFail($id);
-        $employeeId = $referencePayroll->employee_id;
-        $month = $referencePayroll->month;
+        $month    = $referencePayroll->month;          // "YYYY-MM"
+        $branchId = Auth::user()->branch_id;
 
-        // Get all payrolls for the same employee and month
+        [$year, $monthNum] = explode('-', $month);
+        $year     = (int) $year;
+        $monthNum = (int) $monthNum;
+
+        // Get all payrolls for this month+branch
         $payrolls = Payroll::where('month', $month)
-            ->where('branch_id', Auth::user()->branch_id)
+            ->where('branch_id', $branchId)
             ->get();
 
         // Delete contributions and payrolls
         foreach ($payrolls as $payroll) {
-            PayrollContribution::where('payroll_id', $id)
-                                 ->where('branch_id', Auth::user()->branch_id)->delete();
+            PayrollContribution::where('payroll_id', $payroll->id)
+                ->where('branch_id', $branchId)
+                ->delete();
             $payroll->delete();
         }
 
-        // Delete loan repayments for the employee in that month
-        LoanRepayment::where('deduction_date', $month)
-            ->where('branch_id', Auth::user()->branch_id)
-            ->delete();
+        /* ==============================================================
+         | 1. Capture which loans had repayments this month — BEFORE
+         |    deleting them, so we know what to recompute.
+         ============================================================== */
+
+        $month_repay = $referencePayroll->month . '-01';
+        $repaymentsQuery = LoanRepayment::where('deduction_date', $month_repay)
+            ->where('branch_id', $branchId);
+
+        $affectedLoanIds = (clone $repaymentsQuery)
+            ->whereNotNull('loan_id')
+            ->distinct()
+            ->pluck('loan_id')
+            ->unique()
+            ->values()
+            ->all();
+
+        // 2. Delete the loan repayments for this month
+        $deletedRepayments = $repaymentsQuery->delete();
+
+        /* ==============================================================
+         | 3. Restore each affected loan's balance
+         |    balance = max(0, principal − SUM(remaining repayments))
+         ============================================================== */
+        $restoredLoans = 0;
+        foreach ($affectedLoanIds as $loanId) {
+            $loan = Loan::find($loanId);
+            if (!$loan) continue;
+
+            $totalRepaid = (float) LoanRepayment::where('loan_id', $loanId)->sum('amount');
+            $newBalance  = max(0, (float) $loan->principal - $totalRepaid);
+
+            $loan->balance = $newBalance;
+            $loan->status = "active";
+            $loan->save();          // also refreshes updated_at
+            $restoredLoans++;
+        }
+
+        // 4. Delete payroll requests (and their events) for that period
+        $requestIds = PayrollRequest::where('branch_id', $branchId)
+            ->where('period_year',  $year)
+            ->where('period_month', $monthNum)
+            ->pluck('id');
+
+        if ($requestIds->isNotEmpty()) {
+            PayrollRequestEvent::whereIn('payroll_request_id', $requestIds)->delete();
+            PayrollRequest::whereIn('id', $requestIds)->delete();
+        }
 
         DB::commit();
 
-        return response()->json(['message' => true, 'message' => 'All payrolls and related data for this month deleted successfully.']);
+        return response()->json([
+            'success' => true,
+            'message' => 'All payrolls, related data, and payment requests for this month deleted successfully.',
+            'stats'   => [
+                'repayments_deleted' => $deletedRepayments,
+                'loans_restored'     => $restoredLoans,
+            ],
+        ]);
     } catch (\Exception $e) {
         DB::rollBack();
+
         return response()->json([
             'success' => false,
             'message' => 'Failed to rollback all payrolls.',
-            'error' => $e->getMessage()
+            'error'   => $e->getMessage(),
         ], 500);
     }
-   }
+}
+
+
+   public function employeesForPayment($reference)
+{
+    $branchId = Auth::user()->branch_id;
+
+    $rows = DB::table('payrolls')
+        ->join('employees', 'employees.id', '=', 'payrolls.employee_id')
+        ->where('payrolls.branch_id', $branchId)
+        ->where('payrolls.reference', $reference)
+        ->select(
+            'payrolls.id',
+            DB::raw("CONCAT(employees.firstname,' ',employees.surname) AS name"),
+            'payrolls.net_salary',
+            'payrolls.is_paid'
+        )
+        ->orderBy('employees.firstname')
+        ->get();
+
+    return response()->json(['employees' => $rows]);
+}
+
+
+public function markEmployeesPaid(Request $request, $reference)
+{
+    $data = $request->validate([
+        'payroll_ids'   => 'required|array|min:1',
+        'payroll_ids.*' => 'integer|exists:payrolls,id',
+    ]);
+
+    $branchId = Auth::user()->branch_id;
+
+    /* ============================================================
+     * STEP 1 — debug: what do we actually match?
+     * ============================================================ */
+    $matched = DB::table('payrolls')
+        ->where('branch_id', $branchId)
+        ->where('reference', $reference)
+        ->whereIn('id', $data['payroll_ids'])
+        ->get(['id', 'reference', 'branch_id', 'is_paid', 'net_salary']);
+
+    \Log::info('markEmployeesPaid: pre-check', [
+        'reference_param' => $reference,
+        'branch_id_param' => $branchId,
+        'requested_ids'   => $data['payroll_ids'],
+        'matched_count'   => $matched->count(),
+        'matched_rows'    => $matched->toArray(),
+    ]);
+
+    if ($matched->isEmpty()) {
+        return response()->json([
+            'message' => 'No matching payrolls found. '
+                       . 'Reference: "' . $reference . '", '
+                       . 'Branch: ' . $branchId . ', '
+                       . 'Requested IDs: ' . implode(',', $data['payroll_ids']),
+            'updated' => 0,
+        ], 422);
+    }
+
+    /* ============================================================
+     * STEP 2 — update (allow NULL is_paid + use 1 for DB safety)
+     * ============================================================ */
+    $updated = DB::table('payrolls')
+        ->where('branch_id', $branchId)
+        ->where('reference', $reference)
+        ->whereIn('id', $data['payroll_ids'])
+        ->where(function ($q) {
+            $q->where('is_paid', 0)
+              ->orWhereNull('is_paid');   // ← critical if column was added after data existed
+        })
+        ->update([
+            'is_paid'  => 1,              // int, not bool — safest across drivers
+            'paid_at'  => now(),
+            'paid_by'  => Auth::id(),
+        ]);
+
+    /* ============================================================
+     * STEP 3 — fail loudly if nothing changed
+     * ============================================================ */
+    if ($updated === 0) {
+        $alreadyPaid = $matched->where('is_paid', 1)->pluck('id')->all();
+
+        return response()->json([
+            'message' => $alreadyPaid
+                ? 'These payrolls are already marked paid: ' . implode(',', $alreadyPaid)
+                : 'Update affected 0 rows. Check that is_paid/paid_at/paid_by columns exist.',
+            'updated'      => 0,
+            'already_paid' => $alreadyPaid,
+        ], 422);
+    }
+
+    return response()->json([
+        'message' => "Marked {$updated} payroll(s) as paid.",
+        'updated' => $updated,
+    ]);
+}
 
 }

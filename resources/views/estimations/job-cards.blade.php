@@ -610,12 +610,13 @@
     .est-row-act i { font-size: 11px; }
     .est-row-act:hover { text-decoration: none; transform: translateY(-1px); }
     .est-row-act-job {
-        background: linear-gradient(180deg, #ecfeff, #cffafe);
-        color: var(--cyan-dark); border-color: var(--cyan-line);
+        background: linear-gradient(180deg, #f37454, #fc6e69);
+        color: #fff; 
+        border-color: #fff;
     }
     .est-row-act-job:hover {
-        background: linear-gradient(180deg, #cffafe, #a5f3fc);
-        color: var(--cyan-dark); border-color: var(--cyan);
+        background: #fc9a9a;
+        color: #fff;
     }
     .est-row-act-create {
         background: linear-gradient(180deg, var(--brand-700), var(--brand-800));
@@ -645,13 +646,13 @@
 
     /* Create Delivery — violet, distinct from other action chips */
     .est-row-act-delivery {
-        background: linear-gradient(180deg, var(--violet-soft), var(--violet-line));
-        color: var(--violet-dark); border-color: var(--violet-line);
+        background: #387fe9;
+        color: #fff; border-color: var(--violet-line);
         box-shadow: 0 2px 8px -2px rgba(124,58,237,.25), inset 0 1px 0 rgba(255,255,255,.4);
     }
     .est-row-act-delivery:hover {
-        background: linear-gradient(180deg, var(--violet-line), #c4b5fd);
-        color: var(--violet-dark); border-color: var(--violet);
+        background: #6ea4d1;
+        color: #fff;
     }
 
     /* Delivered badge */

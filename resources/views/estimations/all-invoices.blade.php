@@ -785,15 +785,15 @@
 
     /* View PDF — Rose */
     .inv-act-view {
-        background: linear-gradient(180deg, #fff1f2, #ffe4e6);
-        color: var(--rose-dark);
-        border-color: var(--rose-line);
+        background: linear-gradient(180deg, #347afc, #3498f7);
+        color: #fff;
+        border-color: #ddd;
     }
     .inv-act-view:hover {
-        background: linear-gradient(180deg, #ffe4e6, #fecdd3);
-        color: var(--rose-dark);
-        border-color: var(--rose);
-        box-shadow: 0 4px 12px -2px rgba(225,29,72,.28);
+        background: linear-gradient(180deg, #82a3eb, #85b1f3);
+        color: #fff;
+        border-color: #fff;
+        box-shadow: 0 4px 12px -2px rgba(91, 236, 217, 0.28);
     }
 
     /* Edit — Cyan */

@@ -62,36 +62,6 @@ class SalaryAdvanceController extends Controller
         return view('payrolls.salary_advances.edit', compact('advance', 'employees'));
     }
 
-    public function update(Request $request, $id)
-    {
-        $advance = SalaryAdvance::where('branch_id', $this->branchId())
-            ->findOrFail($id);
-
-        $request->validate([
-            'employee_id' => 'required|exists:employees,id',
-            'amount'      => 'required|numeric|min:0',
-            'month'       => 'required|date_format:Y-m',
-        ]);
-
-        $advance->update([
-            'employee_id' => $request->employee_id,
-            'amount'      => $request->amount,
-            'month'       => $request->month,
-        ]);
-
-        return redirect()->route('salary-advances.index')
-            ->with('success', 'Salary advance updated successfully.');
-    }
-
-    public function destroy($id)
-    {
-        $advance = SalaryAdvance::where('branch_id', $this->branchId())
-            ->findOrFail($id);
-
-        $advance->delete();
-
-        return redirect()->back()->with('success', 'Salary advance deleted.');
-    }
 
     public function downloadPdf(Request $request)
     {
@@ -157,5 +127,61 @@ public function submitForApproval($id)
     );
 
     return back()->with('success', 'Salary advance submitted to HR for approval.');
+}
+
+
+public function markPaid(Request $request)
+{
+    $request->validate([
+        'advance_ids'   => 'required|array',
+        'advance_ids.*' => 'integer',
+    ]);
+
+    \App\Models\SalaryAdvance::whereIn('id', $request->advance_ids)
+        ->where('branch_id', auth()->user()->branch_id)
+        ->update([
+            'is_paid'  => true,
+            'status'   => 'paid',
+            'paid_at'  => now(),
+            'paid_by'  => auth()->id(),
+        ]);
+
+    return response()->json(['message' => 'Advances marked as paid.']);
+}
+
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'amount'  => 'required|numeric|min:0.01',
+        'is_paid' => 'required|in:0,1',
+    ]);
+
+    $advance = SalaryAdvance::where('id', $id)
+        ->where('branch_id', Auth::user()->branch_id)
+        ->firstOrFail();
+
+    $advance->amount = $request->amount;
+    $advance->is_paid = $request->is_paid;
+    $advance->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Salary advance updated successfully.'
+    ]);
+}
+
+
+public function destroy($id)
+{
+    $advance = SalaryAdvance::where('id', $id)
+        ->where('branch_id', Auth::user()->branch_id)
+        ->firstOrFail();
+
+    $advance->delete();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Salary advance deleted successfully.'
+    ]);
 }
 }

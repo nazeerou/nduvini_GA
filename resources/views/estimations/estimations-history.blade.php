@@ -912,17 +912,17 @@
         background: linear-gradient(180deg, var(--brand-800), var(--brand-900));
     }
     .est-row-act-view {
-        background: linear-gradient(180deg, #eff6ff, #dbeafe);
-        color: var(--brand-800);
+        background: linear-gradient(180deg, #519bfc, #4f98f7);
+        color: #ddd;
         border-color: #bfdbfe;
     }
     .est-row-act-view:hover {
-        background: linear-gradient(180deg, #dbeafe, #bfdbfe);
-        color: var(--brand-900);
+        background: linear-gradient(180deg, #5f99e6, #68a8f7);
+        color: #fff;
     }
     .est-row-act-delete {
-        background: linear-gradient(180deg, #fff1f2, #ffe4e6);
-        color: var(--rose);
+        background: linear-gradient(180deg, #f11d2b, #f11927);
+        color: #fff;
         border-color: var(--rose-line);
     }
     .est-row-act-delete:hover {

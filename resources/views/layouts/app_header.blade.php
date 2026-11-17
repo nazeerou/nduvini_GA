@@ -90,6 +90,7 @@ use App\Models\Module;
         <link href="{{ url('assets/plugins/select2/dist/css/select2-bootstrap.css') }}" rel="stylesheet" type="text/css">
         <link rel="stylesheet" href="{{ url('assets/plugins/morris/morris.css') }}">
         <script src="{{ url('assets/js/jquery.min.js') }}"></script>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
         <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -861,7 +862,7 @@ use App\Models\Module;
 .topbar .topbar-left {
     width: var(--gas-sidebar-width);
     min-width: var(--gas-sidebar-width);
-    padding: 0 18px;
+    padding: 0 48px;
     background: #fff;
 }
 .topbar-left .logo {

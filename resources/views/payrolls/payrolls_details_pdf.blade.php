@@ -61,10 +61,7 @@
             font-weight: bold;
         }
 
-        .signature-section {
-            margin-top: 50px;
-            text-align: center;
-        }
+    
 
         .signature-label {
             font-size: 13px;
@@ -72,8 +69,8 @@
         }
 
         .signature-line {
-            width: 200px;
-            border-top: 1px solid #000;
+            width: 100px;
+             border-top: 1px dashed #999;
             margin: 0 auto;
         }
 
@@ -115,6 +112,74 @@
             font-size: 15px;
             padding-top: 10px;
         }
+        /* =====================================================
+   SIGNATURE SECTIONS - LEFT AND RIGHT ALIGNMENT
+===================================================== */
+
+.signature-wrapper {
+        width: 100%;
+        display: table;
+        table-layout: fixed;
+        margin-top: 45px;
+        margin-bottom: 35px;
+    }
+
+    .signature-section-1,
+    .signature-section-2 {
+        display: table-cell;
+        width: 50%;
+        vertical-align: top;
+    }
+
+    .signature-section-1 {
+        text-align: left;
+        padding-left: 20px;
+    }
+
+    .signature-section-2 {
+        text-align: right;
+        padding-right: 20px;
+    }
+
+    .signature-heading {
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+
+    .signature-image {
+        height: 55px;
+        width: 120px;
+        object-fit: contain;
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+
+    .signature-line {
+        width: 100px;
+         border-top: 1px dashed #999;
+        margin-top: 5px;
+    }
+
+    .signature-section-1 .signature-line {
+        margin-left: 0;
+    }
+
+    .signature-section-2 .signature-line {
+        margin-left: auto;
+        margin-right: 0;
+    }
+
+    .signature-name {
+        font-size: 11px;
+        margin-top: 8px;
+        margin-bottom: 4px;
+    }
+
+    .signature-role {
+        font-size: 10px;
+        color: #555;
+    }
+
     </style>
 </head>
 <body>
@@ -234,16 +299,78 @@
     </tfoot>
 </table>
 
-<!-- Signature Section -->
-<div class="signature-section">
-    <div class="signature-label">Authorized By</div>
-    <div class="signature-line"></div>
-    <div class="signature-label">Signature</div>
+
+<!-- Signature Sections -->
+<!-- =====================================================
+     PAYROLL SIGNATURES
+===================================================== -->
+
+<div class="signature-wrapper">
+
+    <!-- CREATED BY - LEFT -->
+    <div class="signature-section-1">
+
+        <div class="signature-heading" style="padding-left: 20px;">
+            <strong>Created By</strong>
+        </div>
+
+        @if(!empty($creator['signature']))
+            <img
+                src="{{ $creator['signature'] }}"
+                class="signature-image"
+                alt="Creator Signature"
+            >
+        @else
+            <div style="height: 65px;"></div>
+        @endif
+
+        <div class="signature-line"></div>
+
+        <div class="signature-name">
+            <strong>{{ strtoupper($creator['name']) }}</strong>
+        </div>
+
+        <div class="signature-role" style="padding-left: 20px;">
+            {{ $creator['role'] }}
+        </div>
+
+    </div>
+
+
+    <!-- APPROVED BY - RIGHT -->
+    <div class="signature-section-2">
+
+        <div class="signature-heading" style="padding-right: 20px;">
+            <strong>Approved By</strong>
+        </div>
+
+        @if(!empty($approver['signature']))
+            <img
+                src="{{ $approver['signature'] }}"
+                class="signature-image"
+                alt="Approver Signature"
+            >
+        @else
+            <div style="height: 65px;"></div>
+        @endif
+
+        <div class="signature-line"></div>
+
+        <div class="signature-name">
+            <strong>{{ strtoupper($approver['name']) }}</strong>
+        </div>
+
+        <div class="signature-role">
+            {{ $approver['role'] }}
+        </div>
+
+    </div>
+
 </div>
 
 <!-- Footer -->
 <div class="footer">
-    Generated on: {{ now()->format('F d, Y h:i A') }}
+   Generated on: {{ now()->addHours(3)->format('F d, Y h:i A') }} 
 </div>
 
 </body>

@@ -21,7 +21,7 @@ use App\Models\Year;
 use Auth;
 use App\Models\Invoice;
 use App\Models\Labour;
-
+use Illuminate\Support\Facades\Storage;
 
 class HomeController extends Controller
 {
@@ -648,4 +648,62 @@ $receivables = (float) DB::table('invoices')
         return redirect()->back()->with('error', 'Labour setting Deleted');
         
     }
+
+
+public function updateSignature(Request $request)
+{
+    $request->validate([
+        'signature' => 'required|image|mimes:png,jpg,jpeg|max:2048',
+    ]);
+
+    $user = Auth::user();
+
+    try {
+
+        $destinationPath = public_path('signatures');
+
+        // Create directory if it does not exist
+        if (!file_exists($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+
+        // Generate unique filename
+        $fileName = 'signature_' . $user->id . '_' . time() . '.' .
+                    $request->file('signature')->getClientOriginalExtension();
+
+        // Upload image directly to public/images/signatures
+        $request->file('signature')->move($destinationPath, $fileName);
+
+        // Delete previous signature
+        if ($user->signature) {
+            $oldFile = public_path($user->signature);
+
+            if (file_exists($oldFile)) {
+                unlink($oldFile);
+            }
+        }
+
+        // Save relative path in database
+        $user->signature = 'signatures/' . $fileName;
+        $user->save();
+
+        return redirect()->back()->with(
+            'message',
+            'Employee signature uploaded successfully.'
+        );
+
+    } catch (\Throwable $e) {
+
+        Log::error('Signature upload failed', [
+            'user_id' => $user->id,
+            'error' => $e->getMessage(),
+        ]);
+
+        return redirect()->back()->with(
+            'error',
+            'Unable to upload signature. Please try again.'
+        );
+    }
+}
+
 }
