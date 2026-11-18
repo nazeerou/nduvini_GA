@@ -2122,7 +2122,7 @@
                         <div class="col-md-9">
                             <div class="form-group">
                                 <label class="control-label">&nbsp;</label>
-                                <button type="submit" class="btn btn-primary btn-rounded w-lg waves-effect waves-light m-b-20 m-t-10" id="save_btn1">Save</button>
+                                <!-- <button type="submit" class="btn btn-primary btn-rounded w-lg waves-effect waves-light m-b-20 m-t-10" id="save_btn1">Save</button> -->
                             </div>
                         </div>
                     </div>
