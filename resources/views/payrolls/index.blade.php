@@ -1616,7 +1616,7 @@ $(function () {
         return (MONTH_NAMES[idx] || m) + ' ' + y;
     }
     function buildApprovalMessage(periodLabel, employees, amount, kind) {
-        return 'Dear Managing Director,\n\nPlease review and approve the ' + kind + ' for ' + periodLabel + '.\n\nEmployees: ' + employees + '\nTotal Amount: TZS ' + amount.toLocaleString(undefined, { minimumFractionDigits: 2 }) + '\n\nKindly respond at your earliest convenience.\n\nThank you.';
+        return 'Dear Managing Director,\nPlease review and approve the ' + kind + ' for ' + periodLabel + '.\nEmployees: ' + employees + '\nTotal Amount: TZS ' + amount.toLocaleString(undefined, { minimumFractionDigits: 2 }) + '\nKindly respond at your earliest convenience.\nThank you.';
     }
     $('#saNotifyEmailCheckbox').on('change', function () { $('#saEmailFieldContainer').toggle(this.checked); });
     function openApprovalModal($btn, type, labelKind) {
@@ -1706,7 +1706,7 @@ $(function () {
         $('#approveRequestName').val(labelPrefix + ' — ' + periodLabel);
         $('#approveReplyTo').val(reqName || 'N/A');
         $('#approveReplyToId').val(reqId);
-        $('#approveMessage').val('Dear ' + (reqName || 'Requester') + ',\n\nYour ' + labelPrefix.toLowerCase() + ' request for ' + periodLabel + ' has been reviewed.\n\nEmployees: ' + employees + '\nTotal Amount: TZS ' + amount.toLocaleString(undefined, { minimumFractionDigits: 2 }) + '\n\nPlease see the decision above.\n\nThank you.');
+        $('#approveMessage').val('Dear ' + (reqName || 'Requester') + ',\nYour ' + labelPrefix.toLowerCase() + ' request for ' + periodLabel + ' has been reviewed.\nEmployees: ' + employees + '\nTotal Amount: TZS ' + amount.toLocaleString(undefined, { minimumFractionDigits: 2 }) + '\nThank you.');
         $('.decision-checkbox[data-decision="accepted"]').prop('checked', true);
         $('.decision-checkbox[data-decision="rejected"]').prop('checked', false);
         $('#approveDecisionStatus').val('accepted');

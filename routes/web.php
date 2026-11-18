@@ -37,8 +37,8 @@ use App\Http\Controllers\{
     AccountTransactionController,
     DebtController,
     AuditLogController,
-    PayrollRequestController
-
+    PayrollRequestController,
+    SmsController
 };
 
 /*
@@ -630,6 +630,10 @@ Route::delete('/salary-advances/{id}',
     [SalaryAdvanceController::class, 'destroy'])
     ->name('salary-advances.destroy');
 
+
+Route::get('/sms', [SmsController::class, 'index'])->name('sms.index');
+Route::post('/sms/send', [SmsController::class, 'sendSms'])->name('sms.send');
+Route::post('/sms/bulk', [SmsController::class, 'bulkUpload'])->name('sms.bulk');
 
 Route::get('/test-nextsms', function () {
 

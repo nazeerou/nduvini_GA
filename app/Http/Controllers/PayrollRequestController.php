@@ -11,6 +11,7 @@ use PDF;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 
 class PayrollRequestController extends Controller
@@ -84,320 +85,744 @@ class PayrollRequestController extends Controller
     }
 
     public function store(Request $request)
-    {
-        /*
-        |------------------------------------------------------------------
-        | 1. Validation — employee_id / send_to must be SCALARS,
-        |    payload must be an ARRAY (cast handles JSON encoding)
-        |------------------------------------------------------------------
-        */
-        $data = $request->validate([
-            'type'             => 'required|in:monthly_salary,salary_advance',
-            'period_month'     => 'required|integer|between:1,12',
-            'period_year'      => 'required|integer|min:2020',
+{
+    $data = $request->validate([
+        'type'             => 'required|in:monthly_salary,salary_advance',
+        'period_month'     => 'required|integer|between:1,12',
+        'period_year'      => 'required|integer|min:2020',
+        'employee_id'      => 'nullable|integer|exists:employees,id',
+        'send_to'          => 'required_unless:decision,accepted,rejected|nullable|integer|exists:users,id',
+        'amount'           => 'required|numeric|min:0.01',
+        'employee_count'   => 'required|integer|min:1',
+        'payload'          => 'nullable|array',
+        'notes'            => 'nullable|string|max:1000',
+        'decision'         => 'nullable|in:accepted,rejected',
+        'rejection_reason' => 'nullable|string|max:1000',
+    ]);
 
-            // bulk monthly payroll sends no employee_id; advances send one
-            'employee_id'      => 'nullable|integer|exists:employees,id',
+    $user          = Auth::user();
+    $branchId      = $user->branch_id;
+    $requesterName = $this->userFullName($user);
 
-            // single approver — scalar only
-            'send_to'          => 'required_unless:decision,accepted,rejected|nullable|integer|exists:users,id',
+    $approverId = $this->scalarInt($data['send_to']     ?? null);
+    $employeeId = $this->scalarInt($data['employee_id'] ?? null);
 
-            'amount'           => 'required|numeric|min:0.01',
-            'employee_count'   => 'required|integer|min:1',
+    if ($data['type'] !== 'salary_advance') {
+        $employeeId = null;
+    }
 
-            // payload is an object/array — model casts to JSON
-            'payload'          => 'nullable|array',
+    $decision = $data['decision'] ?? null;
 
-            'notes'            => 'nullable|string|max:1000',
-            'decision'         => 'nullable|in:accepted,rejected',
-            'rejection_reason' => 'nullable|string|max:1000',
-        ]);
+    $period = sprintf('%04d-%02d', $data['period_year'], $data['period_month']);
 
-        $user          = Auth::user();
-        $branchId      = $user->branch_id;
-        $requesterName = $user->name;
+    $payload = is_array($data['payload'] ?? null) ? $data['payload'] : [];
 
-        /*
-        |------------------------------------------------------------------
-        | 2. Normalise to scalars — defensive against multi-selects
-        |------------------------------------------------------------------
-        */
-        $approverId = $this->scalarInt($data['send_to']     ?? null);
-        $employeeId = $this->scalarInt($data['employee_id'] ?? null);
+    $payload = array_merge($payload, [
+        'period'         => $period,
+        'employee_ids'   => $request->input('employee_ids', $payload['employee_ids'] ?? []),
+        'total_amount'   => (float) $data['amount'],
+        'employee_count' => (int)   $data['employee_count'],
+    ]);
 
-        // monthly_salary is BULK → never store a single employee_id
-        if ($data['type'] !== 'salary_advance') {
-            $employeeId = null;
-        }
+    $payrollReference = DB::table('payrolls')
+        ->where('branch_id', $branchId)
+        ->where('month', $period)
+        ->value('reference');
 
-        $decision = $data['decision'] ?? null;
+    $existing = PayrollRequest::forBranch($branchId)
+        ->where('type', $data['type'])
+        ->where('period_year', $data['period_year'])
+        ->where('period_month', $data['period_month'])
+        ->whereIn('status', ['pending', 'approved', 'rejected', 'cancelled'])
+        ->latest('id')
+        ->first();
 
-        $period = sprintf('%04d-%02d', $data['period_year'], $data['period_month']);
+    if ($existing && $existing->status === 'approved') {
+        return response()->json([
+            'errors' => ['type' => ['A request for this period is already approved.']],
+        ], 422);
+    }
 
-        /*
-        |------------------------------------------------------------------
-        | 3. Build a clean payload array
-        |    (column has CHECK json_valid — always send valid JSON or NULL)
-        |------------------------------------------------------------------
-        */
-        $payload = is_array($data['payload'] ?? null) ? $data['payload'] : [];
+    /* ------------------------------------------------------------------
+     | 7. Existing PENDING request
+     ------------------------------------------------------------------ */
+    if ($existing && $existing->status === 'pending') {
 
-        $payload = array_merge($payload, [
-            'period'         => $period,                                            // "2026-10"
-            'employee_ids'   => $request->input('employee_ids', $payload['employee_ids'] ?? []),
-            'total_amount'   => (float) $data['amount'],                            // 10820000.0
-            'employee_count' => (int)   $data['employee_count'],                    // 25
-        ]);
+        // ----------------------------------------------------------
+        // 7a. Approve / reject the pending request
+        // ----------------------------------------------------------
+        if (in_array($decision, ['accepted', 'rejected'], true)) {
 
-        /*
-        |------------------------------------------------------------------
-        | 4. Payroll reference for the period
-        |------------------------------------------------------------------
-        */
-        $payrollReference = DB::table('payrolls')
-            ->where('branch_id', $branchId)
-            ->where('month', $period)
-            ->value('reference');
+            $newStatus   = $decision === 'accepted' ? 'approved' : 'rejected';
+            $eventAction = $newStatus;
+            $eventNote   = $data['notes']
+                ?? ($decision === 'accepted' ? 'Request approved' : 'Request rejected');
 
-        /*
-        |------------------------------------------------------------------
-        | 5. Find existing request for this branch + type + period
-        |------------------------------------------------------------------
-        */
-        $existing = PayrollRequest::forBranch($branchId)
-            ->where('type', $data['type'])
-            ->where('period_year', $data['period_year'])
-            ->where('period_month', $data['period_month'])
-            ->whereIn('status', ['pending', 'approved', 'rejected', 'cancelled'])
-            ->latest('id')
-            ->first();
+            DB::transaction(function () use ($existing, $data, $decision, $newStatus, $eventAction, $eventNote) {
+                $update = [
+                    'status'      => $newStatus,
+                    'approved_by' => Auth::id(),
+                    'approved_at' => now(),
+                ];
 
-        /*
-        |------------------------------------------------------------------
-        | 6. Approved request — cannot overwrite
-        |------------------------------------------------------------------
-        */
-        if ($existing && $existing->status === 'approved') {
-            return response()->json([
-                'errors' => [
-                    'type' => ['A request for this period is already approved.'],
-                ],
-            ], 422);
-        }
+                if ($decision === 'rejected') {
+                    $update['rejected_by']      = Auth::id();
+                    $update['rejected_at']      = now();
+                    $update['rejection_reason'] = $data['rejection_reason']
+                        ?? ($data['notes'] ?? 'Rejected by approver');
+                }
 
-        /*
-        |------------------------------------------------------------------
-        | 7. Existing PENDING request
-        |------------------------------------------------------------------
-        */
-        if ($existing && $existing->status === 'pending') {
-
-            // 7a. Approve / reject the pending request
-            if (in_array($decision, ['accepted', 'rejected'], true)) {
-
-                $newStatus   = $decision === 'accepted' ? 'approved' : 'rejected';
-                $eventAction = $newStatus;
-                $eventNote   = $data['notes']
-                    ?? ($decision === 'accepted' ? 'Request approved' : 'Request rejected');
-
-                DB::transaction(function () use ($existing, $data, $decision, $newStatus, $eventAction, $eventNote) {
-                    $update = [
-                        'status'      => $newStatus,
-                        'approved_by' => Auth::id(),
-                        'approved_at' => now(),
-                    ];
-
-                    if ($decision === 'rejected') {
-                        $update['rejected_by']      = Auth::id();
-                        $update['rejected_at']      = now();
-                        $update['rejection_reason'] = $data['rejection_reason']
-                            ?? ($data['notes'] ?? 'Rejected by approver');
-                    }
-
-                    $existing->update($update);
-
-                    PayrollRequestEvent::create([
-                        'payroll_request_id' => $existing->id,
-                        'action'             => $eventAction,
-                        'actor_id'           => Auth::id(),
-                        'notes'              => $eventNote,
-                    ]);
-                });
-
-                return response()->json([
-                    'message' => $decision === 'accepted'
-                        ? 'Request approved.'
-                        : 'Request rejected.',
-                    'request' => $existing->fresh(),
-                    'status'  => $newStatus,
-                ]);
-            }
-
-            // 7b. Update and resubmit pending request
-            if (!$approverId) {
-                return response()->json([
-                    'errors' => ['send_to' => ['Please select an approver.']],
-                ], 422);
-            }
-
-            DB::transaction(function () use ($existing, $employeeId, $approverId, $data, $payload) {
-                $existing->update([
-                    'employee_id'    => $employeeId,           // scalar or null
-                    'approver_id'    => $approverId,           // scalar
-                    'amount'         => $data['amount'],
-                    'employee_count' => (int) $data['employee_count'],
-                    'notes'          => $data['notes'] ?? null,
-                    'payload'        => $payload,              // cast → JSON string
-                    'requested_by'   => Auth::id(),
-                    'requested_at'   => now(),
-                ]);
+                $existing->update($update);
 
                 PayrollRequestEvent::create([
                     'payroll_request_id' => $existing->id,
-                    'action'             => 'updated',
+                    'action'             => $eventAction,
                     'actor_id'           => Auth::id(),
-                    'notes'              => 'Pending request updated and resubmitted for approval',
+                    'notes'              => $eventNote,
                 ]);
             });
 
-            $smsMessage =
-                "PAYROLL REQUEST UPDATED\n" .
-                "Requester: {$requesterName}\n" .
-                "Message: " . ($data['notes'] ?? 'No message provided');
+            /* ==========================================================
+             | 🔔 NEW: Notify the REQUESTER that the approver has decided
+             ========================================================== */
+            $requesterId   = $existing->requested_by;
+            $approverName  = $this->userFullName($user);
+            $periodLabel   = \Carbon\Carbon::createFromFormat(
+                'Y-m',
+                sprintf('%04d-%02d', $existing->period_year, $existing->period_month)
+            )->format('F Y');
 
-            $smsSent = $this->notifyPayrollApprover(
-                $approverId,
+            if ($decision === 'accepted') {
+                $smsMessage =
+                    "PAYROLL REQUEST APPROVED\n" .
+                    "Period: {$periodLabel}\n" .
+                    "Approved By: {$approverName}\n" .
+                    "" . ($data['notes'] ?? 'Your request has been approved.');
+            } else {
+                $reason = $data['rejection_reason'] ?? ($data['notes'] ?? 'No reason provided');
+                $smsMessage =
+                    "PAYROLL REQUEST REJECTED\n" .
+                    "Period: {$periodLabel}\n" .
+                    "Rejected By: {$approverName}\n" .
+                    "Reason: {$reason}";
+            }
+
+            $this->notifyPayrollRequester(
+                $requesterId,
                 $smsMessage,
-                'payroll-' . $existing->id . '-upd-' . now()->format('YmdHis')
+                'payroll-' . $existing->id . '-dec-' . now()->format('YmdHis')
             );
 
             return response()->json([
-                'message'  => 'Pending request updated.',
-                'request'  => $existing->fresh(),
-                'updated'  => true,
-                'sms_sent' => $smsSent,
+                'message' => $decision === 'accepted'
+                    ? 'Request approved.'
+                    : 'Request rejected.',
+                'request' => $existing->fresh(),
+                'status'  => $newStatus,
             ]);
         }
 
-        /*
-        |------------------------------------------------------------------
-        | 8. Create NEW request
-        |------------------------------------------------------------------
-        */
-        $newStatus   = 'pending';
-        $eventAction = 'created';
-        $eventNote   = 'Request submitted for approval';
-
-        if ($decision === 'accepted') {
-            $newStatus   = 'approved';
-            $eventAction = 'approved';
-            $eventNote   = $data['notes'] ?? 'Request approved';
-        } elseif ($decision === 'rejected') {
-            $newStatus   = 'rejected';
-            $eventAction = 'rejected';
-            $eventNote   = $data['notes'] ?? 'Request rejected';
+        // ----------------------------------------------------------
+        // 7b. Update and resubmit the pending request → SMS to approver
+        // ----------------------------------------------------------
+        if (!$approverId) {
+            return response()->json([
+                'errors' => ['send_to' => ['Please select an approver.']],
+            ], 422);
         }
 
-        $isDecided = in_array($decision, ['accepted', 'rejected'], true);
-
-        $req = DB::transaction(function () use (
-            $data, $branchId, $newStatus, $eventAction, $eventNote,
-            $decision, $isDecided, $payrollReference, $approverId,
-            $employeeId, $payload
-        ) {
-            if ($data['type'] === 'monthly_salary' && !$payrollReference) {
-                throw new \RuntimeException(
-                    'No payroll reference was found for the selected branch and period.'
-                );
-            }
-
-            $req = PayrollRequest::create([
-                'branch_id'        => $branchId,
-                'reference'        => $data['type'] === 'monthly_salary' ? $payrollReference : null,
-                'type'             => $data['type'],
-                'period_month'     => (int) $data['period_month'],
-                'period_year'      => (int) $data['period_year'],
-
-                'employee_id'      => $employeeId,       // null for bulk monthly
-                'approver_id'      => $approverId,       // scalar or null
-
-                'amount'           => $data['amount'],
-                'employee_count'   => (int) $data['employee_count'],
-                'status'           => $newStatus,
-
-                'requested_by'     => Auth::id(),
-                'requested_at'     => now(),
-
-                'approved_by'      => $isDecided ? Auth::id() : null,
-                'approved_at'      => $isDecided ? now() : null,
-
-                'rejection_reason' => $decision === 'rejected'
-                    ? ($data['rejection_reason'] ?? ($data['notes'] ?? 'Rejected by approver'))
-                    : null,
-
-                'notes'            => $data['notes'] ?? null,
-                'payload'          => $payload,          // cast → JSON string
+        DB::transaction(function () use ($existing, $employeeId, $approverId, $data, $payload) {
+            $existing->update([
+                'employee_id'    => $employeeId,
+                'approver_id'    => $approverId,
+                'amount'         => $data['amount'],
+                'employee_count' => (int) $data['employee_count'],
+                'notes'          => $data['notes'] ?? null,
+                'payload'        => $payload,
+                'requested_by'   => Auth::id(),
+                'requested_at'   => now(),
             ]);
 
             PayrollRequestEvent::create([
-                'payroll_request_id' => $req->id,
-                'action'             => $eventAction,
+                'payroll_request_id' => $existing->id,
+                'action'             => 'updated',
                 'actor_id'           => Auth::id(),
-                'notes'              => $eventNote,
+                'notes'              => 'Pending request updated and resubmitted for approval',
             ]);
-
-            return $req;
         });
 
-        /*
-        |------------------------------------------------------------------
-        | 9. SMS when submitted for approval
-        |------------------------------------------------------------------
-        */
-        $smsSent = false;
+        $smsMessage =
+            "PAYROLL REQUEST UPDATED\n" .
+            "Requester: {$requesterName}\n" .
+            "" . ($data['notes'] ?? 'No message provided');
 
-        if ($newStatus === 'pending' && $approverId) {
-            $smsMessage =
-                "NEW PAYROLL REQUEST\n" .
-                "Requester: {$requesterName}\n" .
-                "Message: " . ($data['notes'] ?? 'No message provided');
-
-            $smsSent = $this->notifyPayrollApprover(
-                $approverId,
-                $smsMessage,
-                'payroll-' . $req->id . '-new-' . now()->format('YmdHis')
-            );
-        }
-
-        $message = $newStatus === 'pending'
-            ? 'Request submitted for approval.'
-            : ($newStatus === 'approved' ? 'Request approved.' : 'Request rejected.');
+        $smsSent = $this->notifyPayrollApprover(
+            $approverId,
+            $smsMessage,
+            'payroll-' . $existing->id . '-upd-' . now()->format('YmdHis')
+        );
 
         return response()->json([
-            'message'  => $message,
-            'request'  => $req,
-            'status'   => $newStatus,
+            'message'  => 'Pending request updated.',
+            'request'  => $existing->fresh(),
+            'updated'  => true,
             'sms_sent' => $smsSent,
         ]);
     }
 
-    /**
-     * Coerce a scalar or single-element array to int.
-     * Prevents "Array to string conversion" when a multi-select
-     * accidentally posts an array to a scalar column.
-     */
-    private function scalarInt($value): ?int
-    {
-        if (is_array($value)) {
-            $value = reset($value);
-        }
+    /* ------------------------------------------------------------------
+     | 8. Create NEW request
+     ------------------------------------------------------------------ */
+    $newStatus   = 'pending';
+    $eventAction = 'created';
+    $eventNote   = 'Request submitted for approval';
 
-        if ($value === null || $value === '' || $value === false) {
-            return null;
-        }
-
-        return is_numeric($value) ? (int) $value : null;
+    if ($decision === 'accepted') {
+        $newStatus   = 'approved';
+        $eventAction = 'approved';
+        $eventNote   = $data['notes'] ?? 'Request approved';
+    } elseif ($decision === 'rejected') {
+        $newStatus   = 'rejected';
+        $eventAction = 'rejected';
+        $eventNote   = $data['notes'] ?? 'Request rejected';
     }
+
+    $isDecided = in_array($decision, ['accepted', 'rejected'], true);
+
+    $req = DB::transaction(function () use (
+        $data, $branchId, $newStatus, $eventAction, $eventNote,
+        $decision, $isDecided, $payrollReference, $approverId,
+        $employeeId, $payload
+    ) {
+        if ($data['type'] === 'monthly_salary' && !$payrollReference) {
+            throw new \RuntimeException(
+                'No payroll reference was found for the selected branch and period.'
+            );
+        }
+
+        $req = PayrollRequest::create([
+            'branch_id'        => $branchId,
+            'reference'        => $data['type'] === 'monthly_salary' ? $payrollReference : null,
+            'type'             => $data['type'],
+            'period_month'     => (int) $data['period_month'],
+            'period_year'      => (int) $data['period_year'],
+            'employee_id'      => $employeeId,
+            'approver_id'      => $approverId,
+            'amount'           => $data['amount'],
+            'employee_count'   => (int) $data['employee_count'],
+            'status'           => $newStatus,
+            'requested_by'     => Auth::id(),
+            'requested_at'     => now(),
+            'approved_by'      => $isDecided ? Auth::id() : null,
+            'approved_at'      => $isDecided ? now() : null,
+            'rejection_reason' => $decision === 'rejected'
+                ? ($data['rejection_reason'] ?? ($data['notes'] ?? 'Rejected by approver'))
+                : null,
+            'notes'            => $data['notes'] ?? null,
+            'payload'          => $payload,
+        ]);
+
+        PayrollRequestEvent::create([
+            'payroll_request_id' => $req->id,
+            'action'             => $eventAction,
+            'actor_id'           => Auth::id(),
+            'notes'              => $eventNote,
+        ]);
+
+        return $req;
+    });
+
+    /* ------------------------------------------------------------------
+     | 9. SMS to approver on submission (pending only)
+     ------------------------------------------------------------------ */
+    $smsSent = false;
+
+    if ($newStatus === 'pending' && $approverId) {
+        $smsMessage =
+            "NEW PAYROLL REQUEST\n" .
+            "Requester: {$requesterName}\n" .
+            "" . ($data['notes'] ?? 'No message provided');
+
+        $smsSent = $this->notifyPayrollApprover(
+            $approverId,
+            $smsMessage,
+            'payroll-' . $req->id . '-new-' . now()->format('YmdHis')
+        );
+    }
+
+    $message = $newStatus === 'pending'
+        ? 'Request submitted for approval.'
+        : ($newStatus === 'approved' ? 'Request approved.' : 'Request rejected.');
+
+    return response()->json([
+        'message'  => $message,
+        'request'  => $req,
+        'status'   => $newStatus,
+        'sms_sent' => $smsSent,
+    ]);
+}
+
+
+private function sendViaNextSms($senderId, array $recipients)
+    {
+        $apiUrl = "https://messaging-service.co.tz/api/sms/v1/text/multi";
+        $apiKey = 'naziru';
+        $apiSecret = '271646njg@NJG';
+        // $senderId = 'MANANI TECH';
+
+        $messages = [];
+
+        foreach ($recipients as $recipient) {
+            $messages[] = [
+                'from' => $senderId,
+                'to'   => $recipient['mobile'],
+                'text' => $recipient['message']
+            ];
+        }
+
+         $response = Http::withHeaders([
+            'Authorization' => 'Basic ' . base64_encode("$apiKey:$apiSecret"),
+            'Content-Type' => 'application/json'
+        ])->post($apiUrl, [
+            "messages" => $messages
+        ]);
+
+        if ($response->successful()) {
+            return [
+                'status' => 'sent',
+                'response' => $response->json()
+            ];
+        }
+
+        \Log::error('SMS Failed', ['body' => $response->body()]);
+
+        return [
+            'status' => 'failed',
+            'response' => null
+        ];
+    }
+
+
+/* ============================================================
+ |  Send an SMS to a specific user by their ID.
+ |  Uses the existing sendViaNextSms() + first approved sender.
+ ============================================================ */
+private function notifyUserById(?int $userId, string $message, string $reference = null): bool
+{
+    if (!$userId) {
+        return false;
+    }
+
+    $recipient = DB::table('users')->where('id', $userId)->first();
+    if (!$recipient) {
+        \Log::warning('SMS skipped: user not found', ['user_id' => $userId]);
+        return false;
+    }
+
+    $mobile = $this->userMobile($recipient);
+    if (!$mobile) {
+        \Log::warning('SMS skipped: user has no mobile', ['user_id' => $userId]);
+        return false;
+    }
+
+    $sender = DB::table('sender_ids')
+        ->where('status', 'approved')
+        ->orderBy('id')
+        ->first();
+
+    if (!$sender) {
+        \Log::warning('SMS skipped: no approved sender ID found');
+        return false;
+    }
+
+    $response = $this->sendViaNextSms($sender->name, [
+        ['mobile' => $mobile, 'message' => $message],
+    ]);
+
+    $status = $response['status'] === 'sent' ? 'sent' : 'failed';
+
+    DB::table('sms_logs')->insert([
+        'sender_id'  => $sender->id,
+        'recipient'  => $mobile,
+        'message'    => $message,
+        'channel'    => 'sms',
+        'status'     => $status,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return $response['status'] === 'sent';
+}
+
+/* Thin wrappers used by store() */
+private function notifyPayrollApprover(?int $approverId, string $message, string $reference = null): bool
+{
+    return $this->notifyUserById($approverId, $message, $reference);
+}
+
+private function notifyPayrollRequester(?int $requesterId, string $message, string $reference = null): bool
+{
+    return $this->notifyUserById($requesterId, $message, $reference);
+}
+
+/* ============================================================
+ |  Helpers — user display name & mobile
+ |  Works with either { name } or { fname, lname } schemas.
+ ============================================================ */
+private function userFullName($user): string
+{
+    if (!$user) return '';
+
+    if (!empty($user->name)) {
+        return $user->name;
+    }
+
+    return trim(($user->fname ?? '') . ' ' . ($user->lname ?? ''));
+}
+
+private function userMobile($user): ?string
+{
+    if (!$user) return null;
+
+    foreach (['mobile', 'phone', 'phone_number', 'mobile_number'] as $col) {
+        if (!empty($user->$col)) {
+            return $user->$col;
+        }
+    }
+
+    return null;
+}
+
+/* Coerce scalar / single-element array to int (existing helper, kept) */
+private function scalarInt($value): ?int
+{
+    if (is_array($value)) {
+        $value = reset($value);
+    }
+
+    if ($value === null || $value === '' || $value === false) {
+        return null;
+    }
+
+    return is_numeric($value) ? (int) $value : null;
+}
+
+
+    // public function store(Request $request)
+    // {
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 1. Validation — employee_id / send_to must be SCALARS,
+    //     |    payload must be an ARRAY (cast handles JSON encoding)
+    //     |------------------------------------------------------------------
+    //     */
+    //     $data = $request->validate([
+    //         'type'             => 'required|in:monthly_salary,salary_advance',
+    //         'period_month'     => 'required|integer|between:1,12',
+    //         'period_year'      => 'required|integer|min:2020',
+
+    //         // bulk monthly payroll sends no employee_id; advances send one
+    //         'employee_id'      => 'nullable|integer|exists:employees,id',
+
+    //         // single approver — scalar only
+    //         'send_to'          => 'required_unless:decision,accepted,rejected|nullable|integer|exists:users,id',
+
+    //         'amount'           => 'required|numeric|min:0.01',
+    //         'employee_count'   => 'required|integer|min:1',
+
+    //         // payload is an object/array — model casts to JSON
+    //         'payload'          => 'nullable|array',
+
+    //         'notes'            => 'nullable|string|max:1000',
+    //         'decision'         => 'nullable|in:accepted,rejected',
+    //         'rejection_reason' => 'nullable|string|max:1000',
+    //     ]);
+
+    //     $user          = Auth::user();
+    //     $branchId      = $user->branch_id;
+    //     $requesterName = $user->name;
+
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 2. Normalise to scalars — defensive against multi-selects
+    //     |------------------------------------------------------------------
+    //     */
+    //     $approverId = $this->scalarInt($data['send_to']     ?? null);
+    //     $employeeId = $this->scalarInt($data['employee_id'] ?? null);
+
+    //     // monthly_salary is BULK → never store a single employee_id
+    //     if ($data['type'] !== 'salary_advance') {
+    //         $employeeId = null;
+    //     }
+
+    //     $decision = $data['decision'] ?? null;
+
+    //     $period = sprintf('%04d-%02d', $data['period_year'], $data['period_month']);
+
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 3. Build a clean payload array
+    //     |    (column has CHECK json_valid — always send valid JSON or NULL)
+    //     |------------------------------------------------------------------
+    //     */
+    //     $payload = is_array($data['payload'] ?? null) ? $data['payload'] : [];
+
+    //     $payload = array_merge($payload, [
+    //         'period'         => $period,                                            // "2026-10"
+    //         'employee_ids'   => $request->input('employee_ids', $payload['employee_ids'] ?? []),
+    //         'total_amount'   => (float) $data['amount'],                            // 10820000.0
+    //         'employee_count' => (int)   $data['employee_count'],                    // 25
+    //     ]);
+
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 4. Payroll reference for the period
+    //     |------------------------------------------------------------------
+    //     */
+    //     $payrollReference = DB::table('payrolls')
+    //         ->where('branch_id', $branchId)
+    //         ->where('month', $period)
+    //         ->value('reference');
+
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 5. Find existing request for this branch + type + period
+    //     |------------------------------------------------------------------
+    //     */
+    //     $existing = PayrollRequest::forBranch($branchId)
+    //         ->where('type', $data['type'])
+    //         ->where('period_year', $data['period_year'])
+    //         ->where('period_month', $data['period_month'])
+    //         ->whereIn('status', ['pending', 'approved', 'rejected', 'cancelled'])
+    //         ->latest('id')
+    //         ->first();
+
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 6. Approved request — cannot overwrite
+    //     |------------------------------------------------------------------
+    //     */
+    //     if ($existing && $existing->status === 'approved') {
+    //         return response()->json([
+    //             'errors' => [
+    //                 'type' => ['A request for this period is already approved.'],
+    //             ],
+    //         ], 422);
+    //     }
+
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 7. Existing PENDING request
+    //     |------------------------------------------------------------------
+    //     */
+    //     if ($existing && $existing->status === 'pending') {
+
+    //         // 7a. Approve / reject the pending request
+    //         if (in_array($decision, ['accepted', 'rejected'], true)) {
+
+    //             $newStatus   = $decision === 'accepted' ? 'approved' : 'rejected';
+    //             $eventAction = $newStatus;
+    //             $eventNote   = $data['notes']
+    //                 ?? ($decision === 'accepted' ? 'Request approved' : 'Request rejected');
+
+    //             DB::transaction(function () use ($existing, $data, $decision, $newStatus, $eventAction, $eventNote) {
+    //                 $update = [
+    //                     'status'      => $newStatus,
+    //                     'approved_by' => Auth::id(),
+    //                     'approved_at' => now(),
+    //                 ];
+
+    //                 if ($decision === 'rejected') {
+    //                     $update['rejected_by']      = Auth::id();
+    //                     $update['rejected_at']      = now();
+    //                     $update['rejection_reason'] = $data['rejection_reason']
+    //                         ?? ($data['notes'] ?? 'Rejected by approver');
+    //                 }
+
+    //                 $existing->update($update);
+
+    //                 PayrollRequestEvent::create([
+    //                     'payroll_request_id' => $existing->id,
+    //                     'action'             => $eventAction,
+    //                     'actor_id'           => Auth::id(),
+    //                     'notes'              => $eventNote,
+    //                 ]);
+    //             });
+
+    //             return response()->json([
+    //                 'message' => $decision === 'accepted'
+    //                     ? 'Request approved.'
+    //                     : 'Request rejected.',
+    //                 'request' => $existing->fresh(),
+    //                 'status'  => $newStatus,
+    //             ]);
+    //         }
+
+    //         // 7b. Update and resubmit pending request
+    //         if (!$approverId) {
+    //             return response()->json([
+    //                 'errors' => ['send_to' => ['Please select an approver.']],
+    //             ], 422);
+    //         }
+
+    //         DB::transaction(function () use ($existing, $employeeId, $approverId, $data, $payload) {
+    //             $existing->update([
+    //                 'employee_id'    => $employeeId,           // scalar or null
+    //                 'approver_id'    => $approverId,           // scalar
+    //                 'amount'         => $data['amount'],
+    //                 'employee_count' => (int) $data['employee_count'],
+    //                 'notes'          => $data['notes'] ?? null,
+    //                 'payload'        => $payload,              // cast → JSON string
+    //                 'requested_by'   => Auth::id(),
+    //                 'requested_at'   => now(),
+    //             ]);
+
+    //             PayrollRequestEvent::create([
+    //                 'payroll_request_id' => $existing->id,
+    //                 'action'             => 'updated',
+    //                 'actor_id'           => Auth::id(),
+    //                 'notes'              => 'Pending request updated and resubmitted for approval',
+    //             ]);
+    //         });
+
+    //         $smsMessage =
+    //             "PAYROLL REQUEST UPDATED\n" .
+    //             "Requester: {$requesterName}\n" .
+    //             "Message: " . ($data['notes'] ?? 'No message provided');
+
+    //         $smsSent = $this->notifyPayrollApprover(
+    //             $approverId,
+    //             $smsMessage,
+    //             'payroll-' . $existing->id . '-upd-' . now()->format('YmdHis')
+    //         );
+
+    //         return response()->json([
+    //             'message'  => 'Pending request updated.',
+    //             'request'  => $existing->fresh(),
+    //             'updated'  => true,
+    //             'sms_sent' => $smsSent,
+    //         ]);
+    //     }
+
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 8. Create NEW request
+    //     |------------------------------------------------------------------
+    //     */
+    //     $newStatus   = 'pending';
+    //     $eventAction = 'created';
+    //     $eventNote   = 'Request submitted for approval';
+
+    //     if ($decision === 'accepted') {
+    //         $newStatus   = 'approved';
+    //         $eventAction = 'approved';
+    //         $eventNote   = $data['notes'] ?? 'Request approved';
+    //     } elseif ($decision === 'rejected') {
+    //         $newStatus   = 'rejected';
+    //         $eventAction = 'rejected';
+    //         $eventNote   = $data['notes'] ?? 'Request rejected';
+    //     }
+
+    //     $isDecided = in_array($decision, ['accepted', 'rejected'], true);
+
+    //     $req = DB::transaction(function () use (
+    //         $data, $branchId, $newStatus, $eventAction, $eventNote,
+    //         $decision, $isDecided, $payrollReference, $approverId,
+    //         $employeeId, $payload
+    //     ) {
+    //         if ($data['type'] === 'monthly_salary' && !$payrollReference) {
+    //             throw new \RuntimeException(
+    //                 'No payroll reference was found for the selected branch and period.'
+    //             );
+    //         }
+
+    //         $req = PayrollRequest::create([
+    //             'branch_id'        => $branchId,
+    //             'reference'        => $data['type'] === 'monthly_salary' ? $payrollReference : null,
+    //             'type'             => $data['type'],
+    //             'period_month'     => (int) $data['period_month'],
+    //             'period_year'      => (int) $data['period_year'],
+
+    //             'employee_id'      => $employeeId,       // null for bulk monthly
+    //             'approver_id'      => $approverId,       // scalar or null
+
+    //             'amount'           => $data['amount'],
+    //             'employee_count'   => (int) $data['employee_count'],
+    //             'status'           => $newStatus,
+
+    //             'requested_by'     => Auth::id(),
+    //             'requested_at'     => now(),
+
+    //             'approved_by'      => $isDecided ? Auth::id() : null,
+    //             'approved_at'      => $isDecided ? now() : null,
+
+    //             'rejection_reason' => $decision === 'rejected'
+    //                 ? ($data['rejection_reason'] ?? ($data['notes'] ?? 'Rejected by approver'))
+    //                 : null,
+
+    //             'notes'            => $data['notes'] ?? null,
+    //             'payload'          => $payload,          // cast → JSON string
+    //         ]);
+
+    //         PayrollRequestEvent::create([
+    //             'payroll_request_id' => $req->id,
+    //             'action'             => $eventAction,
+    //             'actor_id'           => Auth::id(),
+    //             'notes'              => $eventNote,
+    //         ]);
+
+    //         return $req;
+    //     });
+
+    //     /*
+    //     |------------------------------------------------------------------
+    //     | 9. SMS when submitted for approval
+    //     |------------------------------------------------------------------
+    //     */
+    //     $smsSent = false;
+
+    //     if ($newStatus === 'pending' && $approverId) {
+    //         $smsMessage =
+    //             "NEW PAYROLL REQUEST\n" .
+    //             "Requester: {$requesterName}\n" .
+    //             "Message: " . ($data['notes'] ?? 'No message provided');
+
+    //         $smsSent = $this->notifyPayrollApprover(
+    //             $approverId,
+    //             $smsMessage,
+    //             'payroll-' . $req->id . '-new-' . now()->format('YmdHis')
+    //         );
+    //     }
+
+    //     $message = $newStatus === 'pending'
+    //         ? 'Request submitted for approval.'
+    //         : ($newStatus === 'approved' ? 'Request approved.' : 'Request rejected.');
+
+    //     return response()->json([
+    //         'message'  => $message,
+    //         'request'  => $req,
+    //         'status'   => $newStatus,
+    //         'sms_sent' => $smsSent,
+    //     ]);
+    // }
+
+    // /**
+    //  * Coerce a scalar or single-element array to int.
+    //  * Prevents "Array to string conversion" when a multi-select
+    //  * accidentally posts an array to a scalar column.
+    //  */
+    // private function scalarInt($value): ?int
+    // {
+    //     if (is_array($value)) {
+    //         $value = reset($value);
+    //     }
+
+    //     if ($value === null || $value === '' || $value === false) {
+    //         return null;
+    //     }
+
+    //     return is_numeric($value) ? (int) $value : null;
+    // }
 
 
 // public function store(Request $request)
@@ -758,7 +1183,7 @@ class PayrollRequestController extends Controller
 
 
 
-private function notifyPayrollApprover($approverId, $message, $reference = null): bool
+private function notifyPayrollApprover1($approverId, $message, $reference = null): bool
 {
     try {
 
