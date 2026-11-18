@@ -632,32 +632,21 @@ Route::delete('/salary-advances/{id}',
 
 
 Route::get('/sms', [SmsController::class, 'index'])->name('sms.index');
-Route::post('/sms/send', [SmsController::class, 'sendSms'])->name('sms.send');
+// Route::post('/sms/send', [SmsController::class, 'sendSms'])->name('sms.send');
 Route::post('/sms/bulk', [SmsController::class, 'bulkUpload'])->name('sms.bulk');
 
-Route::get('/test-nextsms', function () {
+Route::prefix('sms')->name('sms.')->group(function () {
 
-    $token = trim((string) config('services.nextsms.token'));
+    Route::post('/send', [SmsController::class, 'sendSMS'])
+        ->name('send');
 
-    $response = Http::withToken($token)
-        ->acceptJson()
-        ->asJson()
-        ->post(
-            'https://messaging-service.co.tz/api/sms/v2/test/text/single',
-            [
-                'from' => config('services.nextsms.sender'),
-                'to' => ['255686382142'],
-                'text' => 'MANANI TECH NextSMS API configuration test.',
-            ]
-        );
+    Route::post('/sender-ids', [SmsController::class, 'storeSenderId'])
+        ->name('sender-ids.store');
 
-    Log::info('NEXTSMS INDEPENDENT TEST', [
-        'status' => $response->status(),
-        'response' => $response->json() ?? $response->body(),
-    ]);
+    Route::put('/sender-ids/{id}', [SmsController::class, 'updateSenderId'])
+        ->name('sender-ids.update');
 
-    return response()->json([
-        'http_status' => $response->status(),
-        'response' => $response->json() ?? $response->body(),
-    ]);
+    Route::delete('/sender-ids/{id}', [SmsController::class, 'deleteSenderId'])
+        ->name('sender-ids.destroy');
+
 });

@@ -42,4 +42,10 @@ return [
     'sender_id' => env('NEXTSMS_SENDER_ID'),
 ],
 
+'nextsms' => [
+    'url' => env('NEXTSMS_URL'),
+    'key' => env('NEXTSMS_KEY'),
+    'secret' => env('NEXTSMS_SECRET'),
+],
+
 ];

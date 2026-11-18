@@ -442,6 +442,7 @@ private function notifyUserById(?int $userId, string $message, string $reference
     $status = $response['status'] === 'sent' ? 'sent' : 'failed';
 
     DB::table('sms_logs')->insert([
+        'creator_id'  => Auth::id(),
         'sender_id'  => $sender->id,
         'recipient'  => $mobile,
         'message'    => $message,
