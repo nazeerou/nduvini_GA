@@ -450,11 +450,8 @@ $estimationTotals = DB::table('estimations')
             ) AS grand_total_amount
         ')
     ])
-    ->where('estimations.branch_id', $branchId)
-
-    // Do not filter by profoma_invoice.
-    // This allows all invoice-related estimations to be included.
-
+     ->where('estimations.branch_id', Auth::user()->branch_id)
+    ->whereNotNull('estimations.profoma_invoice')
     ->groupBy('estimations.reference');
 
 
