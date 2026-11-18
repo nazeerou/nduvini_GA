@@ -10,6 +10,7 @@ use App\Models\Payroll;
 use PDF;
 use App;
 use Barryvdh\Snappy;
+use DB;
 
 class SalaryAdvanceController extends Controller
 {
@@ -63,49 +64,60 @@ class SalaryAdvanceController extends Controller
     }
 
 
-    public function downloadPdf(Request $request)
-    {
-        $month = $request->input('month');   // '' or '01'..'12'
-        $year  = $request->input('year');    // '' or 'YYYY'
+public function downloadPdf(Request $request)
+{
+    $month = $request->input('month');   // '' or '01'..'12'
+    $year  = $request->input('year');    // '' or 'YYYY'
 
-        // Branch scoping is applied FIRST, before the optional month/year filters
-        $query = SalaryAdvance::with('employee')
-            ->where('branch_id', $this->branchId());
+    $query = SalaryAdvance::query()
+        ->with('employee')
+        ->leftJoin('users as approvers',  'approvers.id',  '=', 'salary_advances.user_id')
+        ->leftJoin('users as requesters', 'requesters.id', '=', 'salary_advances.paid_by')
+        ->leftJoin('roles as approver_roles',  'approver_roles.id',  '=', 'approvers.role_id')
+        ->leftJoin('roles as requester_roles', 'requester_roles.id', '=', 'requesters.role_id')
+        ->select(
+            'salary_advances.*',
+            DB::raw("CONCAT(approvers.fname, ' ', approvers.lname) as approver_name"),
+            DB::raw("CONCAT(requesters.fname, ' ', requesters.lname) as requester_name"),
+            'approvers.signature as approver_signature',
+            'requesters.signature as requester_signature',
+            'approver_roles.name as approver_role',
+            'requester_roles.name as requester_role'
+        )
+        ->where('salary_advances.branch_id', $this->branchId());
 
-        if ($year && $month) {
-            $query->where('month', $year . '-' . $month);
-        } elseif ($year) {
-            $query->where('month', 'LIKE', $year . '-%');
-        } elseif ($month) {
-            $query->where('month', 'LIKE', '%-' . $month);
-        }
-
-        $salary_advances = $query->orderBy('month', 'desc')->get();
-
-        // Human-readable period for the PDF header
-        $period = 'All Period';
-        if ($year && $month) {
-            $period = \Carbon\Carbon::createFromFormat('Y-m', $year . '-' . $month)->format('F Y');
-        } elseif ($year) {
-            $period = (string) $year;
-        } elseif ($month) {
-            $period = \Carbon\Carbon::createFromFormat('m', $month)->format('F');
-        }
-
-        $pdf = App::make('dompdf.wrapper');
-        $pdf->loadView('payrolls.salary_advances_pdf', compact(
-            'salary_advances',
-            'month',
-            'year',
-            'period'
-        ));
-
-        return $pdf->stream(
-            'salary-advances-' . ($year ?: 'all') . '-' . ($month ?: 'all') . '.pdf'
-        );
+    if ($year && $month) {
+        $query->where('salary_advances.month', $year . '-' . $month);
+    } elseif ($year) {
+        $query->where('salary_advances.month', 'LIKE', $year . '-%');
+    } elseif ($month) {
+        $query->where('salary_advances.month', 'LIKE', '%-' . $month);
     }
 
+    $salary_advances = $query->orderBy('salary_advances.month', 'desc')->get();
 
+    // Human-readable period for the PDF header
+    $period = 'All Period';
+    if ($year && $month) {
+        $period = \Carbon\Carbon::createFromFormat('Y-m', $year . '-' . $month)->format('F Y');
+    } elseif ($year) {
+        $period = (string) $year;
+    } elseif ($month) {
+        $period = \Carbon\Carbon::createFromFormat('m', $month)->format('F');
+    }
+
+    $pdf = App::make('dompdf.wrapper');
+    $pdf->loadView('payrolls.salary_advances_pdf', compact(
+        'salary_advances',
+        'month',
+        'year',
+        'period'
+    ));
+
+    return $pdf->stream(
+        'salary-advances-' . ($year ?: 'all') . '-' . ($month ?: 'all') . '.pdf'
+    );
+}
     // In SalaryAdvanceController
 public function submitForApproval($id)
 {

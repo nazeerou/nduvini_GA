@@ -585,9 +585,9 @@
                             @if($currentMonthFullyPaid)
                             @elseif(!$currentMonthApproval)
                             @elseif($currentMonthApproval->status === 'pending')
-                                <div class="pr-approval-banner pr-pending"><i class="fa fa-clock-o"></i><span>{{ now()->format('F Y') }} payroll request is <strong>pending approval</strong>.</span></div>
+                                <div class="pr-approval-banner pr-pending"><i class="fa fa-clock-o"></i><span>{{ now()->format('F Y') }} Payroll request is <strong>Pending approval</strong>.</span></div>
                             @elseif($currentMonthApproval->status === 'approved')
-                                <div class="pr-approval-banner pr-approved"><i class="fa fa-check-circle"></i><span>{{ now()->format('F Y') }} payroll request is <strong>approved</strong> — ready for Payment.</span></div>
+                                <div class="pr-approval-banner pr-approved"><i class="fa fa-check-circle"></i><span>{{ now()->format('F Y') }} Payroll request is <strong>approved</strong> — ready for Payment.</span></div>
                             @elseif($currentMonthApproval->status === 'rejected')
                                 <div class="pr-approval-banner pr-missing"><i class="fa fa-times-circle"></i><span>{{ now()->format('F Y') }} payroll request was <strong>rejected</strong>: {{ $currentMonthApproval->rejection_reason }}</span></div>
                             @endif
@@ -690,7 +690,7 @@
                                                         </button>
 
                                                         {{-- Approve Request (approver only) --}}
-                                                        @if($showApproveBtn && Auth::user()->role_id == '2')
+                                                        @if($showApproveBtn && Auth::user()->role_id == '2' || Auth::user()->role_id == '1')
                                                             <button type="button" 
                                                                     class="sal-act sal-act-success approve-payroll-btn"
                                                                     data-month="{{ $m['month'] }}"
@@ -730,7 +730,7 @@
                                                                     <i class="fa fa-money"></i> Pay
                                                                 </button>
                                                             @endif
-
+                                                         @endif
                                                             <div class="sal-dropdown">
                                                                 <button type="button" class="sal-act sal-act-bank sal-dropdown-toggle">
                                                                     <i class="fa fa-file-text-o"></i> Vouchers 
@@ -744,7 +744,6 @@
                                                                     <li><a class="rollback-btn" data-id="{{ $m['id'] }}" style="color:#b91c1c;"><i class="fa fa-trash" style="color:#b91c1c;"></i> Rollback</a></li>
                                                                 </ul>
                                                             </div>
-                                                        @endif
                                                     </div>
                                                 @else
                                                     <span class="sal-act-placeholder">Not Generated</span>
@@ -1170,11 +1169,12 @@
                                                         <div class="salary-actions">
                                                             <button type="button" class="sal-act sal-act-view view-advance-btn" data-month="{{ $g['month'] }}" data-advances="{{ json_encode($advancesData) }}"><i class="fa fa-eye"></i> View</button>
                                                             @if($showApproveBtn)
+                                                             @if(Auth::user()->role_id == "2" || Auth::user()->role_id == "1")
                                                                 <button type="button" class="sal-act sal-act-success approve-advance-btn" data-month="{{ $g['month'] }}" data-amount="{{ $g['total_amount'] }}" data-employees="{{ $g['total_count'] }}" data-reference="{{ $g['reference'] }}" data-requester-name="{{ $requesterName }}" data-requester-id="{{ $rowApproval->requested_by ?? '' }}" data-request-id="{{ $rowApproval->id ?? '' }}"><i class="fa fa-check-circle"></i> Approve Request</button>
                                                             @endif
+                                                            @endif
                                                             @if($canRequestApproval)
-                                                            @if(Auth::user()->role_id == "2" || Auth::user()->role_id == "1")
-                                                            @else
+                                                            @if(Auth::user()->role_id != "2")
                                                                 <button type="button" class="sal-act sal-act-request request-advance-approval-btn" data-month="{{ $g['month'] }}" data-amount="{{ $g['total_amount'] }}" data-employees="{{ $g['total_count'] }}"><i class="fa fa-paper-plane"></i> Send for Approval</button>
                                                             @endif
                                                                 @elseif($isPendingApproval)
