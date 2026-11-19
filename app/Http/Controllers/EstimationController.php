@@ -451,7 +451,7 @@ $estimationTotals = DB::table('estimations')
         ')
     ])
      ->where('estimations.branch_id', Auth::user()->branch_id)
-    ->whereNotNull('estimations.profoma_invoice')
+    // ->whereNotNull('estimations.profoma_invoice')
     ->groupBy('estimations.reference');
 
 
