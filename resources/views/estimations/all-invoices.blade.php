@@ -1360,7 +1360,7 @@
                         <p>Browse, filter and manage every client invoice across this branch.</p>
                     </div>
                     <div>
-                        <button type="button" class="inv-btn-primary" id="btn-create-invoice">
+                        <button type="button" class="inv-btn-primary" id="btn-create-invoice-">
                             <i class="fa fa-plus"></i> Create Invoice
                         </button>
                     </div>
